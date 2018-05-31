@@ -1,0 +1,13 @@
+{
+	"name": "dspecview",
+	"authors": [
+		"Michael Reese"
+	],
+	"description": "Spectrum viewer written in Dlang",
+	"copyright": "Copyright © 2018, Michael Reese",
+	"license": "GPL",
+	"preBuildCommands" : ["./prebuild.sh"],
+	"importPaths": ["GtkD/generated/gtkd"],
+	"lflags-posix": ["-LGtkD"],
+	"libs": ["gtkd-3"]
+}

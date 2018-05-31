@@ -1,0 +1,10 @@
+{
+	"build_systems":
+	[
+		{
+			"name": "compile",
+			"shell_cmd": "dub build ; ./run.sh",
+			"working_dir": "$project_path"
+		}
+	]
+}
