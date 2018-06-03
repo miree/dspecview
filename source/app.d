@@ -150,7 +150,7 @@ int main(string[] args)
 					popup_menu.popup(e.button, e.time);
 					popup_menu.showAll(); 
 				}
-				writeln("button press event"); 
+				writeln("tree view button press event"); 
 				return true;
 			} //anonymous function
 			//(GdkEventButton* e, Widget w)=>w.onButtonPressEvent(e) // shortcut lambda syntax only works for function with a single return statement
