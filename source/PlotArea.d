@@ -30,6 +30,16 @@ public:
 		super.addOnButtonPress(&onButtonPressEvent);
 		super.addOnButtonRelease(&onButtonReleaseEvent);
 		super.addOnScroll(&onScrollEvent);
+
+		auto f = new File("hist.dat");
+		import std.array;
+		import std.conv;
+		foreach(line; f.byLine)	{
+			foreach(number; split(line.dup(), " ")) {
+				if (number.length > 0)
+					hist1 ~= to!double(number);
+			}
+		}
 	}
 
 	override void getPreferredHeightForWidth(int width, out int minimumHeight, out int naturalHeight)
@@ -112,15 +122,10 @@ protected:
 			case GdkScrollDirection.RIGHT: 
 				_vbox.translate_one_step(event_scroll.x, event_scroll.y, -delta, 0);
 			break;
-
 			case GdkScrollDirection.SMOOTH:
 				// nothing yet
 			break;
-			//default:
-			//break;
 		}
-		//_vbox.scale_finish(event_scroll.x, event_scroll.y);
-		_vbox.scaling.active = false;
 		queueDrawArea(0,0, size.width, size.height);
 
 		return true;
@@ -178,16 +183,16 @@ protected:
 
 
 					cr.setSourceRgba(1.0, 0.0, 0.0, 1.0);
-					cr.setLineWidth( 4);
+					cr.setLineWidth( 1);
 					//drawLine(cr,_vbox, xs, ys);
-					drawHistogram(cr,_vbox, -5,5, ys);
+					drawHistogram(cr,_vbox, 0,hist1.length, hist1);
 					cr.stroke();
 
 					cr.setSourceRgba(0.0, 0.0, 0.0, 1.0);
 					cr.setLineWidth( 2);
 					cr.setLineCap(cairo_line_cap_t.ROUND);
-					drawLine(cr, _vbox, -1,0, 1,0);
-					drawLine(cr, _vbox,  0,-1,0,1);
+					//drawLine(cr, _vbox, -1,0, 1,0);
+					//drawLine(cr, _vbox,  0,-1,0,1);
 					drawBox(cr, _vbox, _vbox.getLeft(),_vbox.getBottom(), _vbox.getRight(),_vbox.getTop() );
 					cr.stroke();
 
@@ -201,12 +206,14 @@ protected:
 		return true;
 	}
 
-	auto _vbox = ViewBox(3,3 , -5,5,-5,5 );
+	auto _vbox = ViewBox(3,1 , -5,5,-5,5 );
 
 	//int _rows = 5, _colums = 1;
 
 	double m_radius = 0.40;
 	double m_lineWidth = 0.065;
+
+	double[] hist1;
 
 }
 

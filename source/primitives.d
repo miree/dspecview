@@ -126,7 +126,6 @@ void drawGrid(ref Scoped!Context cr, ViewBox box, int canvas_width, int canvas_h
 			left_oom += oomx;
 		}
 		cr.stroke();
-
 	}
 
 	// horizontal lines
@@ -156,7 +155,6 @@ void drawGrid(ref Scoped!Context cr, ViewBox box, int canvas_width, int canvas_h
 			bottom_oom += oomy;
 		}
 		cr.stroke();
-
 	}	
 
 
@@ -165,7 +163,7 @@ void drawGrid(ref Scoped!Context cr, ViewBox box, int canvas_width, int canvas_h
 	//for( int i = 2; i >= 0; --i)
 	{
 		int i = 1;
-		double width = box.getWidth()*500/canvas_width;
+		double width = box.getWidth()*200/canvas_width;
 		double oomx = 1; // order of magnitude X
 		while (oomx < width) oomx *= 10;
 		while (oomx > width) oomx /= 10;
@@ -187,11 +185,20 @@ void drawGrid(ref Scoped!Context cr, ViewBox box, int canvas_width, int canvas_h
 			{
 				cr.setSourceRgba(0, 0, 0, 1.0);
 				import std.conv;
-				auto text = to!string(round(left_oom/oomx)*oomx);
+				int number = cast(int)(round(left_oom/oomx));
+				auto text = to!string(number*oomx);
 				cairo_text_extents_t cte;
-				cr.textExtents(text,&cte);
-				cr.moveTo(box.transform_box2canvas_x(left_oom)-cte.width/2, box.transform_box2canvas_y(bottom)-cte.height/3);
-				cr.showText(text);
+				// use the minus sign to get the extent
+				cr.textExtents(to!string(-abs(number)*oomx),&cte);
+
+				writeln("number ", number);
+
+				if (cte.width <= fabs((box.transform_box2canvas_x(0)-box.transform_box2canvas_x(oomx))) ||
+					(number%5 == 0))
+				{	
+					cr.moveTo(box.transform_box2canvas_x(left_oom)-cte.width/2, box.transform_box2canvas_y(bottom)-cte.height/3);
+					cr.showText(text);
+				}
 				left_oom += oomx;
 			}
 			cr.stroke();
@@ -227,16 +234,23 @@ void drawGrid(ref Scoped!Context cr, ViewBox box, int canvas_width, int canvas_h
 		{
 			import std.stdio;
 			//writeln("oomy ", oomy);
-			bottom_oom = (cast(int)(bottom/oomy))*oomy;
+			bottom_oom = (cast(int)round(bottom/oomy))*oomy;
 			while(bottom_oom < top)
 			{
 				cr.setSourceRgba(0, 0, 0, 1.0);
+
+				int number = cast(int)(round(bottom_oom/oomy));
 				import std.conv;
-				auto text = to!string(round(bottom_oom/oomy)*oomy);
+				auto text = to!string(number*oomy);
 				cairo_text_extents_t cte;
 				cr.textExtents(text,&cte);
-				cr.moveTo(box.transform_box2canvas_x(left), box.transform_box2canvas_y(bottom_oom)+cte.height/2);
-				cr.showText(text);
+
+				if (cte.height <= fabs((box.transform_box2canvas_y(0)-box.transform_box2canvas_y(oomy))) ||
+					(number%5 == 0))
+				{	
+					cr.moveTo(box.transform_box2canvas_x(left), box.transform_box2canvas_y(bottom_oom)+cte.height/2);
+					cr.showText(text);
+				}
 				bottom_oom += oomy;
 			}
 			cr.stroke();
