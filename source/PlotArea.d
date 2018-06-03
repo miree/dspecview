@@ -29,6 +29,7 @@ public:
 		super.addOnMotionNotify(&onMotionNotify);
 		super.addOnButtonPress(&onButtonPressEvent);
 		super.addOnButtonRelease(&onButtonReleaseEvent);
+		super.addOnScroll(&onScrollEvent);
 	}
 
 	override void getPreferredHeightForWidth(int width, out int minimumHeight, out int naturalHeight)
@@ -42,72 +43,93 @@ protected:
 	{
 		GtkAllocation size;
 		getAllocation(size);
-		if (_vbox.translating.active)
-		{
+		if (_vbox.translating.active) {
 			_vbox.translate_ongoing(event_motion.x, event_motion.y);
 			queueDrawArea(0,0, size.width, size.height);
 		}
-		if (_vbox.scaling.active)
-		{
-			_vbox.scale_ongoing(event_motion.x, 
-								event_motion.y);
+		if (_vbox.scaling.active) {
+			_vbox.scale_ongoing(event_motion.x, event_motion.y);
 			queueDrawArea(0,0, size.width, size.height);
 		}
 		return true;
 	}
+
 	bool onButtonPressEvent(GdkEventButton *event_button, Widget w)
 	{
 		GtkAllocation size;
 		getAllocation(size);
-		writeln("PlotArea button pressed ", event_button.x, " ", event_button.y, " ", event_button.button);
+		//writeln("PlotArea button pressed ", event_button.x, " ", event_button.y, " ", event_button.button);
 		if (event_button.button == 2) // starte Translation
 		{
-			with(_vbox.translating)
-			{
-				active  = true;
-				x_start = event_button.x;
-				y_start = event_button.y;
-			}
+			_vbox.translate_start(event_button.x, event_button.y);
 		}		
 		if (event_button.button == 3) // starte Scaling
 		{
-			writeln("reducing x coordinate: ", _vbox.reduce_canvas_x(event_button.x,size.width));
-			writeln("reducing y coordinate: ", _vbox.reduce_canvas_y(event_button.y,size.height));
-			with(_vbox.scaling)
-			{
-				active  = true;
-				x_start = event_button.x;//_vbox.reduce_canvas_x(event_button.x,size.width);
-				y_start = event_button.y;//_vbox.reduce_canvas_y(event_button.y,size.height);
-				// calculate the starting point as if it would have happened inside the top left tile
-				_vbox.update_coefficients(0, 0, size.width, size.height);
-				x_start_box = _vbox.transform_canvas2box_x(_vbox.reduce_canvas_x(event_button.x,size.width));
-				y_start_box = _vbox.transform_canvas2box_y(_vbox.reduce_canvas_y(event_button.y,size.height));
-			}
+			_vbox.scale_start(event_button.x, event_button.y, size.width, size.height);
 		}
 		return true;
 	}
+
 	bool onButtonReleaseEvent(GdkEventButton *event_button, Widget w)
 	{
 		GtkAllocation size;
 		getAllocation(size);
-		writeln("PlotArea button released ", event_button.x, " ", event_button.y, " ", event_button.button);
+		//writeln("PlotArea button released ", event_button.x, " ", event_button.y, " ", event_button.button);
 		if (event_button.button == 2) 
 		{
-			if (_vbox.translating.active)
-			{
+			if (_vbox.translating.active) {
 				_vbox.translate_finish(event_button.x, event_button.y);
 			}
-			_vbox.translating.active = false;
 			queueDrawArea(0,0, size.width, size.height);
 		}
 		if (event_button.button == 3) // starte Scaling
 		{
-			if (_vbox.scaling.active)
-			{
+			if (_vbox.scaling.active) {
 				_vbox.scale_finish(event_button.x, event_button.y);
 			}
-			_vbox.scaling.active = false;
+			queueDrawArea(0,0, size.width, size.height);
 		}
+		return true;
+	}
+
+	bool onScrollEvent(GdkEventScroll *event_scroll, Widget w)
+	{
+		GtkAllocation size;
+		getAllocation(size);
+		double delta = 50;
+		final switch(event_scroll.direction)
+		{
+			import gdk.Event;
+			case GdkScrollDirection.UP: case GdkScrollDirection.DOWN:
+				_vbox.scale_start(event_scroll.x, event_scroll.y, size.width, size.height);
+				if (event_scroll.direction == GdkScrollDirection.UP) {
+					_vbox.scale_ongoing(event_scroll.x+delta, event_scroll.y-delta);
+					_vbox.scale_finish(event_scroll.x+delta, event_scroll.y-delta);
+				}
+				else {
+					_vbox.scale_ongoing(event_scroll.x-delta, event_scroll.y+delta);
+					_vbox.scale_finish(event_scroll.x-delta, event_scroll.y+delta);
+				}
+			break;
+			case GdkScrollDirection.LEFT: case GdkScrollDirection.RIGHT: 
+				_vbox.translate_start(event_scroll.x, event_scroll.y);
+				if (event_scroll.direction == GdkScrollDirection.LEFT) {
+					_vbox.translate_ongoing(event_scroll.x+delta, event_scroll.y);
+					_vbox.translate_finish(event_scroll.x+delta, event_scroll.y);
+				} else {
+					_vbox.translate_ongoing(event_scroll.x-delta, event_scroll.y);
+					_vbox.translate_finish(event_scroll.x-delta, event_scroll.y);
+				}
+			break;
+			case GdkScrollDirection.SMOOTH:
+				// nothing yet
+			break;
+			//default:
+			//break;
+		}
+		//_vbox.scale_finish(event_scroll.x, event_scroll.y);
+		_vbox.scaling.active = false;
+		queueDrawArea(0,0, size.width, size.height);
 
 		return true;
 	}
@@ -152,10 +174,10 @@ protected:
 			foreach (column; 0.._vbox.getColumns) {
 				_vbox.update_coefficients(row, column, size.width, size.height);
 				cr.save();
-					cr.setSourceRgba(0.0, 0.0, 0.0, 1.0);
-					cr.setLineWidth( 2);
-					drawBox(cr, _vbox, _vbox.getLeft(),_vbox.getBottom(), _vbox.getRight(),_vbox.getTop() );
-					cr.stroke();
+					//cr.setSourceRgba(0.0, 0.0, 0.0, 1.0);
+					//cr.setLineWidth( 2);
+					//drawBox(cr, _vbox, _vbox.getLeft(),_vbox.getBottom(), _vbox.getRight(),_vbox.getTop() );
+					//cr.stroke();
 
 					setContextClip(cr,_vbox);
 					cr.setLineWidth(1);
@@ -182,24 +204,7 @@ protected:
 			}
 		}
 
-		//cr.save();
-		//	cr.setSourceRgba(0.0, 0.0, 0.0, 0.8);
-		//	cr.fillPreserve();
-		//cr.restore();
 
-		//cr.save();
-		//	cr.setSourceRgba(1.0, 1.0, 1.0, 1.0);
-		//	cr.setLineWidth( m_lineWidth * 1.7);
-		//	cr.strokePreserve();
-		//	cr.clip();
-		//cr.restore();
-
-
-		////clock ticks
-
-		//// draw a little dot in the middle
-		//cr.arc(0, 0, m_lineWidth / 3.0, 0, 2 * PI);
-		//cr.fill();
 
 		return true;
 	}

@@ -81,6 +81,12 @@ struct ViewBox
 	}
 	TransformationInfo scaling, translating;
 
+	void translate_start(double x_start, double y_start)
+	{
+		translating.x_start = x_start;
+		translating.y_start = y_start;
+		translating.active = true;
+	}
 	void translate_ongoing(double x_new, double y_new)
 	{
 		_delta_x = (x_new - translating.x_start)/_b_x;
@@ -94,8 +100,19 @@ struct ViewBox
 		_top    -= _delta_y;
 		_delta_x = 0;
 		_delta_y = 0;
+		translating.active = false;
 	}
 
+	void scale_start(double x_start, double y_start, int width, int height)
+	{
+		scaling.x_start = x_start;
+		scaling.y_start = y_start;
+
+		update_coefficients(0, 0, width, height);
+		scaling.x_start_box = transform_canvas2box_x(reduce_canvas_x(x_start, width));
+		scaling.y_start_box = transform_canvas2box_y(reduce_canvas_y(y_start, height));
+		scaling.active = true;
+	}
 	void scale_ongoing(double x_new, double y_new)
 	{
 		import std.math;
@@ -122,6 +139,7 @@ struct ViewBox
 		_scale_y = 1; 
 		_delta_x = 0;
 		_delta_y = 0;
+		scaling.active = false;
 	}
 
 

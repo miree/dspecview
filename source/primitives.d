@@ -126,26 +126,7 @@ void drawGrid(ref Scoped!Context cr, ViewBox box, int canvas_width, int canvas_h
 			left_oom += oomx;
 		}
 		cr.stroke();
-		////if (i == 1)
-		//{
-		//	import std.stdio;
-		//	writeln("oomx ", oomx);
-		//	left_oom = (cast(int)(left/oomx))*oomx;
-		//	while(left_oom < right)
-		//	{
-		//		//cr.setSourceRgba(0, 0, 0, 1.0);
-		//		line_strength = 20*oomx/width;
-		//		color = (0.9-line_strength)^^2;
-		//		if (color < 0) color = 0;
-		//		//cr.setLineWidth(1);
-		//		cr.setSourceRgba(color, color, color, 1.0);
-		//		cr.moveTo(box.transform_box2canvas_x(left_oom)+0, box.transform_box2canvas_y(bottom)-5);
-		//		import std.conv;
-		//		cr.showText(to!string(round(left_oom/oomx)*oomx));
-		//		left_oom += oomx;
-		//	}
-		//	cr.stroke();
-		//}
+
 	}
 
 	// horizontal lines
@@ -176,21 +157,6 @@ void drawGrid(ref Scoped!Context cr, ViewBox box, int canvas_width, int canvas_h
 		}
 		cr.stroke();
 
-		////if (i == 0)
-		//{
-		//	import std.stdio;
-		//	writeln("oomy ", oomy);
-		//	bottom_oom = (cast(int)(bottom/oomy))*oomy;
-		//	while(bottom_oom < top)
-		//	{
-		//		//cr.setSourceRgba(0, 0, 0, 1.0);
-		//		cr.moveTo(box.transform_box2canvas_x(left)+5, box.transform_box2canvas_y(bottom_oom)+4);
-		//		import std.conv;
-		//		cr.showText(to!string(round(bottom_oom/oomy)*oomy));
-		//		bottom_oom += oomy;
-		//	}
-		//	cr.stroke();
-		//}
 	}	
 
 
@@ -220,9 +186,12 @@ void drawGrid(ref Scoped!Context cr, ViewBox box, int canvas_width, int canvas_h
 			while(left_oom < right)
 			{
 				cr.setSourceRgba(0, 0, 0, 1.0);
-				cr.moveTo(box.transform_box2canvas_x(left_oom)+0, box.transform_box2canvas_y(bottom)-5);
 				import std.conv;
-				cr.showText(to!string(round(left_oom/oomx)*oomx));
+				auto text = to!string(round(left_oom/oomx)*oomx);
+				cairo_text_extents_t cte;
+				cr.textExtents(text,&cte);
+				cr.moveTo(box.transform_box2canvas_x(left_oom)-cte.width/2, box.transform_box2canvas_y(bottom)-cte.height/3);
+				cr.showText(text);
 				left_oom += oomx;
 			}
 			cr.stroke();
@@ -252,12 +221,7 @@ void drawGrid(ref Scoped!Context cr, ViewBox box, int canvas_width, int canvas_h
 		cr.setSourceRgba(color, color, color, 1.0);
 
 		double bottom_oom = (cast(int)(bottom/oomy))*oomy;
-		while(bottom_oom < top)
-		{
-			drawHorizontalLine(cr, box, bottom_oom, left, right);
-			bottom_oom += oomy;
-		}
-		cr.stroke();
+
 
 		//if (i == 0)
 		{
@@ -267,9 +231,12 @@ void drawGrid(ref Scoped!Context cr, ViewBox box, int canvas_width, int canvas_h
 			while(bottom_oom < top)
 			{
 				cr.setSourceRgba(0, 0, 0, 1.0);
-				cr.moveTo(box.transform_box2canvas_x(left)+5, box.transform_box2canvas_y(bottom_oom)+4);
 				import std.conv;
-				cr.showText(to!string(round(bottom_oom/oomy)*oomy));
+				auto text = to!string(round(bottom_oom/oomy)*oomy);
+				cairo_text_extents_t cte;
+				cr.textExtents(text,&cte);
+				cr.moveTo(box.transform_box2canvas_x(left), box.transform_box2canvas_y(bottom_oom)+cte.height/2);
+				cr.showText(text);
 				bottom_oom += oomy;
 			}
 			cr.stroke();
