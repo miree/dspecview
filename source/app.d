@@ -36,6 +36,8 @@ import gtk.Widget;
 import gtk.Menu;
 import gtk.MenuItem;
 
+import PlotArea;
+
 void say_hello(Button button)
 {
 	writeln("button_clicked ", button.getLabel());
@@ -62,11 +64,11 @@ int main(string[] args)
 
 
 		auto b1 = new Button("Hallo"); b1.addOnClicked(button => say_hello(button));
-		auto b2 = new Button("Welt");  b2.addOnClicked(button => say_hello(button));
 		auto box = new Box(GtkOrientation.VERTICAL,0);
 
 		auto treestore = new TreeStore([GType.STRING,GType.STRING]);
 		auto treeview = new TreeView(treestore);
+		auto b2 = new Button("clear");  b2.addOnClicked(button => treestore.clear());
 		// add all column data
 		auto renderer = new CellRendererText;
 		//  compact way of addin a column
@@ -75,13 +77,14 @@ int main(string[] args)
 
 		treeview.getSelection().setMode(GtkSelectionMode.MULTIPLE);
 
+
 		// create the popup menu content
 		auto popup_menu = new Menu;
 		//popup_menu.append(new MenuItem((MenuItem)=>writeln("selected: ", treeview.getSelectedIter().getValueString(0)), "show",    "in new window"));
 		//popup_menu.append(new MenuItem((MenuItem)=>writeln("delete ", treeview.getSelectedIter().getValueString(0), " ", treestore.remove(treeview.getSelectedIter())),  "delete",  "delete the item"));
 		popup_menu.append( new MenuItem(
 								delegate(MenuItem m) { // the action to perform if that menu entry is selected
-									write("show: ");	
+									write("show: ");
 									auto iter = treeview.getSelectedIter();
 									if (iter is null) {
 										writeln("nothing selected");
@@ -102,14 +105,38 @@ int main(string[] args)
 							));
 		popup_menu.append( new MenuItem(
 								delegate(MenuItem m) { // the action to perform if that menu entry is selected
-									writeln("delete ");
-									auto iter = treeview.getSelectedIter();
-									if (iter is null) {
-										writeln("nothing selected");
-									} else {
-										writeln(iter.getValueString(0));
-										treestore.remove(iter);
+									writeln("show all: ");
+									auto iters = treeview.getSelectedIters();
+									foreach(iter; iters)
+									{
+										string get_full_name(TreeIter iter) {
+											auto parent = iter.getParent();
+											if (parent is null) {
+												return iter.getValueString(0);
+											} else {
+												return get_full_name(parent) ~ "/" ~ iter.getValueString(0);
+											}
+										}
+										writeln(get_full_name(iter));										
 									}
+								},
+								"show all", // menu entry label
+								"show all seleted items"// description
+							));
+		popup_menu.append( new MenuItem(
+								delegate(MenuItem m) { // the action to perform if that menu entry is selected
+									//for (;;)
+									//{
+										writeln("delete ");
+										auto iter = treeview.getSelectedIter();
+										if (iter is null) {
+											writeln("nothing selected");
+											//break;
+										} else {
+											writeln(iter.getValueString(0));
+											treestore.remove(iter);
+										}
+									//}
 								}, 
 								"delete",  // menu entry label
 								"delete selected item" // description
@@ -157,12 +184,19 @@ int main(string[] args)
 
 		// add the treeview ...
 		//    ... with scrolling
-		ScrolledWindow scrollwin = new ScrolledWindow();
+		auto scrollwin = new ScrolledWindow();
 		scrollwin.setPropagateNaturalHeight(true);
 		scrollwin.add(treeview);
 		box.add(scrollwin); 
 		//    ... without scrolling
 		//box.add(treeview);
+
+		auto plot_area = new PlotArea;
+		box.add(plot_area);
+		//plot_area.setSizeRequest(200,200);
+		box.setChildPacking(plot_area,true,true,0,GtkPackType.START);
+
+		plot_area.show();
 
 		b1.show();
 		b2.show();
