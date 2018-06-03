@@ -81,6 +81,12 @@ struct ViewBox
 	}
 	TransformationInfo scaling, translating;
 
+	void translate_one_step(double x_start, double y_start, double x_step, double y_step)
+	{
+		translate_start(x_start, y_start);
+		translate_ongoing(x_start+x_step, y_start+y_step);
+		translate_finish(x_start+x_step, y_start+y_step);
+	}
 	void translate_start(double x_start, double y_start)
 	{
 		translating.x_start = x_start;
@@ -103,6 +109,12 @@ struct ViewBox
 		translating.active = false;
 	}
 
+	void scale_one_step(double x_start, double y_start, int width, int height, double x_step, double y_step)
+	{
+		scale_start(x_start, y_start, width, height);
+		scale_ongoing(x_start+x_step, y_start-y_step);
+		scale_finish(x_start+x_step, y_start-y_step);
+	}
 	void scale_start(double x_start, double y_start, int width, int height)
 	{
 		scaling.x_start = x_start;

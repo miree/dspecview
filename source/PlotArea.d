@@ -100,27 +100,19 @@ protected:
 		final switch(event_scroll.direction)
 		{
 			import gdk.Event;
-			case GdkScrollDirection.UP: case GdkScrollDirection.DOWN:
-				_vbox.scale_start(event_scroll.x, event_scroll.y, size.width, size.height);
-				if (event_scroll.direction == GdkScrollDirection.UP) {
-					_vbox.scale_ongoing(event_scroll.x+delta, event_scroll.y-delta);
-					_vbox.scale_finish(event_scroll.x+delta, event_scroll.y-delta);
-				}
-				else {
-					_vbox.scale_ongoing(event_scroll.x-delta, event_scroll.y+delta);
-					_vbox.scale_finish(event_scroll.x-delta, event_scroll.y+delta);
-				}
+			case GdkScrollDirection.UP: 
+				_vbox.scale_one_step(event_scroll.x, event_scroll.y, size.width, size.height, delta, delta);
 			break;
-			case GdkScrollDirection.LEFT: case GdkScrollDirection.RIGHT: 
-				_vbox.translate_start(event_scroll.x, event_scroll.y);
-				if (event_scroll.direction == GdkScrollDirection.LEFT) {
-					_vbox.translate_ongoing(event_scroll.x+delta, event_scroll.y);
-					_vbox.translate_finish(event_scroll.x+delta, event_scroll.y);
-				} else {
-					_vbox.translate_ongoing(event_scroll.x-delta, event_scroll.y);
-					_vbox.translate_finish(event_scroll.x-delta, event_scroll.y);
-				}
+			case GdkScrollDirection.DOWN:	
+				_vbox.scale_one_step(event_scroll.x, event_scroll.y, size.width, size.height, -delta, -delta);
 			break;
+			case GdkScrollDirection.LEFT: 
+				_vbox.translate_one_step(event_scroll.x, event_scroll.y, delta, 0);
+			break;
+			case GdkScrollDirection.RIGHT: 
+				_vbox.translate_one_step(event_scroll.x, event_scroll.y, -delta, 0);
+			break;
+
 			case GdkScrollDirection.SMOOTH:
 				// nothing yet
 			break;
