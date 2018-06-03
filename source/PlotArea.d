@@ -42,8 +42,6 @@ protected:
 	{
 		GtkAllocation size;
 		getAllocation(size);
-		writeln("motion detected ", event_motion.x, " ", event_motion.y);
-		writeln("reduced coordsd ", _vbox.reduce_canvas_x(event_motion.x,size.width), " ", _vbox.reduce_canvas_y(event_motion.y,size.height));
 		if (_vbox.translating.active)
 		{
 			_vbox.translate_ongoing(event_motion.x, event_motion.y);
@@ -134,13 +132,13 @@ protected:
 
 		// background color
 		cr.save();
-			cr.setSourceRgba(0.9, 0.9, 0.9, 0.9);   
+			cr.setSourceRgba(0.9, 0.9, 0.9, 1);   
 			cr.paint();
 		cr.restore();
 
 		double[] xs;
 		double[] ys;
-		int N = 100;
+		int N = 11;
 		for (int i = 0; i < N; ++i)
 		{
 			import std.math;
@@ -160,10 +158,15 @@ protected:
 					cr.stroke();
 
 					setContextClip(cr,_vbox);
+					cr.setLineWidth(1);
+					drawGrid(cr, _vbox, size.width, size.height);
+					cr.stroke();
+
 
 					cr.setSourceRgba(1.0, 0.0, 0.0, 1.0);
 					cr.setLineWidth( 4);
-					drawLine(cr,_vbox, xs, ys);
+					//drawLine(cr,_vbox, xs, ys);
+					drawHistogram(cr,_vbox, -5,5, ys);
 					cr.stroke();
 
 					cr.setSourceRgba(0.0, 0.0, 0.0, 1.0);
@@ -201,7 +204,7 @@ protected:
 		return true;
 	}
 
-	auto _vbox = ViewBox(4,7 , -5,5,-5,5 );
+	auto _vbox = ViewBox(3,3 , -5,5,-5,5 );
 
 	//int _rows = 5, _colums = 1;
 

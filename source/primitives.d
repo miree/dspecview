@@ -71,3 +71,210 @@ do
 		}
 	}
 }
+
+void drawHistogram(ref Scoped!Context cr, ViewBox box, double min, double max, double[] bins)
+in {
+	assert(bins.length > 0);
+	assert(min < max);
+} do {
+	double bin_width = (max-min)/bins.length;
+	double xhist = min;
+	double x = box.transform_box2canvas_x(xhist);
+	double y = box.transform_box2canvas_y(bins[0]);
+	cr.moveTo(x,y);
+	xhist += bin_width;
+	x = box.transform_box2canvas_x(xhist);
+	cr.lineTo(x,y);
+	foreach(bin; bins[1..$])
+	{
+		y = box.transform_box2canvas_y(bin);
+		cr.lineTo(x,y);
+		xhist += bin_width;
+		x = box.transform_box2canvas_x(xhist);
+		cr.lineTo(x,y);
+	}
+}
+
+void drawGrid(ref Scoped!Context cr, ViewBox box, int canvas_width, int canvas_height)
+{
+	import std.math;
+
+	// vertical lines
+	for( int i = 2; i >= 0; --i)
+	{
+		double width = box.getWidth()*1000/canvas_width;
+		double oomx = 1; // order of magnitude X
+		while (oomx < width) oomx *= 10;
+		while (oomx > width) oomx /= 10;
+		oomx /= 10;
+		for (int n = 0; n < i; ++n) oomx *= 10;
+
+		double left  = box.getLeft();
+		double right = box.getRight();
+		double bottom  = box.getBottom();
+		double top     = box.getTop();
+
+		double line_strength = 2*oomx/width;
+		double color = (0.9-line_strength)^^2;
+		cr.setLineWidth(1);
+		cr.setSourceRgba(color, color, color, 1.0);
+
+		double left_oom   = (cast(int)(left  /oomx))*oomx;
+		while(left_oom < right)
+		{
+			drawVerticalLine(cr, box, left_oom, bottom, top);
+			left_oom += oomx;
+		}
+		cr.stroke();
+		////if (i == 1)
+		//{
+		//	import std.stdio;
+		//	writeln("oomx ", oomx);
+		//	left_oom = (cast(int)(left/oomx))*oomx;
+		//	while(left_oom < right)
+		//	{
+		//		//cr.setSourceRgba(0, 0, 0, 1.0);
+		//		line_strength = 20*oomx/width;
+		//		color = (0.9-line_strength)^^2;
+		//		if (color < 0) color = 0;
+		//		//cr.setLineWidth(1);
+		//		cr.setSourceRgba(color, color, color, 1.0);
+		//		cr.moveTo(box.transform_box2canvas_x(left_oom)+0, box.transform_box2canvas_y(bottom)-5);
+		//		import std.conv;
+		//		cr.showText(to!string(round(left_oom/oomx)*oomx));
+		//		left_oom += oomx;
+		//	}
+		//	cr.stroke();
+		//}
+	}
+
+	// horizontal lines
+	for( int i = 2; i >= 0; --i)
+	{
+		double height  = box.getHeight()*1000/canvas_height;
+		double oomy = 1; // order of magnitude Y
+		while (oomy < height) oomy *= 10;
+		while (oomy > height) oomy /= 10;
+		oomy /= 10;
+		for (int n = 0; n < i; ++n) oomy *= 10;
+
+
+		double left  = box.getLeft();
+		double right = box.getRight();
+		double bottom  = box.getBottom();
+		double top     = box.getTop();
+
+		double line_strength = 2*oomy/height;
+		double color = (0.9-line_strength)^^2;
+		cr.setSourceRgba(color, color, color, 1.0);
+
+		double bottom_oom = (cast(int)(bottom/oomy))*oomy;
+		while(bottom_oom < top)
+		{
+			drawHorizontalLine(cr, box, bottom_oom, left, right);
+			bottom_oom += oomy;
+		}
+		cr.stroke();
+
+		////if (i == 0)
+		//{
+		//	import std.stdio;
+		//	writeln("oomy ", oomy);
+		//	bottom_oom = (cast(int)(bottom/oomy))*oomy;
+		//	while(bottom_oom < top)
+		//	{
+		//		//cr.setSourceRgba(0, 0, 0, 1.0);
+		//		cr.moveTo(box.transform_box2canvas_x(left)+5, box.transform_box2canvas_y(bottom_oom)+4);
+		//		import std.conv;
+		//		cr.showText(to!string(round(bottom_oom/oomy)*oomy));
+		//		bottom_oom += oomy;
+		//	}
+		//	cr.stroke();
+		//}
+	}	
+
+
+
+	// x numers lines
+	//for( int i = 2; i >= 0; --i)
+	{
+		int i = 1;
+		double width = box.getWidth()*500/canvas_width;
+		double oomx = 1; // order of magnitude X
+		while (oomx < width) oomx *= 10;
+		while (oomx > width) oomx /= 10;
+		oomx /= 10;
+		for (int n = 0; n < i; ++n) oomx *= 10;
+
+		double left  = box.getLeft();
+		double right = box.getRight();
+		double bottom  = box.getBottom();
+		double top     = box.getTop();
+
+		double left_oom   = (cast(int)(left  /oomx))*oomx;
+		//if (i == 1)
+		{
+			import std.stdio;
+			//writeln("oomx ", oomx);
+			left_oom = (cast(int)(left/oomx))*oomx;
+			while(left_oom < right)
+			{
+				cr.setSourceRgba(0, 0, 0, 1.0);
+				cr.moveTo(box.transform_box2canvas_x(left_oom)+0, box.transform_box2canvas_y(bottom)-5);
+				import std.conv;
+				cr.showText(to!string(round(left_oom/oomx)*oomx));
+				left_oom += oomx;
+			}
+			cr.stroke();
+		}
+	}
+
+
+	// y axis numers
+	//for( int i = 2; i >= 0; --i)
+	{
+		int i = 0;
+		double height  = box.getHeight()*1000/canvas_height;
+		double oomy = 1; // order of magnitude Y
+		while (oomy < height) oomy *= 10;
+		while (oomy > height) oomy /= 10;
+		oomy /= 10;
+		for (int n = 0; n < i; ++n) oomy *= 10;
+
+
+		double left  = box.getLeft();
+		double right = box.getRight();
+		double bottom  = box.getBottom();
+		double top     = box.getTop();
+
+		double line_strength = 2*oomy/height;
+		double color = (0.9-line_strength)^^2;
+		cr.setSourceRgba(color, color, color, 1.0);
+
+		double bottom_oom = (cast(int)(bottom/oomy))*oomy;
+		while(bottom_oom < top)
+		{
+			drawHorizontalLine(cr, box, bottom_oom, left, right);
+			bottom_oom += oomy;
+		}
+		cr.stroke();
+
+		//if (i == 0)
+		{
+			import std.stdio;
+			//writeln("oomy ", oomy);
+			bottom_oom = (cast(int)(bottom/oomy))*oomy;
+			while(bottom_oom < top)
+			{
+				cr.setSourceRgba(0, 0, 0, 1.0);
+				cr.moveTo(box.transform_box2canvas_x(left)+5, box.transform_box2canvas_y(bottom_oom)+4);
+				import std.conv;
+				cr.showText(to!string(round(bottom_oom/oomy)*oomy));
+				bottom_oom += oomy;
+			}
+			cr.stroke();
+		}
+	}	
+
+
+}
