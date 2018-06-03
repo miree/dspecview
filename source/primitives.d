@@ -52,8 +52,22 @@ void drawBox(ref Scoped!Context cr, ViewBox box, double x1, double y1, double x2
 	cr.lineTo(x2_canvas,y2_canvas);
 	cr.lineTo(x1_canvas,y2_canvas);
 	cr.lineTo(x1_canvas,y1_canvas);
-	//drawHorizontalLine(cr, box, y1, x1, x2);
-	//drawHorizontalLine(cr, box, y2, x1, x2);
-	//drawVerticalLine(cr, box, x1, y1, y2);
-	//drawVerticalLine(cr, box, x2, y1, y2);
+}
+
+void drawLine(ref Scoped!Context cr, ViewBox box, double[] xs, double[] ys)
+in { assert(xs.length == ys.length); }
+do
+{
+	if (xs.length > 1)
+	{
+		double x = box.transform_box2canvas_x(xs[0]);
+		double y = box.transform_box2canvas_y(ys[0]);
+		cr.moveTo(x,y);
+		foreach(i; 1..xs.length)
+		{
+			x = box.transform_box2canvas_x(xs[i]);
+			y = box.transform_box2canvas_y(ys[i]);
+			cr.lineTo(x,y);
+		}
+	}
 }

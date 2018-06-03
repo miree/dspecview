@@ -40,22 +40,27 @@ public:
 protected:
 	bool onMotionNotify(GdkEventMotion *event_motion, Widget w)
 	{
+		GtkAllocation size;
+		getAllocation(size);
 		writeln("motion detected ", event_motion.x, " ", event_motion.y);
+		writeln("reduced coordsd ", _vbox.reduce_canvas_x(event_motion.x,size.width), " ", _vbox.reduce_canvas_y(event_motion.y,size.height));
 		if (_vbox.translating.active)
 		{
 			_vbox.translate_ongoing(event_motion.x, event_motion.y);
+			queueDrawArea(0,0, size.width, size.height);
 		}
 		if (_vbox.scaling.active)
 		{
-			_vbox.scale_ongoing(event_motion.x, event_motion.y);
+			_vbox.scale_ongoing(event_motion.x, 
+								event_motion.y);
+			queueDrawArea(0,0, size.width, size.height);
 		}
-		GtkAllocation size;
-		getAllocation(size);
-		queueDrawArea(0,0, size.width, size.height);
 		return true;
 	}
 	bool onButtonPressEvent(GdkEventButton *event_button, Widget w)
 	{
+		GtkAllocation size;
+		getAllocation(size);
 		writeln("PlotArea button pressed ", event_button.x, " ", event_button.y, " ", event_button.button);
 		if (event_button.button == 2) // starte Translation
 		{
@@ -68,17 +73,25 @@ protected:
 		}		
 		if (event_button.button == 3) // starte Scaling
 		{
+			writeln("reducing x coordinate: ", _vbox.reduce_canvas_x(event_button.x,size.width));
+			writeln("reducing y coordinate: ", _vbox.reduce_canvas_y(event_button.y,size.height));
 			with(_vbox.scaling)
 			{
 				active  = true;
-				x_start = event_button.x;
-				y_start = event_button.y;
+				x_start = event_button.x;//_vbox.reduce_canvas_x(event_button.x,size.width);
+				y_start = event_button.y;//_vbox.reduce_canvas_y(event_button.y,size.height);
+				// calculate the starting point as if it would have happened inside the top left tile
+				_vbox.update_coefficients(0, 0, size.width, size.height);
+				x_start_box = _vbox.transform_canvas2box_x(_vbox.reduce_canvas_x(event_button.x,size.width));
+				y_start_box = _vbox.transform_canvas2box_y(_vbox.reduce_canvas_y(event_button.y,size.height));
 			}
 		}
 		return true;
 	}
 	bool onButtonReleaseEvent(GdkEventButton *event_button, Widget w)
 	{
+		GtkAllocation size;
+		getAllocation(size);
 		writeln("PlotArea button released ", event_button.x, " ", event_button.y, " ", event_button.button);
 		if (event_button.button == 2) 
 		{
@@ -87,9 +100,15 @@ protected:
 				_vbox.translate_finish(event_button.x, event_button.y);
 			}
 			_vbox.translating.active = false;
-			GtkAllocation size;
-			getAllocation(size);
 			queueDrawArea(0,0, size.width, size.height);
+		}
+		if (event_button.button == 3) // starte Scaling
+		{
+			if (_vbox.scaling.active)
+			{
+				_vbox.scale_finish(event_button.x, event_button.y);
+			}
+			_vbox.scaling.active = false;
 		}
 
 		return true;
@@ -112,35 +131,49 @@ protected:
 		//cr.translate(0.5, 0.5);
 		//cr.setLineWidth(m_lineWidth);
 
+
+		// background color
 		cr.save();
-			cr.setSourceRgba(0.9, 0.9, 0.9, 0.9);   // brownish green
+			cr.setSourceRgba(0.9, 0.9, 0.9, 0.9);   
 			cr.paint();
 		cr.restore();
 
-
-		cr.save();
-			cr.setSourceRgba(0.0, 0.0, 0.0, 1.0);
-			cr.setLineWidth( 2);
-			cr.setLineCap(cairo_line_cap_t.ROUND);
-			cr.moveTo(0,0);
-			cr.lineTo(size.width, size.height);
-			cr.stroke();
-		cr.restore();
+		double[] xs;
+		double[] ys;
+		int N = 100;
+		for (int i = 0; i < N; ++i)
+		{
+			import std.math;
+			double x = 5.0*(i-N/2)/N;
+			double y = exp(-x^^2);
+			xs ~= x;
+			ys ~= y;
+		}
 
 		foreach (row; 0.._vbox.getRows) {
 			foreach (column; 0.._vbox.getColumns) {
 				_vbox.update_coefficients(row, column, size.width, size.height);
 				cr.save();
-					setContextClip(cr,_vbox);
 					cr.setSourceRgba(0.0, 0.0, 0.0, 1.0);
+					cr.setLineWidth( 2);
+					drawBox(cr, _vbox, _vbox.getLeft(),_vbox.getBottom(), _vbox.getRight(),_vbox.getTop() );
+					cr.stroke();
+
+					setContextClip(cr,_vbox);
+
+					cr.setSourceRgba(1.0, 0.0, 0.0, 1.0);
 					cr.setLineWidth( 4);
+					drawLine(cr,_vbox, xs, ys);
+					cr.stroke();
+
+					cr.setSourceRgba(0.0, 0.0, 0.0, 1.0);
+					cr.setLineWidth( 2);
 					cr.setLineCap(cairo_line_cap_t.ROUND);
 					drawLine(cr, _vbox, -1,0, 1,0);
 					drawLine(cr, _vbox,  0,-1,0,1);
-
 					drawBox(cr, _vbox, _vbox.getLeft(),_vbox.getBottom(), _vbox.getRight(),_vbox.getTop() );
-
 					cr.stroke();
+
 				cr.restore();
 
 			}
@@ -168,7 +201,7 @@ protected:
 		return true;
 	}
 
-	auto _vbox = ViewBox(8,8 , -5,10,-5,10);
+	auto _vbox = ViewBox(4,7 , -5,5,-5,5 );
 
 	//int _rows = 5, _colums = 1;
 

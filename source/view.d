@@ -8,15 +8,15 @@ struct ViewBox
 	// the defining numbers for a view box
 	double _left = -1, _right = 1, _bottom = -1, _top = 1;
 	double _delta_x = 0, _delta_y = 0; // dynamic while translating the view
-	double _scale_x = 0, _scale_y = 0; // dynamic while scaling the view
+	double _scale_x = 1, _scale_y = 1; // dynamic while scaling the view
 
 	double getLeft()  {return _left - _delta_x;}
-	double getRight() {return _right- _delta_x;}
+	double getRight() {return getLeft()+getWidth();}
 	double getBottom(){return _bottom - _delta_y;}
-	double getTop()   {return _top    - _delta_y;}
+	double getTop()   {return getBottom()+getHeight();}
 
-	double getWidth() {return _right - _left;}
-	double getHeight(){return _bottom- _top;}
+	double getWidth() {return (_right - _left)*_scale_x;}
+	double getHeight(){return (_top   - _bottom)*_scale_y;}
 
 	// coefficients for linear transformation
 	double _a_x, _b_x, _a_y, _b_y;
@@ -32,7 +32,7 @@ struct ViewBox
 		double canvas_height = height / _rows;
 
 		// calculate coefficients for linear transformation
-		_b_y = canvas_height / getHeight();
+		_b_y = - canvas_height / getHeight();
 		_a_y = y_offset - _b_y*getTop();
 
 		_b_x = canvas_width / getWidth();
@@ -57,10 +57,26 @@ struct ViewBox
 		return (y - _a_y) / _b_y;
 	}
 
+	// takes into account the tiling to reduce the x position to the value inside the first tile
+	double reduce_canvas_x(in double x, int width)
+	{
+		int column_width = width/_columns;
+		int column = cast(int)x / column_width;
+		return x-column*column_width;
+	}
+	// takes into account the tiling to reduce the y position to the value inside the first tile
+	double reduce_canvas_y(in double y, int height)
+	{
+		int row_height = height/_rows;
+		int row = cast(int)y / row_height;
+		return y-row*row_height;
+	}
+
 	// manage transformation state
 	struct TransformationInfo
 	{
 		double x_start, y_start;
+		double x_start_box, y_start_box;
 		bool active = false;
 	}
 	TransformationInfo scaling, translating;
@@ -82,15 +98,28 @@ struct ViewBox
 
 	void scale_ongoing(double x_new, double y_new)
 	{
-		_delta_x = (x_new - translating.x_start)/_b_x;
-		_delta_y = (y_new - translating.y_start)/_b_y;
+		import std.math;
+		// x scaling
+		double scale_x_distance = x_new - scaling.x_start;
+		_scale_x = exp(-scale_x_distance/100.);
+		double new_left = scaling.x_start_box - _scale_x*(scaling.x_start_box - _left); 
+		_delta_x = _left - new_left; 
+		// y scaling
+		double scale_y_distance = y_new - scaling.y_start;
+		_scale_y = exp(scale_y_distance/100.);
+		double new_bottom = scaling.y_start_box - _scale_y*(scaling.y_start_box - _bottom); 
+		_delta_y = _bottom - new_bottom; 
 	}
 	void scale_finish(double x_new, double y_new)
 	{
+		double width = getWidth();
 		_left   -= _delta_x;
-		_right  -= _delta_x;
+		_right   = _left + width;
+		double height = getHeight();
 		_bottom -= _delta_y;
-		_top    -= _delta_y;
+		_top     = _bottom + height;
+		_scale_x = 1;
+		_scale_y = 1; 
 		_delta_x = 0;
 		_delta_y = 0;
 	}
