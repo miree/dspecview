@@ -102,7 +102,7 @@ void drawGrid(ref Scoped!Context cr, ViewBox box, int canvas_width, int canvas_h
 	// vertical lines
 	for( int i = 2; i >= 0; --i)
 	{
-		double width = box.getWidth()*1000/canvas_width;
+		double width = box.getWidth()*1000/(canvas_width/box.getColumns());
 		double oomx = 1; // order of magnitude X
 		while (oomx < width) oomx *= 10;
 		while (oomx > width) oomx /= 10;
@@ -131,7 +131,7 @@ void drawGrid(ref Scoped!Context cr, ViewBox box, int canvas_width, int canvas_h
 	// horizontal lines
 	for( int i = 2; i >= 0; --i)
 	{
-		double height  = box.getHeight()*1000/canvas_height;
+		double height  = box.getHeight()*1000/(canvas_height/box.getRows());
 		double oomy = 1; // order of magnitude Y
 		while (oomy < height) oomy *= 10;
 		while (oomy > height) oomy /= 10;
@@ -163,7 +163,7 @@ void drawGrid(ref Scoped!Context cr, ViewBox box, int canvas_width, int canvas_h
 	//for( int i = 2; i >= 0; --i)
 	{
 		int i = 1;
-		double width = box.getWidth()*200/canvas_width;
+		double width = box.getWidth()*200/(canvas_width/box.getColumns());
 		double oomx = 1; // order of magnitude X
 		while (oomx < width) oomx *= 10;
 		while (oomx > width) oomx /= 10;
@@ -191,7 +191,7 @@ void drawGrid(ref Scoped!Context cr, ViewBox box, int canvas_width, int canvas_h
 				// use the minus sign to get the extent
 				cr.textExtents(to!string(-abs(number)*oomx),&cte);
 
-				writeln("number ", number);
+				//writeln("number ", number);
 
 				if (cte.width <= fabs((box.transform_box2canvas_x(0)-box.transform_box2canvas_x(oomx))) ||
 					(number%5 == 0))
@@ -210,7 +210,7 @@ void drawGrid(ref Scoped!Context cr, ViewBox box, int canvas_width, int canvas_h
 	//for( int i = 2; i >= 0; --i)
 	{
 		int i = 0;
-		double height  = box.getHeight()*1000/canvas_height;
+		double height  = box.getHeight()*1000/(canvas_height/box.getRows());
 		double oomy = 1; // order of magnitude Y
 		while (oomy < height) oomy *= 10;
 		while (oomy > height) oomy /= 10;
