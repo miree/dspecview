@@ -17,6 +17,10 @@ import gtk.Widget;
 import gtk.Menu;
 import gtk.MenuItem;
 
+import glib.Thread;
+
+import session;
+
 import PlotArea;
 
 void say_hello(Button button)
@@ -33,17 +37,17 @@ bool on_button_press_event(GdkEventButton* e, Widget w)
 }
 
 
-int run(string[] args)
+int run(string[] args, Session session)
 {
 	auto application = new Application("de.egelsbach.dspecview", GApplicationFlags.FLAGS_NONE);
-	application.addOnActivate(delegate void(GioApplication app) { new Gui(application); });
+	application.addOnActivate(delegate void(GioApplication app) { new Gui(application, session); });
 	return application.run(args);
 }
 
 class Gui : ApplicationWindow
 {
 
-	this(Application application)
+	this(Application application, Session session)
 	{
 		super(application);
 
