@@ -163,7 +163,7 @@ void drawGrid(ref Scoped!Context cr, ViewBox box, int canvas_width, int canvas_h
 	//for( int i = 2; i >= 0; --i)
 	{
 		int i = 1;
-		double width = box.getWidth()*200/(canvas_width/box.getColumns());
+		double width = box.getWidth()*80/(canvas_width/box.getColumns());
 		double oomx = 1; // order of magnitude X
 		while (oomx < width) oomx *= 10;
 		while (oomx > width) oomx /= 10;
@@ -196,6 +196,7 @@ void drawGrid(ref Scoped!Context cr, ViewBox box, int canvas_width, int canvas_h
 				if (cte.width <= fabs((box.transform_box2canvas_x(0)-box.transform_box2canvas_x(oomx))) ||
 					(number%5 == 0))
 				{	
+					cr.textExtents(to!string(number*oomx),&cte);
 					cr.moveTo(box.transform_box2canvas_x(left_oom)-cte.width/2, box.transform_box2canvas_y(bottom)-cte.height/3);
 					cr.showText(text);
 				}

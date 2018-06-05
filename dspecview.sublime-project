@@ -3,7 +3,7 @@
 	[
 		{
 			"name": "compile",
-			"shell_cmd": "dub build --build=debug  && ./run.sh",
+			"shell_cmd": "dub build --build=debug  && ./run.sh --gui",
 			"working_dir": "$project_path"
 		}
 	]

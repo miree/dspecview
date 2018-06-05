@@ -1,8 +1,11 @@
+// stanard imports
+import std.stdio;
 
+// imports for lib linenoise
+import core.stdc.string, core.stdc.stdlib;
+import deimos.linenoise;
 
-import core.stdc.string, core.stdc.stdlib, std.stdio;
-import linenoise;
-
+// local imports
 import gui;
 
 extern(C) void completion(const char *buf, linenoiseCompletions *lc) {
@@ -12,7 +15,6 @@ extern(C) void completion(const char *buf, linenoiseCompletions *lc) {
     }
 }
 
-
 int main(string[] args)
 {
 
@@ -20,15 +22,15 @@ int main(string[] args)
     auto prgname = args[0];
 
     /* Parse options, with --multiline we enable multi line editing. */
-    foreach (arg; args[1 .. $]) {
+    foreach (idx, arg; args[1 .. $]) {
         if (arg == "--multiline") {
             linenoiseSetMultiLine(1);
             writeln("Multi-line mode enabled.");
-        } else if (arg == "--keycodes") {
-            linenoisePrintKeyCodes();
-            return 0;
+        } else if (arg == "--gui") {
+        	args.length = 1;
+            return gui.run(args);
         } else {
-            stderr.writefln("Usage: %s [--multiline] [--keycodes]", prgname);
+            stderr.writefln("Usage: %s [--multiline] [--gui]", prgname);
             return 1;
         }
     }
@@ -53,6 +55,9 @@ int main(string[] args)
             printf("echo: '%s'\n", line);
             linenoiseHistoryAdd(line); /* Add to the history. */
             linenoiseHistorySave("history.txt"); /* Save the history on disk. */
+            if (!strncmp(line,"gui",3)) {
+            	return gui.run(args);
+            }
         } else if (!strncmp(line,"/historylen",11)) {
             /* The "/historylen" command will change the history len. */
             int len = atoi(line+11);
@@ -62,7 +67,6 @@ int main(string[] args)
         }
         free(line);
     }
-
-	return gui.run(args);
+    return 0;
 }
 
