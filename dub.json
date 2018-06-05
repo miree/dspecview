@@ -6,6 +6,7 @@
 	"description": "Spectrum viewer written in Dlang",
 	"copyright": "Copyright © 2018, Michael Reese",
 	"license": "GPL",
+	"linenoise": "~>1.1.0+1.0.0",
 	"preBuildCommands" : ["./prebuild.sh"],
 	"importPaths": ["GtkD/generated/gtkd"],
 	"lflags-posix": ["-LGtkD"],

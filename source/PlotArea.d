@@ -206,7 +206,7 @@ protected:
 		return true;
 	}
 
-	auto _vbox = ViewBox(3,1 , -5,5,-5,5 );
+	auto _vbox = ViewBox(2,3 , -5,5,-5,5 );
 
 	//int _rows = 5, _colums = 1;
 
