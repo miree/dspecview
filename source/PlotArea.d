@@ -194,6 +194,7 @@ protected:
 					//drawLine(cr, _vbox, -1,0, 1,0);
 					//drawLine(cr, _vbox,  0,-1,0,1);
 					drawBox(cr, _vbox, _vbox.getLeft(),_vbox.getBottom(), _vbox.getRight(),_vbox.getTop() );
+					drawGridNumbers(cr, _vbox, size.width, size.height);
 					cr.stroke();
 
 				cr.restore();

@@ -157,7 +157,11 @@ void drawGrid(ref Scoped!Context cr, ViewBox box, int canvas_width, int canvas_h
 		cr.stroke();
 	}	
 
+}
 
+void drawGridNumbers(ref Scoped!Context cr, ViewBox box, int canvas_width, int canvas_height)
+{
+	import std.math;
 
 	// x numers lines
 	//for( int i = 2; i >= 0; --i)
