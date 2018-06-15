@@ -4,7 +4,10 @@ import glib.Thread;
 // stanard imports
 import std.stdio;
 import std.array;
+import std.algorithm;
+import std.conv;
 
+import std.concurrency;
 
 // imports for lib linenoise
 import core.stdc.string, core.stdc.stdlib;
@@ -16,17 +19,75 @@ import session;
 import item;
 import hist1;
 
+alias CommandType = void function(string[] args, Session session);
+CommandType[string] list_of_commands;
+
+void additem(string[] args, Session session)
+{
+    writeln("additme called with args: ", args);
+}
+
+void threadfunction()
+{
+    gui.run(null, null);
+    writeln("hello from other thread");
+}
+void startgui(string[] args, Session session)
+{
+    
+    gui.run(args,session);
+    writeln("gui started ");
+}
+void startguithread(string[] args, Session session)
+{
+    
+    Tid tid = spawn(&threadfunction);
+    writeln("gui started in new thread");
+}
+
+void calculator(string[] args, Session session)
+{
+    if (args.length != 3) {
+        writeln("need 3 arguments, got ", args.length, " : ", args);
+    }
+    operation: switch(args[1][0]) {
+        static foreach(op; "+-*/") {
+            mixin("case '" ~ op ~ "': writeln(to!double(args[0]) " ~ op ~ " to!double(args[2])); break operation;");
+        }
+        default: writeln("unknown operation");    
+    }
+}
+ 
 
 extern(C) void completion(const char *buf, linenoiseCompletions *lc) {
-    if (buf[0] == 'h') {
-        linenoiseAddCompletion(lc,"hello");
-        linenoiseAddCompletion(lc,"hello there");
+    // do the conversion from C nullterminated string to D string in
+    // a better (shorter) way.
+    string request = cstring2string(buf);
+    foreach(command, action; list_of_commands) {
+        if (command.canFind(request))
+            linenoiseAddCompletion(lc,command.ptr);
     }
 }
 
+auto cstring2string(const char *buf)
+{
+    string result;
+    while(*buf) {
+        result ~= *buf;
+        ++cast(char*)buf;
+    }
+    return result;
+}
 
 int run(string[] args, Session session)
 {
+    // populate list of commands
+    //immutable string[] list_of_commands = ["additem", "gui", "quit"];
+    list_of_commands["additem"] = &additem;
+    list_of_commands["gui"]     = &startgui;
+    list_of_commands["guithread"] = &startguithread;
+    list_of_commands["calc"]    = &calculator;
+
 
     char *line;
     auto prgname = args[0];
@@ -67,18 +128,28 @@ int run(string[] args, Session session)
             printf("echo: '%s'\n", line);
             linenoiseHistoryAdd(line); /* Add to the history. */
             linenoiseHistorySave("history.txt"); /* Save the history on disk. */
-            if (!strncmp(line,"gui",3)) {
-            	gui.run(args,session);
-            	writeln("gui started ");
-            } else if (!strncmp(line,"add",3)) {
-            	auto content = sline.split(" ");
-            	if (content.length != 2) {
-            		writeln("expecting: add name ");
-            	} else {
-            		session.addItem(content[1], new Hist1(new double[](10), 0, 10));
-            	}
-            	session.listItems();
-			}
+            auto dline = cstring2string(line);
+            auto tokens = dline.split(' ');
+            if (tokens.length > 0) {
+                string[] command_args = null;
+                if (tokens.length > 1) {
+                    command_args = tokens[1..$];
+                }
+                list_of_commands[tokens[0]](command_args, session);
+            }
+
+            //if (!strncmp(line,"gui",3)) {
+            //	gui.run(args,session);
+            //	writeln("gui started ");
+            //} else if (!strncmp(line,"add",3)) {
+            //	auto content = sline.split(" ");
+            //	if (content.length != 2) {
+            //		writeln("expecting: add name ");
+            //	} else {
+            //		session.addItem(content[1], new Hist1(new double[](10), 0, 10));
+            //	}
+            //	session.listItems();
+			//}
         } else if (!strncmp(line,"/historylen",11)) {
             /* The "/historylen" command will change the history len. */
             int len = atoi(line+11);
