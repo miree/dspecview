@@ -1,4 +1,7 @@
 import std.stdio;
+import std.string;
+import std.algorithm;
+import std.array;
 
 import gio.Application : GioApplication = Application;
 import gtk.Application;
@@ -150,6 +153,40 @@ class Gui : ApplicationWindow
 
 
 
+		TreeIter[string] folders;
+		folders[""] = treestore.createIter;
+		foreach(item_fullname; session.getItems().byKey().array().sort()) {
+			void add_item(string fullname, TreeIter[string] folders) {
+				bool folder_relname(in string fullanme, out string folder, out string relname) {
+					auto idx = lastIndexOf(fullname, '/');
+					if  (idx == -1) return false;
+					else {
+						folder  = fullname[0..idx+1];
+						relname = fullname[idx+1..$];
+					}
+					return true;
+				}
+				string folder, relname;
+				if (folder_relname(fullname, folder, relname)) {
+					add_item(folder, folders);
+					writeln(folder, "   ", relname);
+					//TreeIter *iter  = (folder in folders);
+					//if (iter) {
+					//	add_item(folder, folders);
+					//} else {
+					//	*iter = treestore.append(*iter);
+					//	treestore.set(*iter, [0,1], [relname, "automatically added"]);
+					//}
+				} else {
+					auto iter = &folders[""];
+					assert(!(iter is null));
+					treestore.set(*iter, [0,1], [fullname, "automatically added"]);
+					//*iter = treestore.append(null);
+				}
+			}
+			writeln(item_fullname);
+			add_item(item_fullname, folders);
+		}
 
 		// create the tree view content
 		auto top = treestore.createIter; // toplevel of the tree

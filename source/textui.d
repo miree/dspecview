@@ -22,11 +22,16 @@ import hist1;
 alias CommandType = void function(string[] args, Session session);
 CommandType[string] list_of_commands;
 
-void additem(string[] args, Session session)
+void addItem(string[] args, Session session)
 {
     writeln("additme called with args: ", args);
+    session.addItem(args[0], new Hist1(new double[](10), 0, 10));
 }
-
+void listItems(string[] args, Session session)
+{
+    writeln("lising items");
+    session.listItems();
+}
 void threadfunction()
 {
     gui.run(null, null);
@@ -83,10 +88,11 @@ int run(string[] args, Session session)
 {
     // populate list of commands
     //immutable string[] list_of_commands = ["additem", "gui", "quit"];
-    list_of_commands["additem"] = &additem;
-    list_of_commands["gui"]     = &startgui;
+    list_of_commands["additem"]   = &addItem;
+    list_of_commands["ls"]        = &listItems;
+    list_of_commands["gui"]       = &startgui;
     list_of_commands["guithread"] = &startguithread;
-    list_of_commands["calc"]    = &calculator;
+    list_of_commands["calc"]      = &calculator;
 
 
     char *line;
@@ -123,19 +129,26 @@ int run(string[] args, Session session)
     while((line = linenoise("dspecview> ")) !is null) {
     	string sline;
     	for(int i = 0; line[i] != '\0'; ++i) sline ~= line[i];
-        /* Do something with the string. */
+        // Do something with the string. 
         if (line[0] != '\0' && line[0] != '/') {
-            printf("echo: '%s'\n", line);
+            //printf("echo: '%s'\n", line);
             linenoiseHistoryAdd(line); /* Add to the history. */
             linenoiseHistorySave("history.txt"); /* Save the history on disk. */
             auto dline = cstring2string(line);
             auto tokens = dline.split(' ');
             if (tokens.length > 0) {
+                // tokens[0]    is the command name
+                // tokens[1..$] are the optional args
                 string[] command_args = null;
                 if (tokens.length > 1) {
                     command_args = tokens[1..$];
                 }
-                list_of_commands[tokens[0]](command_args, session);
+                CommandType *command = (tokens[0] in list_of_commands);
+                if (command) {
+                    (*command)(command_args, session);
+                } else {
+                    writeln("unknown command ", tokens[0]);
+                }
             }
 
             //if (!strncmp(line,"gui",3)) {

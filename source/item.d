@@ -5,6 +5,8 @@ import view;
 
 interface Item
 {
+	string getType();
+
 	double getLeft();
 	double getRight();
 	double getBottom();

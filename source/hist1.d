@@ -7,6 +7,9 @@ import std.algorithm;
 
 class Hist1 : Item 
 {
+	override string getType()   {
+		return "Hist1";
+	}
 	override double getLeft()	{
 		return _left;
 	}
