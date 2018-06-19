@@ -24,7 +24,7 @@ CommandType[string] list_of_commands;
 
 void addItem(string[] args, Session session)
 {
-    writeln("additme called with args: ", args);
+    writeln("additem called with args: ", args);
     session.addItem(args[0], new Hist1(new double[](10), 0, 10));
 }
 void listItems(string[] args, Session session)

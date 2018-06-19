@@ -89,7 +89,7 @@ class Gui : ApplicationWindow
 											if (parent is null) {
 												return iter.getValueString(0);
 											} else {
-												return get_full_name(parent) ~ "/" ~ iter.getValueString(0);
+												return get_full_name(parent) ~ iter.getValueString(0);
 											}
 										}
 										writeln(get_full_name(iter));
@@ -153,57 +153,58 @@ class Gui : ApplicationWindow
 
 
 
-		TreeIter[string] folders;
-		folders[""] = treestore.createIter;
-		foreach(item_fullname; session.getItems().byKey().array().sort()) {
-			void add_item(string fullname, TreeIter[string] folders) {
-				bool folder_relname(in string fullanme, out string folder, out string relname) {
-					auto idx = lastIndexOf(fullname, '/');
-					if  (idx == -1) return false;
-					else {
-						folder  = fullname[0..idx+1];
-						relname = fullname[idx+1..$];
-					}
-					return true;
-				}
-				string folder, relname;
-				if (folder_relname(fullname, folder, relname)) {
-					add_item(folder, folders);
-					writeln(folder, "   ", relname);
-					//TreeIter *iter  = (folder in folders);
-					//if (iter) {
-					//	add_item(folder, folders);
-					//} else {
-					//	*iter = treestore.append(*iter);
-					//	treestore.set(*iter, [0,1], [relname, "automatically added"]);
-					//}
-				} else {
-					auto iter = &folders[""];
-					assert(!(iter is null));
-					treestore.set(*iter, [0,1], [fullname, "automatically added"]);
-					//*iter = treestore.append(null);
-				}
+		TreeIter* add_folder(string name, ref TreeIter[string] folders) {
+			//writeln("add_folder(", name, ",", folders,")");
+			assert(name.lastIndexOf('/') == (name.length-1));
+			// a/b/c/
+			auto idx = lastIndexOf(name[0..$-1],'/');
+			auto base = name[0..idx+1]; // a/b/
+			auto head = name[idx+1..$]; // c/
+			//writeln(base,"   ", head);
+			if (base == "") folders[base] = null; // insert the toplevel dir
+			TreeIter *iter = (base in folders);
+			if (iter == null) iter = add_folder(base, folders);
+			iter = &(folders[name] = treestore.append(*iter));
+			treestore.set(*iter, [0,1], [head, "folder"]);
+			return iter;
+		}
+		void add_item(string name, ref TreeIter[string] folders) {
+			auto idx = name.lastIndexOf('/');
+			// a/b/c
+			assert(idx != (name.length-1)); // not allowed to end in '/'
+			auto folder  = name[0..idx+1]; // /a/b/
+			auto relname = name[idx+1..$]; // c
+			writeln("search " , folder, " in ", folders);
+			TreeIter *iter = (folder in folders);
+			if (iter == null) {
+				writeln("adding folder: ", folder);
+				iter = add_folder(folder, folders);
 			}
-			writeln(item_fullname);
+			auto child = treestore.append(*iter);
+			treestore.set(child, [0,1], [relname, "inserted automatically"]);
+		}
+
+		TreeIter[string] folders;
+		foreach(item_fullname; session.getItems().byKey().array().sort()) {
 			add_item(item_fullname, folders);
 		}
 
 		// create the tree view content
-		auto top = treestore.createIter; // toplevel of the tree
-		treestore.set(top, [0,1], ["WeltA","WeltB"]);
-		top = treestore.append(null); // append(null) creates a new row that is NO child of the previous row
-		treestore.set(top, [0,1], ["X","Y"]);
-		top = treestore.append(null); // another new row that is no child
-		//auto path = new TreePath(true);
-		treestore.setValue(top, 0, "Hallo"); treestore.setValue(top, 1, "Welt");
-		auto child = treestore.append(top); // another row that is a child of the row to which top points
-		treestore.set(child, [0,1], ["Hello10","World1"]);
-		child = treestore.append(top); // another row that is a child of the row to which top points
-		treestore.set(child, [0,1], ["Hello2","World2"]);
-		child = treestore.append(top); // another row that is a child of the row to which top points
-		treestore.set(child, [0,1], ["Hello3","World3"]);
-		child = treestore.append(top); // another row that is a child of the row to which top points
-		treestore.set(child, [0,1], ["Hello4","World4"]);
+		//auto top = treestore.createIter; // toplevel of the tree
+		//treestore.set(top, [0,1], ["WeltA","WeltB"]);
+		//top = treestore.append(null); // append(null) creates a new row that is NO child of the previous row
+		//treestore.set(top, [0,1], ["X","Y"]);
+		//top = treestore.append(null); // another new row that is no child
+		////auto path = new TreePath(true);
+		//treestore.setValue(top, 0, "Hallo"); treestore.setValue(top, 1, "Welt");
+		//auto child = treestore.append(top); // another row that is a child of the row to which top points
+		//treestore.set(child, [0,1], ["Hello10","World1"]);
+		//child = treestore.append(top); // another row that is a child of the row to which top points
+		//treestore.set(child, [0,1], ["Hello2","World2"]);
+		//child = treestore.append(top); // another row that is a child of the row to which top points
+		//treestore.set(child, [0,1], ["Hello3","World3"]);
+		//child = treestore.append(top); // another row that is a child of the row to which top points
+		//treestore.set(child, [0,1], ["Hello4","World4"]);
 
 
 		
