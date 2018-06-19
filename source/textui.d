@@ -151,18 +151,6 @@ int run(string[] args, Session session)
                 }
             }
 
-            //if (!strncmp(line,"gui",3)) {
-            //	gui.run(args,session);
-            //	writeln("gui started ");
-            //} else if (!strncmp(line,"add",3)) {
-            //	auto content = sline.split(" ");
-            //	if (content.length != 2) {
-            //		writeln("expecting: add name ");
-            //	} else {
-            //		session.addItem(content[1], new Hist1(new double[](10), 0, 10));
-            //	}
-            //	session.listItems();
-			//}
         } else if (!strncmp(line,"/historylen",11)) {
             /* The "/historylen" command will change the history len. */
             int len = atoi(line+11);

@@ -1,5 +1,5 @@
 
-import std.stdio;
+
 
 import item;
 
@@ -18,8 +18,9 @@ public:
 
 	void listItems()
 	{
-		foreach(name, item; _items)
-		{
+		import std.array, std.algorithm;
+		foreach(name; getItems().byKey().array().sort()) {
+			import std.stdio;
 			writeln(name);
 		}
 	}
