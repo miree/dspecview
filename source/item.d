@@ -3,7 +3,7 @@ import cairo.Context;
 import cairo.Surface;
 import view;
 
-interface Item
+synchronized interface Item
 {
 	string getType();
 
@@ -16,6 +16,6 @@ interface Item
 
 	void draw(ref Scoped!Context cr, ViewBox box);
 
-	@property ref bool autoScaleX();
-	@property ref bool autoScaleY();
+	@property bool autoScaleX();
+	@property bool autoScaleY();
 }

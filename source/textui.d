@@ -19,38 +19,43 @@ import session;
 import item;
 import hist1;
 
-alias CommandType = void function(string[] args, Session session);
+alias CommandType = void function(immutable string[] args, shared Session session);
 CommandType[string] list_of_commands;
 
-void addItem(string[] args, Session session)
+Tid guiTid;
+
+void addItem(immutable string[] args, shared Session session)
 {
     writeln("additem called with args: ", args);
-    session.addItem(args[0], new Hist1(new double[](10), 0, 10));
+    session.addItem(args[0], new shared Hist1(new double[](10), 0, 10));
+    if (guiTid != Tid.init)
+    {
+    	send(guiTid,1);
+    }
 }
-void listItems(string[] args, Session session)
+void listItems(immutable string[] args, shared Session session)
 {
     writeln("lising items");
     session.listItems();
 }
-void threadfunction()
+void threadfunction(immutable string[] args, shared Session session)
 {
-    gui.run(null, null);
+    gui.run(null, session);
     writeln("hello from other thread");
 }
-void startgui(string[] args, Session session)
+void startgui(immutable string[] args, shared Session session)
 {
-    
     gui.run(args,session);
     writeln("gui started ");
 }
-void startguithread(string[] args, Session session)
+void startguithread(immutable string[] args, shared Session session)
 {
     
-    Tid tid = spawn(&threadfunction);
+    guiTid = spawn(&threadfunction, args, session);
     writeln("gui started in new thread");
 }
 
-void calculator(string[] args, Session session)
+void calculator(immutable string[] args, shared Session session)
 {
     if (args.length != 3) {
         writeln("need 3 arguments, got ", args.length, " : ", args);
@@ -84,7 +89,7 @@ auto cstring2string(const char *buf)
     return result;
 }
 
-int run(string[] args, Session session)
+int run(immutable string[] args, shared Session session)
 {
     // populate list of commands
     //immutable string[] list_of_commands = ["additem", "gui", "quit"];
@@ -104,7 +109,7 @@ int run(string[] args, Session session)
             linenoiseSetMultiLine(1);
             writeln("Multi-line mode enabled.");
         } else if (arg == "--gui") {
-        	args.length = 1;
+        	//args.length = 1;
             return gui.run(args,session);
         } else {
             stderr.writefln("Usage: %s [--multiline] [--gui]", prgname);
@@ -145,7 +150,7 @@ int run(string[] args, Session session)
                 }
                 CommandType *command = (tokens[0] in list_of_commands);
                 if (command) {
-                    (*command)(command_args, session);
+                    (*command)(cast(immutable string[])command_args, session);
                 } else {
                     writeln("unknown command ", tokens[0]);
                 }

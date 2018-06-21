@@ -19,6 +19,7 @@ import gdk.Event;
 import gtk.Widget;
 import gtk.Menu;
 import gtk.MenuItem;
+import gdk.Threads;
 
 import glib.Thread;
 
@@ -39,19 +40,93 @@ bool on_button_press_event(GdkEventButton* e, Widget w)
 	return w.onButtonPressEvent(e); // worward the event to widget to get the default action
 }
 
+extern(C) nothrow static int threadIdleProcess(void* data) {
+	//Don't let D exceptions get thrown from function
+	try{
+		import std.concurrency;
+		import std.variant : Variant;
+		import std.datetime;
+		receiveTimeout(dur!"msecs"(1),(int i) { 
+					Gui gui = cast(Gui)data;
+					gui.updateSession();
+				}
+			);
+		//writeln("idle called");
+	} catch (Throwable t) {
+		return 0;
+	}
+	return 1;
+}
 
-int run(string[] args, Session session)
+int run(immutable string[] args, shared Session session)
 {
 	auto application = new Application("de.egelsbach.dspecview", GApplicationFlags.FLAGS_NONE);
-	application.addOnActivate(delegate void(GioApplication app) { new Gui(application, session); });
-	return application.run(args);
+	application.addOnActivate(delegate void(GioApplication app) { 
+			auto gui = new Gui(application, session); 
+			gdk.Threads.threadsAddIdle(&threadIdleProcess, cast(void*)gui);	
+		});
+	return application.run(cast(string[])args);
 }
 
 class Gui : ApplicationWindow
 {
 
-	this(Application application, Session session)
+	TreeIter* add_folder(string name, ref TreeIter[string] folders) {
+		//writeln("add_folder(", name, ",", folders,")");
+		assert(name.lastIndexOf('/') == (name.length-1));
+		// a/b/c/
+		auto idx = lastIndexOf(name[0..$-1],'/');
+		auto base = name[0..idx+1]; // a/b/
+		auto head = name[idx+1..$]; // c/
+		//writeln(base,"   ", head);
+		if (base == "") folders[base] = null; // insert the toplevel dir
+		TreeIter *iter = (base in folders);
+		if (iter == null) iter = add_folder(base, folders);
+		iter = &(folders[name] = _treestore.append(*iter));
+		_treestore.set(*iter, [0,1], [head, "folder"]);
+		return iter;
+	}
+	void add_item(string name, ref TreeIter[string] folders) {
+		auto idx = name.lastIndexOf('/');
+		// a/b/c
+		assert(idx != (name.length-1)); // not allowed to end in '/'
+		auto folder  = name[0..idx+1]; // /a/b/
+		auto relname = name[idx+1..$]; // c
+		//writeln("search " , folder, " in ", folders);
+		TreeIter *iter = (folder in folders);
+		if (iter == null) {
+			//writeln("adding folder: ", folder);
+			iter = add_folder(folder, folders);
+		}
+		auto child = _treestore.append(*iter);
+		_treestore.set(child, [0,1], [relname, "inserted automatically"]);
+	}
+
+	void updateSession()
 	{
+		TreeIter[string] folders;
+		_treestore.clear();
+		synchronized {
+			foreach(item_fullname; _session.getItems().byKey().array().sort()) {
+				add_item(item_fullname, folders);
+			}
+		}
+	}
+
+	string get_full_name(TreeIter iter) {
+		auto parent = iter.getParent();
+		if (parent is null) {
+			return iter.getValueString(0);
+		} else {
+			return get_full_name(parent) ~ iter.getValueString(0);
+		}
+	}
+
+	this(Application application, shared Session session)
+	{
+		_session = session;
+		import std.stdio;
+		
 		super(application);
 
 		setTitle("gtkD Spectrum Viewer");
@@ -61,9 +136,9 @@ class Gui : ApplicationWindow
 		auto b1 = new Button("Hallo"); b1.addOnClicked(button => say_hello(button));
 		auto box = new Box(GtkOrientation.VERTICAL,0);
 
-		auto treestore = new TreeStore([GType.STRING,GType.STRING]);
-		auto treeview = new TreeView(treestore);
-		auto b2 = new Button("clear");  b2.addOnClicked(button => treestore.clear());
+		_treestore = new TreeStore([GType.STRING,GType.STRING]);
+		auto treeview = new TreeView(_treestore);
+		auto b2 = new Button("clear");  b2.addOnClicked(button => _treestore.clear());
 		// add all column data
 		auto renderer = new CellRendererText;
 		//  compact way of addin a column
@@ -76,7 +151,7 @@ class Gui : ApplicationWindow
 		// create the popup menu content
 		auto popup_menu = new Menu;
 		//popup_menu.append(new MenuItem((MenuItem)=>writeln("selected: ", treeview.getSelectedIter().getValueString(0)), "show",    "in new window"));
-		//popup_menu.append(new MenuItem((MenuItem)=>writeln("delete ", treeview.getSelectedIter().getValueString(0), " ", treestore.remove(treeview.getSelectedIter())),  "delete",  "delete the item"));
+		//popup_menu.append(new MenuItem((MenuItem)=>writeln("delete ", treeview.getSelectedIter().getValueString(0), " ", _treestore.remove(treeview.getSelectedIter())),  "delete",  "delete the item"));
 		popup_menu.append( new MenuItem(
 								delegate(MenuItem m) { // the action to perform if that menu entry is selected
 									write("show: ");
@@ -84,14 +159,6 @@ class Gui : ApplicationWindow
 									if (iter is null) {
 										writeln("nothing selected");
 									} else {
-										string get_full_name(TreeIter iter) {
-											auto parent = iter.getParent();
-											if (parent is null) {
-												return iter.getValueString(0);
-											} else {
-												return get_full_name(parent) ~ iter.getValueString(0);
-											}
-										}
 										writeln(get_full_name(iter));
 									}
 								},
@@ -104,14 +171,6 @@ class Gui : ApplicationWindow
 									auto iters = treeview.getSelectedIters();
 									foreach(iter; iters)
 									{
-										string get_full_name(TreeIter iter) {
-											auto parent = iter.getParent();
-											if (parent is null) {
-												return iter.getValueString(0);
-											} else {
-												return get_full_name(parent) ~ "/" ~ iter.getValueString(0);
-											}
-										}
 										writeln(get_full_name(iter));										
 									}
 								},
@@ -123,14 +182,21 @@ class Gui : ApplicationWindow
 									//for (;;)
 									//{
 										writeln("delete ");
-										auto iter = treeview.getSelectedIter();
-										if (iter is null) {
-											writeln("nothing selected");
-											//break;
-										} else {
-											writeln(iter.getValueString(0));
-											treestore.remove(iter);
+										auto iters = treeview.getSelectedIters();
+										foreach(iter; iters) 
+										{
+											_session.removeItem(get_full_name(iter));
 										}
+										updateSession();
+										//if (iter is null) {
+										//	writeln("nothing selected");
+										//	//break;
+										//} else {
+										//	//writeln(iter.getValueString(0));
+										//	//writeln(get_full_name(iter));
+										//	_session.removeItem(get_full_name(iter));
+										//	//_treestore.remove(iter);
+										//}
 									//}
 								}, 
 								"delete",  // menu entry label
@@ -153,58 +219,25 @@ class Gui : ApplicationWindow
 
 
 
-		TreeIter* add_folder(string name, ref TreeIter[string] folders) {
-			//writeln("add_folder(", name, ",", folders,")");
-			assert(name.lastIndexOf('/') == (name.length-1));
-			// a/b/c/
-			auto idx = lastIndexOf(name[0..$-1],'/');
-			auto base = name[0..idx+1]; // a/b/
-			auto head = name[idx+1..$]; // c/
-			//writeln(base,"   ", head);
-			if (base == "") folders[base] = null; // insert the toplevel dir
-			TreeIter *iter = (base in folders);
-			if (iter == null) iter = add_folder(base, folders);
-			iter = &(folders[name] = treestore.append(*iter));
-			treestore.set(*iter, [0,1], [head, "folder"]);
-			return iter;
-		}
-		void add_item(string name, ref TreeIter[string] folders) {
-			auto idx = name.lastIndexOf('/');
-			// a/b/c
-			assert(idx != (name.length-1)); // not allowed to end in '/'
-			auto folder  = name[0..idx+1]; // /a/b/
-			auto relname = name[idx+1..$]; // c
-			writeln("search " , folder, " in ", folders);
-			TreeIter *iter = (folder in folders);
-			if (iter == null) {
-				writeln("adding folder: ", folder);
-				iter = add_folder(folder, folders);
-			}
-			auto child = treestore.append(*iter);
-			treestore.set(child, [0,1], [relname, "inserted automatically"]);
-		}
 
-		TreeIter[string] folders;
-		foreach(item_fullname; session.getItems().byKey().array().sort()) {
-			add_item(item_fullname, folders);
-		}
+		updateSession();
 
 		// create the tree view content
-		//auto top = treestore.createIter; // toplevel of the tree
-		//treestore.set(top, [0,1], ["WeltA","WeltB"]);
-		//top = treestore.append(null); // append(null) creates a new row that is NO child of the previous row
-		//treestore.set(top, [0,1], ["X","Y"]);
-		//top = treestore.append(null); // another new row that is no child
+		//auto top = _treestore.createIter; // toplevel of the tree
+		//_treestore.set(top, [0,1], ["WeltA","WeltB"]);
+		//top = _treestore.append(null); // append(null) creates a new row that is NO child of the previous row
+		//_treestore.set(top, [0,1], ["X","Y"]);
+		//top = _treestore.append(null); // another new row that is no child
 		////auto path = new TreePath(true);
-		//treestore.setValue(top, 0, "Hallo"); treestore.setValue(top, 1, "Welt");
-		//auto child = treestore.append(top); // another row that is a child of the row to which top points
-		//treestore.set(child, [0,1], ["Hello10","World1"]);
-		//child = treestore.append(top); // another row that is a child of the row to which top points
-		//treestore.set(child, [0,1], ["Hello2","World2"]);
-		//child = treestore.append(top); // another row that is a child of the row to which top points
-		//treestore.set(child, [0,1], ["Hello3","World3"]);
-		//child = treestore.append(top); // another row that is a child of the row to which top points
-		//treestore.set(child, [0,1], ["Hello4","World4"]);
+		//_treestore.setValue(top, 0, "Hallo"); _treestore.setValue(top, 1, "Welt");
+		//auto child = _treestore.append(top); // another row that is a child of the row to which top points
+		//_treestore.set(child, [0,1], ["Hello10","World1"]);
+		//child = _treestore.append(top); // another row that is a child of the row to which top points
+		//_treestore.set(child, [0,1], ["Hello2","World2"]);
+		//child = _treestore.append(top); // another row that is a child of the row to which top points
+		//_treestore.set(child, [0,1], ["Hello3","World3"]);
+		//child = _treestore.append(top); // another row that is a child of the row to which top points
+		//_treestore.set(child, [0,1], ["Hello4","World4"]);
 
 
 		
@@ -232,8 +265,10 @@ class Gui : ApplicationWindow
 		b2.show();
 		treeview.show();
 
-
 		add(box);
 		showAll();
 	}
+
+	TreeStore _treestore;
+	shared Session _session;
 }

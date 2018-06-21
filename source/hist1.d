@@ -5,7 +5,7 @@ import cairo.Context;
 import cairo.Surface;
 import std.algorithm;
 
-class Hist1 : Item 
+synchronized class Hist1 : Item 
 {
 	override string getType()   {
 		return "Hist1";
@@ -22,10 +22,10 @@ class Hist1 : Item
 	override double getTop()	{
 		return _top;
 	}
-	override ref bool autoScaleX() {
+	override bool autoScaleX() {
 		return _autoscale_x;
 	}
-	override ref bool autoScaleY()
+	override bool autoScaleY()
 	{
 		return _autoscale_y;
 	}
@@ -62,7 +62,7 @@ class Hist1 : Item
 	{
 		_left = left;
 		_right = right;
-		_bin_data = bin_data;
+		_bin_data = cast(shared double[])bin_data.dup;
 		if (_bin_data.length > 0) {
 			_top    = maxElement(_bin_data);
 			_bottom = minElement(_bin_data);
@@ -82,10 +82,10 @@ class Hist1 : Item
 	}
 
 
-
-	double[] _bin_data;
-	double _left, _right;
-	double _bottom, _top;
-	bool _autoscale_y = false;
-	bool _autoscale_x = false;
+private:
+	shared double[] _bin_data;
+	shared double _left, _right;
+	shared double _bottom, _top;
+	shared bool _autoscale_y = false;
+	shared bool _autoscale_x = false;
 }

@@ -3,17 +3,25 @@
 
 import item;
 
-class Session
+struct SessionRefresh
+{
+}
+
+synchronized class Session
 {
 public:
-	void addItem(string name, Item item)
+	void addItem(string name, shared Item item)
 	{
 		_items[name] = item;
 	}
-
-	Item[string] getItems()
+	void removeItem(string name)
 	{
-		return _items;
+		_items.remove(name);
+	}
+
+	shared(Item)[string] getItems()
+	{
+		return cast(shared(Item)[string])_items;
 	}
 
 	void listItems()
@@ -27,6 +35,6 @@ public:
 
 
 private:
-	Item[string] _items;
+	shared(Item)[string] _items;
 }
 

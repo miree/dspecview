@@ -7,9 +7,9 @@ import gui;
 import textui;
 import session;
 
-int main(string[] args)
+int main(immutable string[] args)
 {
-	auto session = new Session;
+	auto shared session = new Session;
 
 	return textui.run(args, session);
 }
