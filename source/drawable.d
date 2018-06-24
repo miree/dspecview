@@ -1,4 +1,6 @@
 
+import std.stdio;
+
 public import item;
 
 import cairo.Context;
@@ -13,6 +15,18 @@ synchronized class Drawable : Item
 	override string getInfo() {
 		return "can be vizualized to user";
 	}
+	override string getName() {
+		return _name;
+	}
+	override void refresh() {
+		writeln("Draw.refresh called()");
+	}
+
+	this(string name)
+	{
+		_name = cast(shared string)name;
+	}
+
 	double getLeft()	{
 		return _left;
 	}
@@ -29,7 +43,6 @@ synchronized class Drawable : Item
 	final double getHeight() { return getTop() - getBottom(); }
 
 
-	void refresh() {}; // update the Drawable based on the underlying dataset
 	void draw(ref Scoped!Context cr, ViewBox box) {}; // show the Drawable on a cairo context
 
 
@@ -48,6 +61,8 @@ synchronized class Drawable : Item
 	}
 
 protected:
+
+	shared string _name;
 
 	shared double _left, _right;
 	shared double _bottom, _top;

@@ -19,6 +19,8 @@ import session;
 import item;
 import hist1;
 
+shared Session _session;
+
 alias CommandType = void function(immutable string[] args, shared Session session);
 CommandType[string] list_of_commands;
 
@@ -27,12 +29,30 @@ Tid guiTid;
 void addItem(immutable string[] args, shared Session session)
 {
     writeln("additem called with args: ", args);
-    session.addItem(args[0], new shared Hist1Visualizer(new double[](10), 0, 10));
+    session.addItem(args[0], new shared Hist1Visualizer(args[0], new double[](10), 0, 10));
     if (guiTid != Tid.init)
     {
     	send(guiTid,1);
     }
 }
+
+void addHist1(immutable string[] args, shared Session session)
+{
+    writeln("hist1 called with args: ", args);
+    if (args.length == 1) {
+	    session.addItem(args[0], new shared Hist1Visualizer(args[0], new shared Hist1Filesource(args[0])));
+	    if (guiTid != Tid.init) {
+	    	send(guiTid,1);
+	    }
+    	return;
+    } else {
+    	writeln("wrong number of arguments:");
+    	writeln("   hist1 <filename>");
+    	writeln("   hist1 bins left right");
+    	return;
+    }
+}
+
 void listItems(immutable string[] args, shared Session session)
 {
     writeln("lising items");
@@ -70,12 +90,22 @@ void calculator(immutable string[] args, shared Session session)
  
 
 extern(C) void completion(const char *buf, linenoiseCompletions *lc) {
-    // do the conversion from C nullterminated string to D string in
-    // a better (shorter) way.
+	// see if we find this in the list of commands
     string request = cstring2string(buf);
     foreach(command, action; list_of_commands) {
-        if (command.canFind(request))
-            linenoiseAddCompletion(lc,command.ptr);
+        if (command.startsWith(request))
+            linenoiseAddCompletion(lc,(command ~ '\0').ptr);
+    }
+    // see if we find this in the list of items
+    string[] items;
+	synchronized {
+		 items = _session.getItems().byKey().array().sort().array;
+	}
+    foreach(item; items) {
+    	auto an_item = '/' ~ item ~ '\0';
+    	if (an_item.startsWith(request)) {
+    		linenoiseAddCompletion(lc, an_item.ptr);
+    	}
     }
 }
 
@@ -91,6 +121,7 @@ auto cstring2string(const char *buf)
 
 int run(immutable string[] args, shared Session session)
 {
+	_session = session;
     // populate list of commands
     //immutable string[] list_of_commands = ["additem", "gui", "quit"];
     list_of_commands["additem"]     = &addItem;
@@ -98,6 +129,7 @@ int run(immutable string[] args, shared Session session)
     list_of_commands["guinothread"] = &startgui;
     list_of_commands["gui"]         = &startguithread;
     list_of_commands["calc"]        = &calculator;
+    list_of_commands["hist1"]       = &addHist1;
 
 
     char *line;

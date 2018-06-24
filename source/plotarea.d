@@ -13,6 +13,7 @@ import gtk.DrawingArea;
 
 import view;
 import primitives;
+import drawable;
 
 
 class PlotArea : DrawingArea
@@ -31,14 +32,20 @@ public:
 		super.addOnButtonRelease(&onButtonReleaseEvent);
 		super.addOnScroll(&onScrollEvent);
 
-		auto f = new File("hist.dat");
-		import std.array;
-		import std.conv;
-		foreach(line; f.byLine)	{
-			foreach(number; split(line.dup(), " ")) {
-				if (number.length > 0)
-					hist1 ~= to!double(number);
-			}
+		//auto f = new File("hist.dat");
+		//import std.array;
+		//import std.conv;
+		//foreach(line; f.byLine)	{
+		//	foreach(number; split(line.dup(), " ")) {
+		//		if (number.length > 0)
+		//			hist1 ~= to!double(number);
+		//	}
+		//}
+	}
+	void add_drawable(shared Drawable drawable) {
+		_drawables ~= drawable;
+		if (_drawables.length > _vbox._rows) {
+			_vbox._rows = cast(int)_drawables.length;
 		}
 	}
 
@@ -155,18 +162,9 @@ protected:
 			cr.paint();
 		cr.restore();
 
-		double[] xs;
-		double[] ys;
-		int N = 11;
-		for (int i = 0; i < N; ++i)
-		{
-			import std.math;
-			double x = 5.0*(i-N/2)/N;
-			double y = exp(-x^^2);
-			xs ~= x;
-			ys ~= y;
-		}
 
+
+		int drawable_idx = 0;
 		foreach (row; 0.._vbox.getRows) {
 			foreach (column; 0.._vbox.getColumns) {
 				_vbox.update_coefficients(row, column, size.width, size.height);
@@ -184,8 +182,26 @@ protected:
 
 					cr.setSourceRgba(1.0, 0.0, 0.0, 1.0);
 					cr.setLineWidth( 1);
-					//drawLine(cr,_vbox, xs, ys);
-					drawHistogram(cr,_vbox, 0,hist1.length, hist1);
+					//{
+					//	double[] xs;
+					//	double[] ys;
+					//	int N = 11;
+					//	for (int i = 0; i < N; ++i)
+					//	{
+					//		import std.math;
+					//		double x = 5.0*(i-N/2)/N;
+					//		double y = exp(-x^^2);
+					//		xs ~= x;
+					//		ys ~= y;
+					//	}
+					//	drawLine(cr,_vbox, xs, ys);
+					//}
+					synchronized {
+						if (_drawables.length > drawable_idx) {
+							_drawables[drawable_idx++].draw(cr, _vbox);
+						}
+					}
+
 					cr.stroke();
 
 					cr.setSourceRgba(0.0, 0.0, 0.0, 1.0);
@@ -207,14 +223,14 @@ protected:
 		return true;
 	}
 
-	auto _vbox = ViewBox(2,3 , -5,5,-5,5 );
+	auto _vbox = ViewBox(1,1 , -5,5,-5,5 );
 
 	//int _rows = 5, _colums = 1;
 
 	double m_radius = 0.40;
 	double m_lineWidth = 0.065;
 
-	double[] hist1;
+	shared Drawable[] _drawables;
 
 }
 

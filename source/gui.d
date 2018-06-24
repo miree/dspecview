@@ -7,6 +7,8 @@ import gio.Application : GioApplication = Application;
 import gtk.Application;
 import gtk.ApplicationWindow;
 import gtk.Button;
+import gtk.RadioButton;
+import gtk.SpinButton;
 import gtk.ScrolledWindow;
 import gtk.Box;
 import gtk.TreeView;
@@ -24,8 +26,9 @@ import gdk.Threads;
 import glib.Thread;
 
 import session;
-
-import PlotArea;
+import plotarea;
+import item;
+import drawable;
 
 void say_hello(Button button)
 {
@@ -46,7 +49,7 @@ extern(C) nothrow static int threadIdleProcess(void* data) {
 		import std.concurrency;
 		import std.variant : Variant;
 		import std.datetime;
-		receiveTimeout(dur!"msecs"(1),(int i) { 
+		receiveTimeout(dur!"usecs"(10),(int i) { 
 					Gui gui = cast(Gui)data;
 					gui.updateSession();
 				}
@@ -253,11 +256,38 @@ class Gui : ApplicationWindow
 							));
 		popup_menu.append( new MenuItem(
 								delegate(MenuItem m) { // the action to perform if that menu entry is selected
+									//write("refreshing ");
+									auto iters = _treeview.getSelectedIters();
+									foreach(iter; iters)
+									{
+										string itemname = get_full_name(iter);
+										import item;
+										synchronized {
+											shared Item selected_item = _session.getItem(itemname);
+											if (selected_item is null) {
+												writeln("item is null");
+											} else {
+												selected_item.refresh();
+											}
+										}
+										//writeln(itemname, "\r");
+									}
+								},
+								"refresh", // menu entry label
+								"refresh data content"// description
+							));
+		popup_menu.append( new MenuItem(
+								delegate(MenuItem m) { // the action to perform if that menu entry is selected
 									writeln("show all: ");
 									auto iters = _treeview.getSelectedIters();
 									foreach(iter; iters)
 									{
-										writeln(get_full_name(iter));										
+										string itemname = get_full_name(iter);
+										shared Item item = _session.getItem(itemname);
+										if (auto drawable = cast(shared Drawable)item) {
+											_plot_area.add_drawable(drawable);
+											writeln("added ", itemname , "do plot area\r");										
+										}
 									}
 								},
 								"show all", // menu entry label
@@ -336,21 +366,41 @@ class Gui : ApplicationWindow
 		//    ... without scrolling
 		//box.add(treeview);
 
-		auto plot_area = new PlotArea;
-		box.add(plot_area);
+		_plot_area = new PlotArea;
+		box.add(_plot_area);
 		//plot_area.setSizeRequest(200,200);
-		box.setChildPacking(plot_area,true,true,0,GtkPackType.START);
-
-		plot_area.show();
+		box.setChildPacking(_plot_area,true,true,0,GtkPackType.START);
+		_plot_area.show();
 
 		b1.show();
 		b2.show();
 		_treeview.show();
 
+		auto radio_overlay = new RadioButton("olay");
+		auto radio_grid = new RadioButton("grid");
+		     radio_grid.joinGroup(radio_overlay);
+		auto radio_rows = new RadioButton("rows");
+		     radio_rows.joinGroup(radio_grid);
+		auto radio_cols = new RadioButton("cols");
+		     radio_cols.joinGroup(radio_rows);
+
+		auto radio_box = new Box(GtkOrientation.HORIZONTAL,0);
+		radio_box.add(radio_overlay);
+		radio_box.add(radio_grid);
+		radio_box.add(radio_rows);
+		radio_box.add(radio_cols);
+		radio_overlay.show();
+		radio_grid.show();
+		radio_rows.show();
+		radio_cols.show();
+
+		box.add(radio_box);
+
 		add(box);
 		showAll();
 	}
 
+	PlotArea  _plot_area;
 	TreeStore _treestore;
 	TreeView  _treeview;
 	string[] _items; // the session items that are currently in the _treestore

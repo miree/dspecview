@@ -72,7 +72,7 @@ do
 	}
 }
 
-void drawHistogram(ref Scoped!Context cr, ViewBox box, double min, double max, double[] bins)
+void drawHistogram(T)(ref Scoped!Context cr, ViewBox box, double min, double max, T[] bins)
 in {
 	assert(bins.length > 0);
 	assert(min < max);

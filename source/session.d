@@ -20,13 +20,17 @@ public:
 	{
 		return cast(shared(Item)[string])_items;
 	}
+	shared(Item) getItem(string name)
+	{
+		return cast(shared(Item))_items[name];
+	}
 
 	void listItems()
 	{
 		import std.array, std.algorithm;
 		foreach(name; getItems().byKey().array().sort()) {
 			import std.stdio;
-			writeln(name);
+			writeln('/',name);
 		}
 	}
 
