@@ -150,18 +150,19 @@ protected:
 	}
 
 
-	void draw_content(ref Scoped!Context cr, ulong drawable_idx, int row, int column, int width, int height) {
+	void draw_content(ref Scoped!Context cr, ulong color_idx, ulong drawable_idx, int row, int column, int width, int height) {
 		_vbox.update_coefficients(row, column, width, height);
 		cr.save();
-
-			// draw a grid
-			setContextClip(cr,_vbox);
-			cr.setLineWidth(1);
-			drawGrid(cr, _vbox, width, height);
-			cr.stroke();
-
+			if (drawable_idx == 0 || !_overlay) { // in case we do overlay, we have to draw the grid only once
+				// draw a grid
+				setContextClip(cr,_vbox);
+				cr.setLineWidth(1);
+				drawGrid(cr, _vbox, width, height);
+				cr.stroke();
+			}
 			// draw the content
-			cr.setSourceRgba(1.0, 0.0, 0.0, 1.0);
+			color_idx %= _color_table.length;
+			cr.setSourceRgba(_color_table[color_idx][0], _color_table[color_idx][1], _color_table[color_idx][2], 1.0);
 			cr.setLineWidth( 1);
 			synchronized {
 				if (_drawables.length > drawable_idx) {
@@ -170,17 +171,17 @@ protected:
 				}
 			}
 			cr.stroke();
-
-			// draw a box and the grid numbers
-			cr.setSourceRgba(0.0, 0.0, 0.0, 1.0);
-			cr.setLineWidth( 2);
-			cr.setLineCap(cairo_line_cap_t.ROUND);
-			//drawLine(cr, _vbox, -1,0, 1,0);
-			//drawLine(cr, _vbox,  0,-1,0,1);
-			drawBox(cr, _vbox, _vbox.getLeft(),_vbox.getBottom(), _vbox.getRight(),_vbox.getTop() );
-			drawGridNumbers(cr, _vbox, width, height);
-			cr.stroke();
-
+			if (drawable_idx == _drawables.length-1 || !_overlay) { // in case we do overlay, we have to draw the numbers only once
+				// draw a box and the grid numbers
+				cr.setSourceRgba(0.0, 0.0, 0.0, 1.0);
+				cr.setLineWidth( 2);
+				cr.setLineCap(cairo_line_cap_t.ROUND);
+				//drawLine(cr, _vbox, -1,0, 1,0);
+				//drawLine(cr, _vbox,  0,-1,0,1);
+				drawBox(cr, _vbox, _vbox.getLeft(),_vbox.getBottom(), _vbox.getRight(),_vbox.getTop() );
+				drawGridNumbers(cr, _vbox, width, height);
+				cr.stroke();
+			}
 		cr.restore();
 	}
 
@@ -213,7 +214,8 @@ protected:
 			_vbox._rows = 1;
 			_vbox._columns = 1;
 			foreach (idx, drawable; _drawables) {
-				draw_content(cr, idx, 0, 0, size.width, size.height);
+				ulong color_idx = idx;
+				draw_content(cr, color_idx, idx, 0, 0, size.width, size.height);
 			}
 		} else {
 			int columns = 1;
@@ -225,7 +227,8 @@ protected:
 			foreach (row; 0.._vbox.getRows) {
 				foreach (column; 0.._vbox.getColumns) {
 					ulong idx = column * _rows + row;
-					draw_content(cr, idx, cast(int)row, cast(int)column, size.width, size.height);
+					ulong color_idx = 0; // same color for all in grid mode
+					draw_content(cr, color_idx, idx, cast(int)row, cast(int)column, size.width, size.height);
 				}
 			}
 		}
@@ -247,6 +250,15 @@ protected:
 
 	string[] _drawables;
 	shared Session _session;
+
+	double[3][] _color_table = [
+		[0.8, 0.0, 0.0],
+		[0.6, 0.6, 0.0],
+		[0.6, 0.0, 0.6],
+		[0.0, 0.8, 0.0],
+		[0.0, 0.6, 0.6],
+		[0.0, 0.0, 0.8]
+		];
 
 }
 

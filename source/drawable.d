@@ -7,6 +7,9 @@ import cairo.Context;
 import cairo.Surface;
 import view;
 
+
+
+
 synchronized class Drawable : Item
 {
 	override string getType()   {

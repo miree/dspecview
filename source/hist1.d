@@ -66,11 +66,11 @@ synchronized class Hist1Visualizer : Drawable
 	}
 
 	override void draw(ref Scoped!Context cr, ViewBox box) {
-		writeln("Hist1Visualizer.draw() called\r");
+		//writeln("Hist1Visualizer.draw() called\r");
 		if (_bin_data.length == 0) {
 			refresh();
 		}
-		writeln("bins = ", _bin_data[0].length, "\r");
+		//writeln("bins = ", _bin_data[0].length, "\r");
 
 		drawHistogram(cr,box, 0,_bin_data[0].length, _bin_data[0]);
 	}
