@@ -2,6 +2,7 @@
 
 
 import item;
+import drawable;
 
 
 synchronized class Session
@@ -23,6 +24,14 @@ public:
 	shared(Item) getItem(string name)
 	{
 		return cast(shared(Item))_items[name];
+	}
+	shared(Drawable) getDrawable(string name)
+	{
+		shared Item item = getItem(name);
+		if (auto drawable = cast(shared Drawable)item) {
+			return drawable;
+		}
+		return null;
 	}
 
 	void listItems()

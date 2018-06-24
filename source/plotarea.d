@@ -14,13 +14,15 @@ import gtk.DrawingArea;
 import view;
 import primitives;
 import drawable;
+import session;
 
 
 class PlotArea : DrawingArea
 {
 public:
-	this()
+	this(shared Session session)
 	{
+		_session = session;
 		//Attach our expose callback, which will draw the window.
 		addOnDraw(&drawCallback);
 
@@ -42,17 +44,26 @@ public:
 		//	}
 		//}
 	}
-	void add_drawable(shared Drawable drawable) {
+	void add_drawable(string drawable) {
 		_drawables ~= drawable;
-		if (_drawables.length > _vbox._rows) {
-			_vbox._rows = cast(int)_drawables.length;
-		}
+		// think I don't need this anymore
+		//if (_drawables.length > _vbox._rows) {
+		//	_vbox._rows = cast(int)_drawables.length;
+		//}
 	}
 
 	override void getPreferredHeightForWidth(int width, out int minimumHeight, out int naturalHeight)
 	{
 		minimumHeight = 200;
 		naturalHeight = width*130/100;
+	}
+
+	void setOverlay() {
+		_overlay = true;
+	}
+	void setGrid(int rows) {
+		_overlay = false;
+		_rows = rows;
 	}
 
 protected:
@@ -138,6 +149,41 @@ protected:
 		return true;
 	}
 
+
+	void draw_content(ref Scoped!Context cr, ulong drawable_idx, int row, int column, int width, int height) {
+		_vbox.update_coefficients(row, column, width, height);
+		cr.save();
+
+			// draw a grid
+			setContextClip(cr,_vbox);
+			cr.setLineWidth(1);
+			drawGrid(cr, _vbox, width, height);
+			cr.stroke();
+
+			// draw the content
+			cr.setSourceRgba(1.0, 0.0, 0.0, 1.0);
+			cr.setLineWidth( 1);
+			synchronized {
+				if (_drawables.length > drawable_idx) {
+					auto drawable = _session.getDrawable(_drawables[drawable_idx++]);
+					drawable.draw(cr, _vbox);
+				}
+			}
+			cr.stroke();
+
+			// draw a box and the grid numbers
+			cr.setSourceRgba(0.0, 0.0, 0.0, 1.0);
+			cr.setLineWidth( 2);
+			cr.setLineCap(cairo_line_cap_t.ROUND);
+			//drawLine(cr, _vbox, -1,0, 1,0);
+			//drawLine(cr, _vbox,  0,-1,0,1);
+			drawBox(cr, _vbox, _vbox.getLeft(),_vbox.getBottom(), _vbox.getRight(),_vbox.getTop() );
+			drawGridNumbers(cr, _vbox, width, height);
+			cr.stroke();
+
+		cr.restore();
+	}
+
 	//Override default signal handler:
 	bool drawCallback(Scoped!Context cr, Widget widget)
 	{
@@ -163,58 +209,24 @@ protected:
 		cr.restore();
 
 
-
-		int drawable_idx = 0;
-		foreach (row; 0.._vbox.getRows) {
-			foreach (column; 0.._vbox.getColumns) {
-				_vbox.update_coefficients(row, column, size.width, size.height);
-				cr.save();
-					//cr.setSourceRgba(0.0, 0.0, 0.0, 1.0);
-					//cr.setLineWidth( 2);
-					//drawBox(cr, _vbox, _vbox.getLeft(),_vbox.getBottom(), _vbox.getRight(),_vbox.getTop() );
-					//cr.stroke();
-
-					setContextClip(cr,_vbox);
-					cr.setLineWidth(1);
-					drawGrid(cr, _vbox, size.width, size.height);
-					cr.stroke();
-
-
-					cr.setSourceRgba(1.0, 0.0, 0.0, 1.0);
-					cr.setLineWidth( 1);
-					//{
-					//	double[] xs;
-					//	double[] ys;
-					//	int N = 11;
-					//	for (int i = 0; i < N; ++i)
-					//	{
-					//		import std.math;
-					//		double x = 5.0*(i-N/2)/N;
-					//		double y = exp(-x^^2);
-					//		xs ~= x;
-					//		ys ~= y;
-					//	}
-					//	drawLine(cr,_vbox, xs, ys);
-					//}
-					synchronized {
-						if (_drawables.length > drawable_idx) {
-							_drawables[drawable_idx++].draw(cr, _vbox);
-						}
-					}
-
-					cr.stroke();
-
-					cr.setSourceRgba(0.0, 0.0, 0.0, 1.0);
-					cr.setLineWidth( 2);
-					cr.setLineCap(cairo_line_cap_t.ROUND);
-					//drawLine(cr, _vbox, -1,0, 1,0);
-					//drawLine(cr, _vbox,  0,-1,0,1);
-					drawBox(cr, _vbox, _vbox.getLeft(),_vbox.getBottom(), _vbox.getRight(),_vbox.getTop() );
-					drawGridNumbers(cr, _vbox, size.width, size.height);
-					cr.stroke();
-
-				cr.restore();
-
+		if (_overlay) {
+			_vbox._rows = 1;
+			_vbox._columns = 1;
+			foreach (idx, drawable; _drawables) {
+				draw_content(cr, idx, 0, 0, size.width, size.height);
+			}
+		} else {
+			int columns = 1;
+			while (columns * _rows < _drawables.length) {
+				++columns;
+			}
+			_vbox._rows    = _rows;
+			_vbox._columns = columns;
+			foreach (row; 0.._vbox.getRows) {
+				foreach (column; 0.._vbox.getColumns) {
+					ulong idx = column * _rows + row;
+					draw_content(cr, idx, cast(int)row, cast(int)column, size.width, size.height);
+				}
 			}
 		}
 
@@ -224,13 +236,17 @@ protected:
 	}
 
 	auto _vbox = ViewBox(1,1 , -5,5,-5,5 );
+	bool _overlay = true;
+	int _rows = 1;
+
 
 	//int _rows = 5, _colums = 1;
 
 	double m_radius = 0.40;
 	double m_lineWidth = 0.065;
 
-	shared Drawable[] _drawables;
+	string[] _drawables;
+	shared Session _session;
 
 }
 

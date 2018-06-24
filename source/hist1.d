@@ -73,33 +73,6 @@ synchronized class Hist1Visualizer : Drawable
 		writeln("bins = ", _bin_data[0].length, "\r");
 
 		drawHistogram(cr,box, 0,_bin_data[0].length, _bin_data[0]);
-
-
-		//double bin_width = getBinWidth();
-		//double xhist = getLeft();
-		//double x = box.transform_box2canvas_x(xhist);
-		//double y = box.transform_box2canvas_y(0);
-
-		//// draw the start (the non repetetive stuff)
-		//cr.moveTo(x,y);
-		//y = box.transform_box2canvas_y(_bin_data[0][0]);
-		//cr.lineTo(x,y);
-		//xhist += bin_width;
-		//x = box.transform_box2canvas_x(xhist);
-		//cr.lineTo(x,y);
-
-		//// draw the repetitive stuff
-		//foreach(bin; _bin_data[0][1..$]) {
-		//	y = box.transform_box2canvas_y(bin);
-		//	cr.lineTo(x,y);
-		//	xhist += bin_width;
-		//	x = box.transform_box2canvas_x(xhist);
-		//	cr.lineTo(x,y);
-		//}
-
-		//// draw the end of the line
-		//y = box.transform_box2canvas_y(0);
-		//cr.lineTo(x,y);
 	}
 
 

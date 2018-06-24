@@ -7,8 +7,11 @@ import gio.Application : GioApplication = Application;
 import gtk.Application;
 import gtk.ApplicationWindow;
 import gtk.Button;
+import gtk.ToggleButton;
 import gtk.RadioButton;
 import gtk.SpinButton;
+import gtk.CheckButton;
+import gtk.Label;
 import gtk.ScrolledWindow;
 import gtk.Box;
 import gtk.TreeView;
@@ -214,7 +217,7 @@ class Gui : ApplicationWindow
 		setTitle("gtkD Spectrum Viewer");
 		setDefaultSize( 300, 500 );
 
-		auto box = new Box(GtkOrientation.VERTICAL,0);
+		_box = new Box(GtkOrientation.VERTICAL,0);
 
 		_treestore = new TreeStore([GType.STRING,GType.STRING]);
 		_treeview = new TreeView(_treestore);
@@ -241,19 +244,19 @@ class Gui : ApplicationWindow
 		auto popup_menu = new Menu;
 		//popup_menu.append(new MenuItem((MenuItem)=>writeln("selected: ", treeview.getSelectedIter().getValueString(0)), "show",    "in new window"));
 		//popup_menu.append(new MenuItem((MenuItem)=>writeln("delete ", treeview.getSelectedIter().getValueString(0), " ", _treestore.remove(treeview.getSelectedIter())),  "delete",  "delete the item"));
-		popup_menu.append( new MenuItem(
-								delegate(MenuItem m) { // the action to perform if that menu entry is selected
-									write("show: ");
-									auto iter = _treeview.getSelectedIter();
-									if (iter is null) {
-										writeln("nothing selected");
-									} else {
-										writeln(get_full_name(iter));
-									}
-								},
-								"show", // menu entry label
-								"show in new window"// description
-							));
+		//popup_menu.append( new MenuItem(
+		//						delegate(MenuItem m) { // the action to perform if that menu entry is selected
+		//							write("show: ");
+		//							auto iter = _treeview.getSelectedIter();
+		//							if (iter is null) {
+		//								writeln("nothing selected");
+		//							} else {
+		//								writeln(get_full_name(iter));
+		//							}
+		//						},
+		//						"show", // menu entry label
+		//						"show in new window"// description
+		//					));
 		popup_menu.append( new MenuItem(
 								delegate(MenuItem m) { // the action to perform if that menu entry is selected
 									//write("refreshing ");
@@ -272,6 +275,7 @@ class Gui : ApplicationWindow
 										}
 										//writeln(itemname, "\r");
 									}
+									_box.queueDraw();
 								},
 								"refresh", // menu entry label
 								"refresh data content"// description
@@ -283,12 +287,9 @@ class Gui : ApplicationWindow
 									foreach(iter; iters)
 									{
 										string itemname = get_full_name(iter);
-										shared Item item = _session.getItem(itemname);
-										if (auto drawable = cast(shared Drawable)item) {
-											_plot_area.add_drawable(drawable);
-											writeln("added ", itemname , "do plot area\r");										
-										}
+										_plot_area.add_drawable(itemname);
 									}
+									_box.queueDraw();
 								},
 								"show all", // menu entry label
 								"show all seleted items"// description
@@ -314,6 +315,7 @@ class Gui : ApplicationWindow
 										//	//_treestore.remove(iter);
 										//}
 									//}
+									_box.queueDraw();
 								}, 
 								"delete",  // menu entry label
 								"delete selected item" // description
@@ -353,52 +355,90 @@ class Gui : ApplicationWindow
 		updateSession();
 
 		// add buttons 
-		box.add(b1);
-		box.add(b2);
-		box.add(b3);
+		_box.add(b1);
+		_box.add(b2);
+		_box.add(b3);
 
 		// add the treeview ...
 		//    ... with scrolling
 		auto scrollwin = new ScrolledWindow();
 		scrollwin.setPropagateNaturalHeight(true);
 		scrollwin.add(_treeview);
-		box.add(scrollwin); 
+		_box.add(scrollwin); 
 		//    ... without scrolling
-		//box.add(treeview);
+		//_box.add(treeview);
 
-		_plot_area = new PlotArea;
-		box.add(_plot_area);
+		_plot_area = new PlotArea(_session);
+		_box.add(_plot_area);
 		//plot_area.setSizeRequest(200,200);
-		box.setChildPacking(_plot_area,true,true,0,GtkPackType.START);
+		_box.setChildPacking(_plot_area,true,true,0,GtkPackType.START);
 		_plot_area.show();
 
 		b1.show();
 		b2.show();
 		_treeview.show();
 
-		auto radio_overlay = new RadioButton("olay");
-		auto radio_grid = new RadioButton("grid");
-		     radio_grid.joinGroup(radio_overlay);
-		auto radio_rows = new RadioButton("rows");
-		     radio_rows.joinGroup(radio_grid);
-		auto radio_cols = new RadioButton("cols");
-		     radio_cols.joinGroup(radio_rows);
+		_radio_overlay = new RadioButton("overlay");
+		_radio_overlay.addOnToggled(
+							delegate void(ToggleButton button) {
+								//writeln("overlay button toggled ", button.getActive(), "\r");
+								if (button.getActive()) {
+									_plot_area.setOverlay();
+								} else {
+									_plot_area.setGrid(cast(int)_spin_rows.getValue());
+								}
+								_box.queueDraw();
+							} );
 
-		auto radio_box = new Box(GtkOrientation.HORIZONTAL,0);
-		radio_box.add(radio_overlay);
-		radio_box.add(radio_grid);
-		radio_box.add(radio_rows);
-		radio_box.add(radio_cols);
-		radio_overlay.show();
-		radio_grid.show();
-		radio_rows.show();
-		radio_cols.show();
+		_radio_grid = new RadioButton("grid");
+		_radio_grid.joinGroup(_radio_overlay);
+		auto rows_label = new Label("rows   ");
+		_spin_rows = new SpinButton(1,50,1);
+		_spin_rows.addOnValueChanged(
+							delegate void(SpinButton button) {
+								//writeln("spin button changed ", button.getValue(), "\r");
+								if (_radio_overlay.getActive()) {
+									_plot_area.setOverlay();
+								} else {
+									_plot_area.setGrid(cast(int)_spin_rows.getValue());
+								}
+								_box.queueDraw();
+							} );
+		auto logx_label = new Label("logX");
+		_check_logx = new CheckButton();
+		auto logy_label = new Label("logY");
+		_check_logy = new CheckButton();
+		auto logz_label = new Label("logZ");
+		_check_logz = new CheckButton();
 
-		box.add(radio_box);
 
-		add(box);
+
+		auto layout_box = new Box(GtkOrientation.HORIZONTAL,0);
+		layout_box.add(_radio_overlay);
+		layout_box.add(_radio_grid);
+		layout_box.add(_spin_rows);
+		layout_box.add(rows_label);
+		layout_box.add(_check_logx);
+		layout_box.add(logx_label);
+		layout_box.add(_check_logy);
+		layout_box.add(logy_label);
+		layout_box.add(_check_logz);
+		layout_box.add(logz_label);
+		//_radio_overlay.show();
+		//_radio_grid.show();
+		//_spin_rows.show();
+
+		_box.add(layout_box);
+
+		add(_box);
 		showAll();
 	}
+
+	Box _box;
+	RadioButton _radio_overlay, _radio_grid;
+	SpinButton _spin_rows;
+	CheckButton _check_logx, _check_logy, _check_logz;
+
 
 	PlotArea  _plot_area;
 	TreeStore _treestore;
