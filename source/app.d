@@ -11,14 +11,14 @@ int main(immutable string[] args)
 {
 	auto shared session = new Session;
 
-	import hist1;
-    session.addItem("a/b", new shared Hist1(new double[](10), 0, 10));
-    session.addItem("a/b/c", new shared Hist1(new double[](10), 0, 10));
-    session.addItem("a/b/c/x", new shared Hist1(new double[](10), 0, 10));
-    session.addItem("a/b/c/y", new shared Hist1(new double[](10), 0, 10));
-    session.addItem("x/b/c", new shared Hist1(new double[](10), 0, 10));
-    session.addItem("x/b/c/x", new shared Hist1(new double[](10), 0, 10));
-    session.addItem("x/b/c/y", new shared Hist1(new double[](10), 0, 10));
+	//import hist1;
+ //   session.addItem("a/b", new shared Hist1(new double[](10), 0, 10));
+ //   session.addItem("a/b/c", new shared Hist1(new double[](10), 0, 10));
+ //   session.addItem("a/b/c/x", new shared Hist1(new double[](10), 0, 10));
+ //   session.addItem("a/b/c/y", new shared Hist1(new double[](10), 0, 10));
+ //   session.addItem("x/b/c", new shared Hist1(new double[](10), 0, 10));
+ //   session.addItem("x/b/c/x", new shared Hist1(new double[](10), 0, 10));
+ //   session.addItem("x/b/c/y", new shared Hist1(new double[](10), 0, 10));
 
 
 	return textui.run(args, session);

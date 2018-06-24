@@ -102,6 +102,12 @@ class Gui : ApplicationWindow
 	}
 	TreeIter add_item(string name, ref TreeIter[string] folders) {
 		writeln("add_item(", name, ")\r");
+		if (!name.canFind('/')) { // special case of a name without a folder
+			auto root_child = _treestore.append(null);
+			folders[name~"/"] = root_child;
+			_treestore.set(root_child, [0,1], [name, "item"]);
+			return root_child;
+		}
 		auto idx = name.lastIndexOf('/');
 		// a/b/c
 		assert(idx != (name.length-1)); // not allowed to end in '/'
@@ -140,7 +146,7 @@ class Gui : ApplicationWindow
 		foreach(expanded_name; _expanded.byKey().array().sort().array)
 		{
 			writeln("expand ", expanded_name, "\r");
-			string mypath = get_path_name_from_name(expanded_name);
+			string mypath = get_path_name_from_name(expanded_name, _items);
 			TreeIter iter;
 			_treestore.getIterFromString(iter, mypath);
 			TreePath path = _treestore.getPath(iter);
@@ -152,95 +158,51 @@ class Gui : ApplicationWindow
 		}
 	}
 
-	string get_path_name_from_name(string name)
+	// path is something like 0:3:1
+	string get_full_name_from_path(string path, string[] items)
 	{
-		writeln("get_path_name_from_name(", name, ")\r");
-		foreach(item; _items)
-		{
-			writeln("    ", item, "\r");
-		}
-		auto columns = name.split("/").length;
-		writeln("number of columns: ", columns, "\r");
-		int[] pathnumbers = new int[columns];
-		int col = 0;
+		assert(items.length > 0);
+		assert(path.length > 0);
+		import std.array, std.string, std.algorithm, std.conv;
+		auto columns = path.split(':').length;
+		int[] pathnumbers = std.algorithm.map!(a => a.to!int)(path.split(':')).array;
 		int itemindex = 0;
-		string test = "/" ~ _items[itemindex].split("/")[col];
-		for (;;)
-		{
-			writeln("col = ", col , ",   test = ", test, ",  item = ", _items[itemindex],  "    pathnumbers = ", pathnumbers, "\r");
-			if (name.startsWith(test[1..$])) {
-				++col;
-				if (col == columns) {
-					break;
-				}
-				test ~= "/" ~ _items[itemindex].split("/")[col];
-			} else {
-				while (_items[itemindex].startsWith(test[1..$])) {
-					++itemindex;
-				}
-				++pathnumbers[col];
-				test = "";
-				foreach(part; _items[itemindex].split("/")[0..col+1])	{
-					test ~= "/" ~ part;
+		foreach (col; 0..columns) {
+			while (pathnumbers[col] != 0 || items[itemindex].split('/').length < columns) { // decreasing the pathnumbers until reaching 0
+				++itemindex;
+				if (items[itemindex].split('/')[0..col+1] != items[itemindex-1].split('/')[0..col+1]) {
+					--pathnumbers[col];
 				}
 			}
 		}
-		import std.algorithm, std.conv;
-		string result = std.algorithm.map!(a => a.to!string)(pathnumbers).join(":");
-		writeln("result  = ", result, "\r");
-		return result;
+		return items[itemindex].split('/')[0..columns].join("/");
 	}
-	string get_full_name_from_path(string path)	
+
+	string get_path_name_from_name(string name, string[] items)
 	{
-		writeln("get_full_name_from_path(", path, ")\r");
-		import std.algorithm, std.conv;
-		auto pathnumbers = std.algorithm.map!(a => to!int(a))(split(path,":"));
-		int col = 0;
-		int itemindex = 0;
-		int pathvalue = 0;
-		// increase itemindex until pathvalue matches pathnumbers[col]
-		string result = "/" ~ _items[itemindex].split("/")[col];
-		//writeln("get_full_name_from_path(", path,")\r");
-		foreach(item; _items)
-		{
-			writeln("item ", item, "\r");
-		}
-		for(;;)
-		{
-			writeln("col = ", col, "     itemindex = ", itemindex, "     pathvalue = ", pathvalue, "    result = ", result,  "\r");
-			if (pathvalue == pathnumbers[col]) {
-				writeln("pathvalue == pathnumbers[", col, "]\r");
-				++col;
-				if (pathnumbers.length > col) { // show must go on
-					writeln(pathnumbers.length , ">", col , "\r");
-					if (col >= _items[itemindex].split("/").length) {
-						++itemindex;
-						--col;
-						continue;
-					}
-					result ~= "/" ~ _items[itemindex].split("/")[col];
-					pathvalue = 0; // start counting from 0 in the new column
-					continue;
-				} else {
-					writeln("done: ",result[1..$],  "\r");
-					return result[1..$]; // we are done
-				}
-			} else { 
-				writeln("goto next item\r");
-				for(;;) {
-					++itemindex; // go to next item
-					writeln("itemindex = ", itemindex, "\r");
-					if (!startsWith(_items[itemindex], result[1..$])) {
-						++pathvalue;
-						result.length = 0;
-						foreach(part; _items[itemindex].split("/")[0..col+1]) {
-							result ~= "/" ~ part;
-						}
-						break;
-					}
+		assert(items.length > 0);
+		assert(name.length > 0);
+		import std.array, std.string, std.algorithm, std.conv;
+		auto columns = name.split('/').length;
+		int[] pathnumbers = new int[columns]; // will contain the result as integers
+		int itemindex = 0; // index into the items array
+		foreach (col; 0..columns) {
+			string[] target = name.split('/')[0..col+1];
+			while(target.length > items[itemindex].split('/').length) {
+				// if the current item is too short, we go to the next in the list
+				++itemindex;
+			}
+			while (target != items[itemindex].split('/')[0..col+1]) {
+				++itemindex;
+				// is there a change to the previous item?
+				if (items[itemindex].split('/')[0..col+1] != items[itemindex-1].split('/')[0..col+1]) {
+					++pathnumbers[col];
 				}
 			}
 		}
+		// convert the result into "x:y:z" form 
+		string result = std.algorithm.map!(a => a.to!string)(pathnumbers).join(":");
+		return result;
 	}
 
 	string get_full_name(TreeIter iter) 
@@ -365,7 +327,7 @@ class Gui : ApplicationWindow
 		_treeview.addOnRowExpanded(
 				delegate void(TreeIter iter, TreePath path, TreeView view) {
 					writeln("addOnRowExpanded() ", path.toString(), "\r");
-					string expanded_row = get_full_name_from_path(path.toString());
+					string expanded_row = get_full_name_from_path(path.toString(), _items);
 					//writeln(expanded_row, "\r");
 					_expanded[expanded_row] = true;
 				}
@@ -373,7 +335,7 @@ class Gui : ApplicationWindow
 		_treeview.addOnRowCollapsed(
 				delegate void(TreeIter iter, TreePath path, TreeView view) {
 					writeln("addOnRowCollapsed() ", path.toString(), "\r");
-					string expanded_row = get_full_name_from_path(path.toString());
+					string expanded_row = get_full_name_from_path(path.toString(), _items);
 					//writeln(expanded_row, "\r");
 					_expanded[expanded_row] = false;
 				}
@@ -383,25 +345,6 @@ class Gui : ApplicationWindow
 
 		updateSession();
 
-		// create the tree view content
-		//auto top = _treestore.createIter; // toplevel of the tree
-		//_treestore.set(top, [0,1], ["WeltA","WeltB"]);
-		//top = _treestore.append(null); // append(null) creates a new row that is NO child of the previous row
-		//_treestore.set(top, [0,1], ["X","Y"]);
-		//top = _treestore.append(null); // another new row that is no child
-		////auto path = new TreePath(true);
-		//_treestore.setValue(top, 0, "Hallo"); _treestore.setValue(top, 1, "Welt");
-		//auto child = _treestore.append(top); // another row that is a child of the row to which top points
-		//_treestore.set(child, [0,1], ["Hello10","World1"]);
-		//child = _treestore.append(top); // another row that is a child of the row to which top points
-		//_treestore.set(child, [0,1], ["Hello2","World2"]);
-		//child = _treestore.append(top); // another row that is a child of the row to which top points
-		//_treestore.set(child, [0,1], ["Hello3","World3"]);
-		//child = _treestore.append(top); // another row that is a child of the row to which top points
-		//_treestore.set(child, [0,1], ["Hello4","World4"]);
-
-
-		
 		// add buttons 
 		box.add(b1);
 		box.add(b2);
