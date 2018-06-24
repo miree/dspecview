@@ -3,9 +3,6 @@
 
 import item;
 
-struct SessionRefresh
-{
-}
 
 synchronized class Session
 {

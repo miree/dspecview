@@ -27,7 +27,7 @@ Tid guiTid;
 void addItem(immutable string[] args, shared Session session)
 {
     writeln("additem called with args: ", args);
-    session.addItem(args[0], new shared Hist1(new double[](10), 0, 10));
+    session.addItem(args[0], new shared Hist1Visualizer(new double[](10), 0, 10));
     if (guiTid != Tid.init)
     {
     	send(guiTid,1);
@@ -93,11 +93,11 @@ int run(immutable string[] args, shared Session session)
 {
     // populate list of commands
     //immutable string[] list_of_commands = ["additem", "gui", "quit"];
-    list_of_commands["additem"]   = &addItem;
-    list_of_commands["ls"]        = &listItems;
-    list_of_commands["gui"]       = &startgui;
-    list_of_commands["guithread"] = &startguithread;
-    list_of_commands["calc"]      = &calculator;
+    list_of_commands["additem"]     = &addItem;
+    list_of_commands["ls"]          = &listItems;
+    list_of_commands["guinothread"] = &startgui;
+    list_of_commands["gui"]         = &startguithread;
+    list_of_commands["calc"]        = &calculator;
 
 
     char *line;
@@ -110,7 +110,8 @@ int run(immutable string[] args, shared Session session)
             writeln("Multi-line mode enabled.");
         } else if (arg == "--gui") {
         	//args.length = 1;
-            return gui.run(args,session);
+        	immutable string[] guiargs = args[0] ~ args[idx+2..$];
+            return gui.run(guiargs,session);
         } else {
             stderr.writefln("Usage: %s [--multiline] [--gui]", prgname);
             return 1;

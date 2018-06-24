@@ -1,34 +1,30 @@
-import item;
+import drawable;
 import view;
 
 import cairo.Context;
 import cairo.Surface;
 import std.algorithm;
 
-synchronized class Hist1 : Item 
+// this can be asked for data and can be 
+// represented by a real dataset or just 
+// a link to a file from which the data is
+// read on request
+synchronized interface Hist1Datasource
 {
-	override string getType()   {
-		return "Hist1";
-	}
-	override double getLeft()	{
-		return _left;
-	}
-	override double getRight()	{
-		return _right;
-	}
-	override double getBottom()	{
-		return _bottom;
-	}
-	override double getTop()	{
-		return _top;
-	}
-	override bool autoScaleX() {
-		return _autoscale_x;
-	}
-	override bool autoScaleY()
-	{
-		return _autoscale_y;
-	}
+	double[] getData();
+	double   getLeft();
+	double   getRight();
+}
+
+synchronized class Hist1Visualizer : Drawable 
+{
+	//override string getType()   {
+	//	return "Hist1";
+	//}
+	//override string getInfo() {
+	//	return "empty histogram";
+	//}
+
 	override void draw(ref Scoped!Context cr, ViewBox box) {
 		double bin_width = getBinWidth();
 		double xhist = getLeft();
@@ -58,6 +54,11 @@ synchronized class Hist1 : Item
 	}
 
 
+	this(Hist1Datasource source)
+	{
+
+	}
+
 	this(double[] bin_data, double left, double right)
 	{
 		_left = left;
@@ -70,7 +71,6 @@ synchronized class Hist1 : Item
 			_top    =  1;
 			_bottom = -1;
 		}
-
 	}
 
 	double getBinWidth()
@@ -83,9 +83,6 @@ synchronized class Hist1 : Item
 
 
 private:
+	shared Hist1Datasource _source;
 	shared double[] _bin_data;
-	shared double _left, _right;
-	shared double _bottom, _top;
-	shared bool _autoscale_y = false;
-	shared bool _autoscale_x = false;
 }

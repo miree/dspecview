@@ -68,25 +68,11 @@ int run(immutable string[] args, shared Session session)
 	return application.run(cast(string[])args);
 }
 
-//struct Helper
-//{
-//	import gtk.TreePath;
-//	TreePath[] expanded_paths = new TreePath[0];
-//}
-//extern(C) void expandedMapper(GtkTreeView* treeView, GtkTreePath* path, void* userData)
-//{
-//	auto helper = cast(Helper*)userData;
-//	import gtk.TreePath;
-//	auto p = new TreePath(path);
-//	helper.expanded_paths ~= p;
-//	writeln("expanded row path: ", p.toString(), "\r");
-//}
-
 class Gui : ApplicationWindow
 {
 
 	TreeIter* add_folder(string name, ref TreeIter[string] folders) {
-		writeln("add_folder(", name, ")\r");
+		//writeln("add_folder(", name, ")\r");
 		assert(name.lastIndexOf('/') == (name.length-1));
 		// a/b/c/
 		auto idx = lastIndexOf(name[0..$-1],'/');
@@ -101,7 +87,7 @@ class Gui : ApplicationWindow
 		return iter;
 	}
 	TreeIter add_item(string name, ref TreeIter[string] folders) {
-		writeln("add_item(", name, ")\r");
+		//writeln("add_item(", name, ")\r");
 		if (!name.canFind('/')) { // special case of a name without a folder
 			auto root_child = _treestore.append(null);
 			folders[name~"/"] = root_child;
@@ -113,10 +99,10 @@ class Gui : ApplicationWindow
 		assert(idx != (name.length-1)); // not allowed to end in '/'
 		auto folder  = name[0..idx+1]; // /a/b/
 		auto relname = name[idx+1..$]; // c
-		writeln("search " , folder, " in ", folders ,"\r");
+		//writeln("search " , folder, " in ", folders ,"\r");
 		TreeIter *iter = (folder in folders);
 		if (iter == null) {
-			writeln("adding folder: ", folder);
+			//writeln("adding folder: ", folder);
 			iter = add_folder(folder, folders);
 		}
 		auto child = _treestore.append(*iter);
@@ -134,18 +120,11 @@ class Gui : ApplicationWindow
 		}
 		foreach(item_fullname; _items) {
 			add_item(item_fullname, _folders);
-			foreach(key;_folders.byKey().array().sort())	{
-				writeln(key , "\r");
-			}
 		}
 
 		foreach(expanded_name; _expanded.byKey().array().sort().array)
 		{
-			writeln("expand ", expanded_name, "\r");
-		}
-		foreach(expanded_name; _expanded.byKey().array().sort().array)
-		{
-			writeln("expand ", expanded_name, "\r");
+			//writeln("expand ", expanded_name, "\r");
 			string mypath = get_path_name_from_name(expanded_name, _items);
 			TreeIter iter;
 			_treestore.getIterFromString(iter, mypath);
@@ -311,22 +290,20 @@ class Gui : ApplicationWindow
 							));
 
 		_treeview.addOnButtonPress(
-			//(GdkEventButton* e, Widget w)=>on_button_press_event(e,w) // explicit function call
-			delegate bool(GdkEventButton* e, Widget w) {
-				w.onButtonPressEvent(e); 
-				if (e.button == 3)	{
-					popup_menu.popup(e.button, e.time);
-					popup_menu.showAll(); 
-				}
-				writeln("tree view button press event\r"); 
-				return true;
-			} //anonymous function
-			//(GdkEventButton* e, Widget w)=>w.onButtonPressEvent(e) // shortcut lambda syntax only works for function with a single return statement
+				delegate bool(GdkEventButton* e, Widget w) {
+					w.onButtonPressEvent(e); 
+					if (e.button == 3)	{
+						popup_menu.popup(e.button, e.time);
+						popup_menu.showAll(); 
+					}
+					//writeln("tree view button press event\r"); 
+					return true;
+				} //anonymous function
 			);
 
 		_treeview.addOnRowExpanded(
 				delegate void(TreeIter iter, TreePath path, TreeView view) {
-					writeln("addOnRowExpanded() ", path.toString(), "\r");
+					//writeln("addOnRowExpanded() ", path.toString(), "\r");
 					string expanded_row = get_full_name_from_path(path.toString(), _items);
 					//writeln(expanded_row, "\r");
 					_expanded[expanded_row] = true;
@@ -334,7 +311,7 @@ class Gui : ApplicationWindow
 			);
 		_treeview.addOnRowCollapsed(
 				delegate void(TreeIter iter, TreePath path, TreeView view) {
-					writeln("addOnRowCollapsed() ", path.toString(), "\r");
+					//writeln("addOnRowCollapsed() ", path.toString(), "\r");
 					string expanded_row = get_full_name_from_path(path.toString(), _items);
 					//writeln(expanded_row, "\r");
 					_expanded[expanded_row] = false;
