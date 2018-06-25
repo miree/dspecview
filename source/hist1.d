@@ -65,6 +65,37 @@ synchronized class Hist1Visualizer : Drawable
 		mipmap_data();
 	}
 
+	override void getBottomTopInLeftRight(out double bottom, out double top, in double left, in double right) {
+		if (_bin_data.length == 0) {
+			refresh();
+		}
+		double minimum;
+		double maximum;
+
+		bool initialize = true;
+		foreach(i ; cast(int)left..cast(int)right){
+			if (i < 0) {
+				continue;
+			}
+			if (i >= _bin_data[0].length) {
+				break;
+			}
+			import std.algorithm;
+			assert(i >= 0 && i < _bin_data[0].length);
+			if (initialize) {
+				minimum = _bin_data[0][i];
+				maximum = _bin_data[0][i];
+				initialize = false;
+			}
+			minimum = min(minimum, _bin_data[0][i]);
+			maximum = max(maximum, _bin_data[0][i]);
+		}
+
+		double height = maximum - minimum;
+		bottom = minimum - 0.1*height;
+		top    = maximum + 0.1*height;
+	}
+
 	override void draw(ref Scoped!Context cr, ViewBox box) {
 		//writeln("Hist1Visualizer.draw() called\r");
 		if (_bin_data.length == 0) {

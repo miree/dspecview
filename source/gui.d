@@ -386,25 +386,48 @@ class Gui : ApplicationWindow
 								if (button.getActive()) {
 									_plot_area.setOverlay();
 								} else {
-									_plot_area.setGrid(cast(int)_spin_rows.getValue());
+									_plot_area.setGrid(cast(int)_spin_columns.getValue());
 								}
 								_box.queueDraw();
 							} );
 
 		_radio_grid = new RadioButton("grid");
 		_radio_grid.joinGroup(_radio_overlay);
-		auto rows_label = new Label("rows   ");
-		_spin_rows = new SpinButton(1,50,1);
-		_spin_rows.addOnValueChanged(
+		auto columns_label = new Label("columns   ");
+		_spin_columns = new SpinButton(1,50,1);
+		_spin_columns.addOnValueChanged(
 							delegate void(SpinButton button) {
 								//writeln("spin button changed ", button.getValue(), "\r");
 								if (_radio_overlay.getActive()) {
 									_plot_area.setOverlay();
 								} else {
-									_plot_area.setGrid(cast(int)_spin_rows.getValue());
+									_plot_area.setGrid(cast(int)_spin_columns.getValue());
 								}
 								_box.queueDraw();
 							} );
+		_radio_rowmajor = new RadioButton("1 2\n34");
+		_radio_rowmajor.addOnToggled(
+							delegate void(ToggleButton button) {
+								//writeln("overlay button toggled ", button.getActive(), "\r");
+								if (button.getActive()) {
+									_plot_area.setGridRowMajor();
+								} else {
+									_plot_area.setGridColMajor();
+								}
+								_box.queueDraw();
+							} );
+		_radio_colmajor = new RadioButton("13\n24");
+		_radio_colmajor.joinGroup(_radio_rowmajor);
+
+		auto _grid_autoscale_y_label = new Label("autoscale Y        ");
+		auto _check_grid_autoscale_y = new CheckButton();
+		_check_grid_autoscale_y.addOnToggled(
+							delegate void(ToggleButton button) {
+								//writeln("overlay button toggled ", button.getActive(), "\r");
+								_plot_area.setGridAutoscaleY(button.getActive());
+								_box.queueDraw();
+							} );
+
 		auto logx_label = new Label("logX");
 		_check_logx = new CheckButton();
 		auto logy_label = new Label("logY");
@@ -417,8 +440,12 @@ class Gui : ApplicationWindow
 		auto layout_box = new Box(GtkOrientation.HORIZONTAL,0);
 		layout_box.add(_radio_overlay);
 		layout_box.add(_radio_grid);
-		layout_box.add(_spin_rows);
-		layout_box.add(rows_label);
+		layout_box.add(_spin_columns);
+		layout_box.add(columns_label);
+		layout_box.add(_radio_rowmajor);
+		layout_box.add(_radio_colmajor);
+		layout_box.add(_check_grid_autoscale_y);
+		layout_box.add(_grid_autoscale_y_label);
 		layout_box.add(_check_logx);
 		layout_box.add(logx_label);
 		layout_box.add(_check_logy);
@@ -437,7 +464,8 @@ class Gui : ApplicationWindow
 
 	Box _box;
 	RadioButton _radio_overlay, _radio_grid;
-	SpinButton _spin_rows;
+	SpinButton _spin_columns;
+	RadioButton _radio_rowmajor, _radio_colmajor;
 	CheckButton _check_logx, _check_logy, _check_logz;
 
 

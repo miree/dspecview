@@ -42,6 +42,10 @@ synchronized class Drawable : Item
 	double getTop()	{
 		return _top;
 	}
+	void getBottomTopInLeftRight(out double bottom, out double top, in double left, in double right) {
+		bottom = _bottom;
+		top    = _top;
+	}
 	final double getWidth() { return getRight() - getLeft(); }
 	final double getHeight() { return getTop() - getBottom(); }
 
