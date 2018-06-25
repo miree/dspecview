@@ -20,9 +20,10 @@ import session;
 class PlotArea : DrawingArea
 {
 public:
-	this(shared Session session)
+	this(shared Session session, bool in_other_thread)
 	{
 		_session = session;
+		_in_other_thread = in_other_thread;
 		//Attach our expose callback, which will draw the window.
 		addOnDraw(&drawCallback);
 
@@ -234,7 +235,10 @@ protected:
 		}
 
 
-
+		if (_in_other_thread) {
+			import gtkc.cairo;
+			cairo_destroy(cr.payload.getContextStruct());
+		}
 		return true;
 	}
 
@@ -242,6 +246,8 @@ protected:
 	bool _overlay = true;
 	int _rows = 1;
 
+
+	bool _in_other_thread = false;
 
 	//int _rows = 5, _colums = 1;
 

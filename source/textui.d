@@ -60,7 +60,10 @@ void listItems(immutable string[] args, shared Session session)
 }
 void threadfunction(immutable string[] args, shared Session session)
 {
-    gui.run(null, session);
+	// last parameter tells the gui that it runs in a separate thread. This is 
+	// important because memory handling is different in this case and memory
+	// leaks if that is not handled explicitely
+    gui.run(null, session, true);
     writeln("hello from other thread");
 }
 void startgui(immutable string[] args, shared Session session)

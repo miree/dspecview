@@ -52,6 +52,7 @@ extern(C) nothrow static int threadIdleProcess(void* data) {
 		import std.concurrency;
 		import std.variant : Variant;
 		import std.datetime;
+		// get messages from parent thread
 		receiveTimeout(dur!"usecs"(10),(int i) { 
 					Gui gui = cast(Gui)data;
 					gui.updateSession();
@@ -64,11 +65,11 @@ extern(C) nothrow static int threadIdleProcess(void* data) {
 	return 1;
 }
 
-int run(immutable string[] args, shared Session session)
+int run(immutable string[] args, shared Session session, bool in_other_thread = false)
 {
 	auto application = new Application("de.egelsbach.dspecview", GApplicationFlags.FLAGS_NONE);
 	application.addOnActivate(delegate void(GioApplication app) { 
-			auto gui = new Gui(application, session); 
+			auto gui = new Gui(application, session, in_other_thread); 
 			gdk.Threads.threadsAddIdle(&threadIdleProcess, cast(void*)gui);	
 		});
 	return application.run(cast(string[])args);
@@ -207,7 +208,7 @@ class Gui : ApplicationWindow
 		return _treestore.getPath(iter).toString();
 	}
 
-	this(Application application, shared Session session)
+	this(Application application, shared Session session, bool in_other_thread)
 	{
 		_session = session;
 		import std.stdio;
@@ -368,7 +369,7 @@ class Gui : ApplicationWindow
 		//    ... without scrolling
 		//_box.add(treeview);
 
-		_plot_area = new PlotArea(_session);
+		_plot_area = new PlotArea(_session, in_other_thread);
 		_box.add(_plot_area);
 		//plot_area.setSizeRequest(200,200);
 		_box.setChildPacking(_plot_area,true,true,0,GtkPackType.START);
