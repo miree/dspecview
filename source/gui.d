@@ -32,11 +32,8 @@ import session;
 import plotarea;
 import item;
 import drawable;
+import plotwindow;
 
-void say_hello(Button button)
-{
-	writeln("button_clicked ", button.getLabel());
-}
 
 bool on_button_press_event(GdkEventButton* e, Widget w)
 {
@@ -77,6 +74,15 @@ int run(immutable string[] args, shared Session session, bool in_other_thread = 
 
 class Gui : ApplicationWindow
 {
+
+	void say_hello(Button button)
+	{
+		writeln("button_clicked ", button.getLabel());
+
+		auto child_window = new PlotWindow(_application, _session, _in_other_thread);
+		child_window.show();
+	}
+
 
 	TreeIter* add_folder(string name, ref TreeIter[string] folders) {
 		//writeln("add_folder(", name, ")\r");
@@ -211,9 +217,11 @@ class Gui : ApplicationWindow
 	this(Application application, shared Session session, bool in_other_thread)
 	{
 		_session = session;
+		_in_other_thread = in_other_thread;
 		import std.stdio;
 		
 		super(application);
+		_application = application;
 
 		setTitle("gtkD Spectrum Viewer");
 		setDefaultSize( 300, 500 );
@@ -462,6 +470,8 @@ class Gui : ApplicationWindow
 		showAll();
 	}
 
+	Application _application;
+
 	Box _box;
 	RadioButton _radio_overlay, _radio_grid;
 	SpinButton _spin_columns;
@@ -476,5 +486,6 @@ class Gui : ApplicationWindow
 	bool[string] _expanded; // safe which treeview rows are expanded
 	//TreeIter[string] _folders;
 	shared Session _session;
+	bool _in_other_thread;
 
 }
