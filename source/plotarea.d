@@ -163,24 +163,48 @@ protected:
 
 	void draw_content_autoscale_y(ref Scoped!Context cr, ulong color_idx, ulong drawable_idx, int row, int column, int width, int height) {
 		synchronized {
-			if (_drawables.length > drawable_idx) {
-				auto drawable = _session.getDrawable(_drawables[drawable_idx++]);
-				double bottom, bottom_safe = _vbox.getBottom;
-				double top,    top_safe    = _vbox.getTop;
+				double global_top = 10, global_bottom = -10;
+				if (_overlay) {
+					foreach(drawable; _drawables) {
+						double bottom, top;
+						 _session.getDrawable(drawable).getBottomTopInLeftRight(bottom, top, _vbox.getLeft, _vbox.getRight);
+						import std.algorithm;
+						global_bottom = min(global_bottom, bottom);
+						global_top    = max(global_top   , top);
+					}
+				}
+
+				shared Drawable drawable;
+				if (_drawables.length > drawable_idx) {
+					drawable = _session.getDrawable(_drawables[drawable_idx]);
+				}
+				double bottom      = _vbox.getBottom;
+				double bottom_safe = _vbox.getBottom;
+				double top         = _vbox.getTop;
+				double top_safe    = _vbox.getTop;
 				double delta_y = _vbox._delta_y;
 				double scale_y = _vbox._scale_y;
 
-				if (!_overlay) { // in case we do overlay, we have to draw the numbers only once
-					drawable.getBottomTopInLeftRight(bottom, top, _vbox.getLeft, _vbox.getRight);
-					_vbox._bottom = bottom;
-					_vbox._top = top;
-					_vbox._delta_y = 0;
-					_vbox._scale_y = 1;
+				// safe the vbox extents in grid mode in case of autoscaling
+				if (!_overlay) { 
+					if (_drawables.length > drawable_idx) {
+						drawable.getBottomTopInLeftRight(bottom, top, _vbox.getLeft, _vbox.getRight);
+					} else {
+						bottom = -10;
+						top    =  10;
+					}
+				} else {
+					bottom = global_bottom;
+					top    = global_top;
 				}
+				_vbox._bottom = bottom;
+				_vbox._top = top;
+				_vbox._delta_y = 0;
+				_vbox._scale_y = 1;
 
 				_vbox.update_coefficients(row, column, width, height);
 				cr.save();
-					if (drawable_idx == 0 || !_overlay) { // in case we do overlay, we have to draw the grid only once
+					if (drawable_idx == 0 || !_overlay) { 
 						// draw a grid
 						setContextClip(cr,_vbox);
 						cr.setLineWidth(1);
@@ -188,32 +212,35 @@ protected:
 						cr.stroke();
 					}
 					// draw the content
-					color_idx %= _color_table.length;
-					cr.setSourceRgba(_color_table[color_idx][0], _color_table[color_idx][1], _color_table[color_idx][2], 1.0);
-					cr.setLineWidth( 1);
-					drawable.draw(cr, _vbox);
-					cr.stroke();
+					if (_drawables.length > drawable_idx) {
+						color_idx %= _color_table.length;
+						cr.setSourceRgba(_color_table[color_idx][0], _color_table[color_idx][1], _color_table[color_idx][2], 1.0);
+						cr.setLineWidth( 1);
+						drawable.draw(cr, _vbox);
+						cr.stroke();
+					}
 					if (drawable_idx == _drawables.length-1 || !_overlay) { // in case we do overlay, we have to draw the numbers only once
 						// draw a box and the grid numbers
-						cr.setSourceRgba(0.0, 0.0, 0.0, 1.0);
-						cr.setLineWidth( 2);
+						cr.setSourceRgba(0.4, 0.4, 0.4, 1.0);
+						cr.setLineWidth( 3);
 						cr.setLineCap(cairo_line_cap_t.ROUND);
 						//drawLine(cr, _vbox, -1,0, 1,0);
 						//drawLine(cr, _vbox,  0,-1,0,1);
 						drawBox(cr, _vbox, _vbox.getLeft(),_vbox.getBottom(), _vbox.getRight(),_vbox.getTop() );
+						cr.stroke();
 						drawGridNumbers(cr, _vbox, width, height);
 						cr.stroke();
 					}
 				cr.restore();
 
-				if (!_overlay) { // in case we do overlay, we have to draw the numbers only once
-					_vbox._bottom = bottom_safe;
-					_vbox._top    = top_safe;
-					_vbox._delta_y = delta_y;
-					_vbox._scale_y = scale_y;
-				}
+				//if (!_overlay) { // in case we do overlay, we have to draw the numbers only once
+				//	//_vbox._bottom = bottom_safe;
+				//	//_vbox._top    = top_safe;
+				//	//_vbox._delta_y = delta_y;
+				//	//_vbox._scale_y = scale_y;
+				//}
 
-			}
+//			}
 		}
 	}
 
@@ -233,19 +260,20 @@ protected:
 			cr.setLineWidth( 1);
 			synchronized {
 				if (_drawables.length > drawable_idx) {
-					auto drawable = _session.getDrawable(_drawables[drawable_idx++]);
+					auto drawable = _session.getDrawable(_drawables[drawable_idx]);
 					drawable.draw(cr, _vbox);
 				}
 			}
 			cr.stroke();
 			if (drawable_idx == _drawables.length-1 || !_overlay) { // in case we do overlay, we have to draw the numbers only once
 				// draw a box and the grid numbers
-				cr.setSourceRgba(0.0, 0.0, 0.0, 1.0);
-				cr.setLineWidth( 2);
+				cr.setSourceRgba(0.4, 0.4, 0.4, 1.0);
+				cr.setLineWidth( 3);
 				cr.setLineCap(cairo_line_cap_t.ROUND);
 				//drawLine(cr, _vbox, -1,0, 1,0);
 				//drawLine(cr, _vbox,  0,-1,0,1);
 				drawBox(cr, _vbox, _vbox.getLeft(),_vbox.getBottom(), _vbox.getRight(),_vbox.getTop() );
+				cr.stroke();
 				drawGridNumbers(cr, _vbox, width, height);
 				cr.stroke();
 			}
@@ -269,10 +297,13 @@ protected:
 			_vbox._columns = 1;
 			foreach (idx, drawable; _drawables) {
 				ulong color_idx = idx;
-				draw_content(cr, color_idx, idx, 0, 0, size.width, size.height);
-				//draw_content_autoscale_y(cr, color_idx, idx, 0, 0, size.width, size.height);
+				if (_grid_autoscale_y) {
+					draw_content_autoscale_y(cr, color_idx, idx, 0, 0, size.width, size.height);
+				} else {
+					draw_content(cr, color_idx, idx, 0, 0, size.width, size.height);
+				}
 			}
-		} else {
+		} else { // grid mode
 			int rows = 1;
 			while (_columns * rows < _drawables.length) {
 				++rows;
@@ -285,7 +316,8 @@ protected:
 					if (_row_major) {
 						idx = row * _columns + column;
 					}
-					ulong color_idx = 0; // same color for all in grid mode
+					ulong color_idx = idx; // same color as in overlay mode
+					//ulong color_idx = 0; // same color for all in grid mode
 					if (_grid_autoscale_y) {
 						draw_content_autoscale_y(cr, color_idx, idx, cast(int)row, cast(int)column, size.width, size.height);
 					} else {

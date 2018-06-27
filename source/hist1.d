@@ -65,13 +65,17 @@ synchronized class Hist1Visualizer : Drawable
 		mipmap_data();
 	}
 
-	override void getBottomTopInLeftRight(out double bottom, out double top, in double left, in double right) {
+	override void getBottomTopInLeftRight(ref double bottom, ref double top, in double left, in double right) {
 		if (_bin_data.length == 0) {
 			refresh();
 		}
-		double minimum;
-		double maximum;
+		if (left >= getRight || right <= getLeft) {
+			return;
+		}
+		double bottom_safe = bottom;
+		double top_safe    = top;
 
+		double minimum, maximum;
 		bool initialize = true;
 		foreach(i ; cast(int)left..cast(int)right){
 			if (i < 0) {
@@ -90,10 +94,14 @@ synchronized class Hist1Visualizer : Drawable
 			minimum = min(minimum, _bin_data[0][i]);
 			maximum = max(maximum, _bin_data[0][i]);
 		}
-
-		double height = maximum - minimum;
-		bottom = minimum - 0.1*height;
-		top    = maximum + 0.1*height;
+		if (minimum < maximum) {
+			double height = maximum - minimum;
+			bottom = minimum - 0.1*height;
+			top    = maximum + 0.1*height;
+		} else {
+			bottom = -10;
+			top    =  10;
+		}
 	}
 
 	override void draw(ref Scoped!Context cr, ViewBox box) {
