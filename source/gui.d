@@ -296,7 +296,11 @@ class Gui : ApplicationWindow
 									foreach(iter; iters)
 									{
 										string itemname = get_full_name(iter);
+										bool was_empty = _plot_area.isEmpty;
 										_plot_area.add_drawable(itemname);
+										if (was_empty) {
+											_plot_area.setFit();
+										}
 									}
 									_box.queueDraw();
 								},

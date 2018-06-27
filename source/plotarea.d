@@ -77,6 +77,37 @@ public:
 		_grid_autoscale_y = autoscale;
 	}
 
+	void setFit() {
+		writeln("setFit()");
+		double global_top, global_bottom, global_left, global_right;
+		synchronized {
+			foreach(idx, drawable; _drawables) {
+				auto item = _session.getDrawable(drawable);
+				item.refresh();
+				import std.algorithm;
+				if (idx == 0) {
+					global_bottom = item.getBottom();
+					global_top 	  = item.getTop();
+					global_left   = item.getLeft();
+					global_right  = item.getRight();
+				}
+				global_bottom = min(global_bottom, item.getBottom());
+				global_top 	  = max(global_top 	 , item.getTop());
+				global_left   = min(global_left  , item.getLeft());
+				global_right  = max(global_right , item.getRight());
+			}
+		}
+		_vbox._left   = global_left;
+		_vbox._right  = global_right;
+		_vbox._bottom = global_bottom;
+		_vbox._top    = global_top;
+		writeln("setFit() done ", global_left, global_right, global_top, global_bottom);
+	}
+
+	@property bool isEmpty() {
+		return _drawables.length == 0;
+	}
+
 protected:
 	bool onMotionNotify(GdkEventMotion *event_motion, Widget w)
 	{
@@ -163,7 +194,7 @@ protected:
 
 	void draw_content_autoscale_y(ref Scoped!Context cr, ulong color_idx, ulong drawable_idx, int row, int column, int width, int height) {
 		synchronized {
-				double global_top = 10, global_bottom = -10;
+				double global_top = 10, global_bottom = 0;
 				if (_overlay) {
 					foreach(drawable; _drawables) {
 						double bottom, top;
@@ -265,7 +296,7 @@ protected:
 				}
 			}
 			cr.stroke();
-			if (drawable_idx == _drawables.length-1 || !_overlay) { // in case we do overlay, we have to draw the numbers only once
+			if (_drawables.length == 0 || drawable_idx == _drawables.length-1 || !_overlay) { // in case we do overlay, we have to draw the numbers only once
 				// draw a box and the grid numbers
 				cr.setSourceRgba(0.4, 0.4, 0.4, 1.0);
 				cr.setLineWidth( 3);
@@ -295,7 +326,8 @@ protected:
 		if (_overlay) {
 			_vbox._rows = 1;
 			_vbox._columns = 1;
-			foreach (idx, drawable; _drawables) {
+			import std.algorithm;
+			foreach (idx; 0..max(1, _drawables.length)) {
 				ulong color_idx = idx;
 				if (_grid_autoscale_y) {
 					draw_content_autoscale_y(cr, color_idx, idx, 0, 0, size.width, size.height);

@@ -63,6 +63,17 @@ synchronized class Hist1Visualizer : Drawable
 		_bin_data.length = 0;
 		_bin_data ~= cast(shared(double[]))_source.getData();
 		mipmap_data();
+		if (_bin_data[0].length > 0) {
+			_top    = maxElement(_bin_data[0]);
+			_bottom = minElement(_bin_data[0]);
+			_left   = 0;
+			_right  = _bin_data[0].length;
+		} else {
+			_bottom = -1;
+			_top    =  1;
+			_left   = -1;
+			_right  =  1;
+		}
 	}
 
 	override void getBottomTopInLeftRight(ref double bottom, ref double top, in double left, in double right) {
