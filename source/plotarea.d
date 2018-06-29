@@ -192,10 +192,15 @@ protected:
 	}
 
 	void add_bottom_top_margin(ref double bottom, ref double top) {
-		double margin_factor = 0.1;
-		double height = top - bottom;
-		top    += margin_factor * height;
-		bottom -= margin_factor * height;
+		if (bottom < top) {
+			double margin_factor = 0.1;
+			double height = top - bottom;
+			top    += margin_factor * height;
+			bottom -= margin_factor * height;
+		} else {
+			top    += 1;
+			bottom -= 1;
+		}
 	}
 	void default_bottom_top(out double bottom, out double top) {
 		bottom = -10;

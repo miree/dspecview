@@ -38,6 +38,14 @@ struct ViewBox
 		_b_x = canvas_width / getWidth();
 		_a_x = x_offset - _b_x*getLeft();
 	}
+	double get_pixel_width()
+	{
+		return 1.0/_b_x;
+	}
+	double get_pixel_height()
+	{
+		return -1.0/_b_y;
+	}
 
 	double transform_box2canvas_x(in double x)
 	{

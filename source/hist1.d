@@ -60,14 +60,13 @@ synchronized class Hist1Visualizer : Drawable
 	override void refresh() 
 	{
 		//writeln("Hist1Visualizer.refresh called()");
-		_bin_data.length = 0;
-		_bin_data ~= cast(shared(double[]))_source.getData();
+		_bin_data = cast(shared(double[]))_source.getData();
 		mipmap_data();
-		if (_bin_data[0].length > 0) {
-			_top    = maxElement(_bin_data[0]);
-			_bottom = minElement(_bin_data[0]);
+		if (_bin_data !is null) {
+			_top    = maxElement(_bin_data);
+			_bottom = minElement(_bin_data);
 			_left   = 0;
-			_right  = _bin_data[0].length;
+			_right  = _bin_data.length;
 		} else {
 			_bottom = -1;
 			_top    =  1;
@@ -77,7 +76,7 @@ synchronized class Hist1Visualizer : Drawable
 	}
 
 	override bool getBottomTopInLeftRight(ref double bottom, ref double top, in double left, in double right) {
-		if (_bin_data.length == 0) {
+		if (_bin_data is null) {
 			refresh();
 		}
 		if (left >= getRight || right <= getLeft) {
@@ -88,44 +87,59 @@ synchronized class Hist1Visualizer : Drawable
 
 		double minimum, maximum;
 		bool initialize = true;
-		foreach(i ; cast(int)left..cast(int)right){
+		foreach(i ; cast(int)left..cast(int)right+1){
 			if (i < 0) {
 				continue;
 			}
-			if (i >= _bin_data[0].length) {
+			if (i >= _bin_data.length) {
 				break;
 			}
 			import std.algorithm;
-			assert(i >= 0 && i < _bin_data[0].length);
+			assert(i >= 0 && i < _bin_data.length);
 			if (initialize) {
-				minimum = _bin_data[0][i];
-				maximum = _bin_data[0][i];
+				minimum = _bin_data[i];
+				maximum = _bin_data[i];
 				initialize = false;
 			}
-			minimum = min(minimum, _bin_data[0][i]);
-			maximum = max(maximum, _bin_data[0][i]);
+			minimum = min(minimum, _bin_data[i]);
+			maximum = max(maximum, _bin_data[i]);
 		}
-		if (minimum < maximum) {
-			double height = maximum - minimum;
+		//if (minimum < maximum) {
+		//	double height = maximum - minimum;
 			bottom = minimum;
 			top    = maximum;
-		} else { 
-			// minimum == maximum 
-			// (or minumum > maximum which shouldn't happen at all)
-			bottom = -10;
-			top    =  10;
-		}
+		//} else { 
+		//	// minimum == maximum 
+		//	// (or minumum > maximum which shouldn't happen at all)
+		//	bottom = -10;
+		//	top    =  10;
+		//}
 		return true;
 	}
 
 	override void draw(ref Scoped!Context cr, ViewBox box) {
 		//writeln("Hist1Visualizer.draw() called\r");
-		if (_bin_data.length == 0) {
+		if (_bin_data is null) {
 			refresh();
 		}
 		//writeln("bins = ", _bin_data[0].length, "\r");
 
-		drawHistogram(cr,box, 0,_bin_data[0].length, _bin_data[0]);
+		//writeln("pixel width = ", box.get_pixel_width() , "\r");
+		auto pixel_width = box.get_pixel_width();
+		auto bin_width = 1;
+		if (bin_width > pixel_width) {
+			drawHistogram(cr,box, 0,_bin_data.length, _bin_data);
+		} else {
+			int mipmap_idx = 0;
+			for (;;) {
+				bin_width *= 2;
+				++mipmap_idx;
+				if (mipmap_idx == _mipmap_data.length-1 || bin_width > pixel_width) {
+					drawMipMapHistogram(cr,box, 0, _bin_data.length, _mipmap_data[mipmap_idx-1]);
+					break;
+				}
+			}
+		}
 	}
 
 
@@ -140,12 +154,11 @@ synchronized class Hist1Visualizer : Drawable
 		super(name);
 		_left = left;
 		_right = right;
-		_bin_data.length = 0;
-		_bin_data ~= cast(shared double[])bin_data.dup;
+		this._bin_data = cast(shared double[])bin_data.dup;
 		mipmap_data();
-		if (_bin_data[0].length > 0) {
-			_top    = maxElement(_bin_data[0]);
-			_bottom = minElement(_bin_data[0]);
+		if (_bin_data.length > 0) {
+			_top    = maxElement(_bin_data);
+			_bottom = minElement(_bin_data);
 		} else {
 			_top    =  1;
 			_bottom = -1;
@@ -154,23 +167,50 @@ synchronized class Hist1Visualizer : Drawable
 
 	double getBinWidth()
 	{
-		if (_bin_data.length == 0 || _bin_data[0].length == 0) {
-			return 0;
+		if (_bin_data is null || _bin_data.length == 0) {
+			return double.init;
 		}
-		return (_right - _left) / _bin_data[0].length;
+		return (_right - _left) / _bin_data.length;
 	}
 
 
 private:
 	void mipmap_data() 
 	{
-		if (_bin_data.length == 0) {
+		if (_bin_data is null) {
 			return;
+		}
+		import std.algorithm;
+		for (int idx = 0;; ++idx) {
+			if (idx == 0) {
+				_mipmap_data ~= new minmax[_bin_data.length-1];
+				foreach(n, ref mip; _mipmap_data[$-1]) {
+					mip.min = min(_bin_data[n],_bin_data[n+1]);
+					mip.max = max(_bin_data[n],_bin_data[n+1]);
+				}
+			} else {
+				auto parent_len = _mipmap_data[idx-1].length;
+				if (parent_len == 1) {
+					break;
+				}
+				_mipmap_data ~= new minmax[(_mipmap_data[idx-1].length+1) / 2];
+				foreach(n, ref mip; _mipmap_data[$-1]) {
+					auto n2 = n*2, n2_plus_1 = n2+1;
+					if (n2_plus_1 >= _mipmap_data[idx-1].length) {
+						n2_plus_1 = n2;
+					}
+					mip.min = min(_mipmap_data[idx-1][n2].min, _mipmap_data[idx-1][n2_plus_1].min);
+					mip.max = max(_mipmap_data[idx-1][n2].max, _mipmap_data[idx-1][n2_plus_1].max);
+				}
+			}
 		}
 
 	}
 
 	shared Hist1Datasource _source;
-	shared double[][] _bin_data;
+	shared double[] _bin_data;
 	shared string _name;
+
+	alias struct minmax {double min; double max;} ;
+	shared minmax[][] _mipmap_data;
 }

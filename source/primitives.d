@@ -92,6 +92,35 @@ in {
 		xhist += bin_width;
 		x = box.transform_box2canvas_x(xhist);
 		cr.lineTo(x,y);
+		if (xhist > box.getRight) {
+			break;
+		}
+	}
+}
+void drawMipMapHistogram(MinMax)(ref Scoped!Context cr, ViewBox box, double min, double max, MinMax[] data)
+in {
+	assert (data.length > 0);
+	assert (min < max);
+} do {
+	double bin_width = (max-min)/data.length;
+	double xhist = min + bin_width/2;
+	foreach(idx, vline; data) {
+		double vmin = vline.min;
+		double vmax = vline.max;
+		if (vmin == vmax) {
+			drawHorizontalLine(cr,box, vmin, xhist+bin_width, xhist);
+		} else {
+			double vheight = vmax - vmin;
+			auto pixel_height = box.get_pixel_height();
+			//import std.stdio;
+			//writeln("vheight = ", vheight, "    pixel_height = ", pixel_height, "\r");
+			if (vheight < 2*pixel_height) {
+				vmin -=  pixel_height;
+				vmax +=  pixel_height;
+			}
+			drawVerticalLine(cr,box, xhist, vmin, vmax);
+		}
+		xhist += bin_width;
 	}
 }
 
