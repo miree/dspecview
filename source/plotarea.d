@@ -75,6 +75,12 @@ public:
 	void setGridAutoscaleY(bool autoscale) {
 		_grid_autoscale_y = autoscale;
 	}
+	void setDrawGridHorizontal(bool draw) {
+		_draw_grid_horizontal = draw;
+	}
+	void setDrawGridVertical(bool draw) {
+		_draw_grid_vertical = draw;
+	}
 
 	void setFit() {
 		writeln("setFit()");
@@ -261,7 +267,12 @@ protected:
 						// draw a grid
 						setContextClip(cr,_vbox);
 						cr.setLineWidth(1);
-						drawGrid(cr, _vbox, width, height);
+						if (_draw_grid_horizontal) {
+							drawGridHorizontal(cr, _vbox, width, height);
+						}
+						if (_draw_grid_vertical) {
+							drawGridVertical(cr, _vbox, width, height);
+						}
 						cr.stroke();
 					}
 					// draw the content
@@ -304,7 +315,12 @@ protected:
 				// draw a grid
 				setContextClip(cr,_vbox);
 				cr.setLineWidth(1);
-				drawGrid(cr, _vbox, width, height);
+				if (_draw_grid_horizontal) {
+					drawGridHorizontal(cr, _vbox, width, height);
+				}
+				if (_draw_grid_vertical) {
+					drawGridVertical(cr, _vbox, width, height);
+				}
 				cr.stroke();
 			}
 			// draw the content
@@ -396,6 +412,9 @@ protected:
 	bool _row_major = true;
 
 	bool _grid_autoscale_y = false;
+
+	bool _draw_grid_horizontal = false;
+	bool _draw_grid_vertical = false;
 
 
 	bool _in_other_thread = false;

@@ -447,6 +447,23 @@ class Gui : ApplicationWindow
 		auto logz_label = new Label("logZ");
 		_check_logz = new CheckButton();
 
+		auto gridx_label = new Label("grid x");
+		_check_gridx = new CheckButton();
+		_check_gridx.addOnToggled(
+			delegate void(ToggleButton button) {
+								_plot_area.setDrawGridVertical(button.getActive());
+								_box.queueDraw();
+							}
+			);
+		auto gridy_label = new Label("grid y");
+		_check_gridy = new CheckButton();
+		_check_gridy.addOnToggled(
+			delegate void(ToggleButton button) {
+								_plot_area.setDrawGridHorizontal(button.getActive());
+								_box.queueDraw();
+							}
+			);
+
 
 
 		auto layout_box = new Box(GtkOrientation.HORIZONTAL,0);
@@ -464,6 +481,11 @@ class Gui : ApplicationWindow
 		layout_box.add(logy_label);
 		layout_box.add(_check_logz);
 		layout_box.add(logz_label);
+		layout_box.add(_check_gridx);
+		layout_box.add(gridx_label);
+		layout_box.add(_check_gridy);
+		layout_box.add(gridy_label);
+
 		//_radio_overlay.show();
 		//_radio_grid.show();
 		//_spin_rows.show();
@@ -481,6 +503,7 @@ class Gui : ApplicationWindow
 	SpinButton _spin_columns;
 	RadioButton _radio_rowmajor, _radio_colmajor;
 	CheckButton _check_logx, _check_logy, _check_logz;
+	CheckButton _check_gridx, _check_gridy;
 
 
 	PlotArea  _plot_area;

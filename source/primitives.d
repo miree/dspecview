@@ -124,7 +124,7 @@ in {
 	}
 }
 
-void drawGrid(ref Scoped!Context cr, ViewBox box, int canvas_width, int canvas_height)
+void drawGridVertical(ref Scoped!Context cr, ViewBox box, int canvas_width, int canvas_height)
 {
 	import std.math;
 
@@ -156,8 +156,12 @@ void drawGrid(ref Scoped!Context cr, ViewBox box, int canvas_width, int canvas_h
 		}
 		cr.stroke();
 	}
+}
 
+void drawGridHorizontal(ref Scoped!Context cr, ViewBox box, int canvas_width, int canvas_height)
+{
 	// horizontal lines
+	import std.math;
 	for( int i = 2; i >= 0; --i)
 	{
 		double height  = box.getHeight()*1000/(canvas_height/box.getRows());
