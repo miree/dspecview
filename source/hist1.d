@@ -76,12 +76,12 @@ synchronized class Hist1Visualizer : Drawable
 		}
 	}
 
-	override void getBottomTopInLeftRight(ref double bottom, ref double top, in double left, in double right) {
+	override bool getBottomTopInLeftRight(ref double bottom, ref double top, in double left, in double right) {
 		if (_bin_data.length == 0) {
 			refresh();
 		}
 		if (left >= getRight || right <= getLeft) {
-			return;
+			return false;
 		}
 		double bottom_safe = bottom;
 		double top_safe    = top;
@@ -107,12 +107,15 @@ synchronized class Hist1Visualizer : Drawable
 		}
 		if (minimum < maximum) {
 			double height = maximum - minimum;
-			bottom = minimum - 0.1*height;
-			top    = maximum + 0.1*height;
-		} else {
+			bottom = minimum;
+			top    = maximum;
+		} else { 
+			// minimum == maximum 
+			// (or minumum > maximum which shouldn't happen at all)
 			bottom = -10;
 			top    =  10;
 		}
+		return true;
 	}
 
 	override void draw(ref Scoped!Context cr, ViewBox box) {

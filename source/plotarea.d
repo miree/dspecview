@@ -46,11 +46,10 @@ public:
 		//}
 	}
 	void add_drawable(string drawable) {
-		_drawables ~= drawable;
-		// think I don't need this anymore
-		//if (_drawables.length > _vbox._rows) {
-		//	_vbox._rows = cast(int)_drawables.length;
-		//}
+		import std.algorithm;
+		if (!_drawables.canFind(drawable)) {
+			_drawables ~= drawable;
+		}
 	}
 
 	override void getPreferredHeightForWidth(int width, out int minimumHeight, out int naturalHeight)
@@ -97,10 +96,11 @@ public:
 				global_right  = max(global_right , item.getRight());
 			}
 		}
+		double height = global_top - global_bottom;
 		_vbox._left   = global_left;
 		_vbox._right  = global_right;
-		_vbox._bottom = global_bottom;
-		_vbox._top    = global_top;
+		_vbox._bottom = global_bottom - 0.1*height ;
+		_vbox._top    = global_top    + 0.1*height;
 		writeln("setFit() done ", global_left, global_right, global_top, global_bottom);
 	}
 
@@ -191,18 +191,35 @@ protected:
 		return true;
 	}
 
-
+	void add_bottom_top_margin(ref double bottom, ref double top) {
+		double margin_factor = 0.1;
+		double height = top - bottom;
+		top    += margin_factor * height;
+		bottom -= margin_factor * height;
+	}
+	void default_bottom_top(out double bottom, out double top) {
+		bottom = -10;
+		top    =  10;
+	}
 	void draw_content_autoscale_y(ref Scoped!Context cr, ulong color_idx, ulong drawable_idx, int row, int column, int width, int height) {
 		synchronized {
-				double global_top = 10, global_bottom = 0;
+				double global_top = 10, global_bottom = -10;
+				bool first_assignment = true;
 				if (_overlay) {
 					foreach(drawable; _drawables) {
 						double bottom, top;
-						 _session.getDrawable(drawable).getBottomTopInLeftRight(bottom, top, _vbox.getLeft, _vbox.getRight);
-						import std.algorithm;
-						global_bottom = min(global_bottom, bottom);
-						global_top    = max(global_top   , top);
+						if (_session.getDrawable(drawable).getBottomTopInLeftRight(bottom, top, _vbox.getLeft, _vbox.getRight)) {
+							import std.algorithm;
+							if (first_assignment) {
+								global_bottom = bottom;
+								global_top    = top;
+								first_assignment = false;
+							}
+							global_bottom = min(global_bottom, bottom);
+							global_top    = max(global_top   , top);
+						}
 					}
+					add_bottom_top_margin(global_bottom, global_top);
 				}
 
 				shared Drawable drawable;
@@ -218,11 +235,11 @@ protected:
 
 				// safe the vbox extents in grid mode in case of autoscaling
 				if (!_overlay) { 
-					if (_drawables.length > drawable_idx) {
-						drawable.getBottomTopInLeftRight(bottom, top, _vbox.getLeft, _vbox.getRight);
+					if (_drawables.length > drawable_idx && 
+						drawable.getBottomTopInLeftRight(bottom, top, _vbox.getLeft, _vbox.getRight)) {
+						add_bottom_top_margin(bottom, top);
 					} else {
-						bottom = -10;
-						top    =  10;
+						default_bottom_top(bottom, top);
 					}
 				} else {
 					bottom = global_bottom;
@@ -246,7 +263,7 @@ protected:
 					if (_drawables.length > drawable_idx) {
 						color_idx %= _color_table.length;
 						cr.setSourceRgba(_color_table[color_idx][0], _color_table[color_idx][1], _color_table[color_idx][2], 1.0);
-						cr.setLineWidth( 1);
+						cr.setLineWidth( 2);
 						drawable.draw(cr, _vbox);
 						cr.stroke();
 					}
@@ -288,7 +305,7 @@ protected:
 			// draw the content
 			color_idx %= _color_table.length;
 			cr.setSourceRgba(_color_table[color_idx][0], _color_table[color_idx][1], _color_table[color_idx][2], 1.0);
-			cr.setLineWidth( 1);
+			cr.setLineWidth( 2);
 			synchronized {
 				if (_drawables.length > drawable_idx) {
 					auto drawable = _session.getDrawable(_drawables[drawable_idx]);
