@@ -83,21 +83,22 @@ public:
 		_draw_grid_vertical = draw;
 	}
 	void update_drawable_list() {
-		writeln("update_drawable_list()\n\rdrawables before : " , _drawables, "\r");
+		//writeln("update_drawable_list()\n\rdrawables before : " , _drawables, "\r");
 		string[] new_drawables;
 		synchronized {
 			foreach(drawable; _drawables) {
 				if (_session.getDrawable(drawable) !is null) {
+					writeln(drawable, "\r");
 					new_drawables ~= drawable;
 				}
 			}
 		}
-		writeln("drawables after : " , new_drawables, "\r");
+		//writeln("drawables after : " , new_drawables, "\r");
 		_drawables = new_drawables;
 	}
 
 	void setFit() {
-		writeln("setFit()");
+		//writeln("setFit()");
 		update_drawable_list();
 		double global_top, global_bottom, global_left, global_right;
 		synchronized {
@@ -122,7 +123,7 @@ public:
 		_vbox._right  = global_right;
 		_vbox._bottom = global_bottom - 0.1*height ;
 		_vbox._top    = global_top    + 0.1*height;
-		writeln("setFit() done ", global_left, global_right, global_top, global_bottom);
+		//writeln("setFit() done ", global_left, global_right, global_top, global_bottom);
 	}
 
 	@property bool isEmpty() {
@@ -294,7 +295,7 @@ protected:
 						drawable.draw(cr, _vbox);
 						cr.stroke();
 					}
-					writeln("draw numbers? ", drawable_idx, " " , _drawables.length-1, " ", _drawables, "\r");
+					//writeln("draw numbers? ", drawable_idx, " " , _drawables.length-1, " ", _drawables, "\r");
 					if (drawable_idx == _drawables.length-1 || _drawables is null || !_overlay) { // in case we do overlay, we have to draw the numbers only once
 						// draw a box and the grid numbers
 						cr.setSourceRgba(0.4, 0.4, 0.4, 1.0);

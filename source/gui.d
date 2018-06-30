@@ -294,21 +294,45 @@ class Gui : ApplicationWindow
 							));
 		popup_menu.append( new MenuItem(
 								delegate(MenuItem m) { // the action to perform if that menu entry is selected
-									writeln("show all: ");
+									writeln("show selected: ");
 									auto iters = _treeview.getSelectedIters();
 									foreach(iter; iters)
 									{
 										string itemname = get_full_name(iter);
-										bool was_empty = _plot_area.isEmpty;
-										_plot_area.add_drawable(itemname);
-										if (was_empty) {
-											_plot_area.setFit();
+										auto itemlist = _session.getItemList();
+										if (itemlist.canFind(itemname)) {
+											bool was_empty = _plot_area.isEmpty;
+											_plot_area.add_drawable(itemname);
+											if (was_empty) {
+												_plot_area.setFit();
+											}
 										}
 									}
 									_box.queueDraw();
 								},
-								"show all", // menu entry label
-								"show all seleted items"// description
+								"show selected", // menu entry label
+								"show seleted items"// description
+							));
+		popup_menu.append( new MenuItem(
+								delegate(MenuItem m) { // the action to perform if that menu entry is selected
+									writeln("show selected recusive: ");
+									auto iters = _treeview.getSelectedIters();
+									auto itemlist = _session.getItemList();
+									foreach(iter; iters)
+									{
+										string itemname = get_full_name(iter);
+										foreach(item; itemlist) {
+											if (item.startsWith(itemname)) {
+												_plot_area.add_drawable(item);
+											}
+										}
+										//_plot_area.add_drawable(itemname);
+									}
+									_plot_area.setFit();
+									_box.queueDraw();
+								},
+								"show selected recusive", // menu entry label
+								"show seleted items and all items in selected folders"// description
 							));
 		popup_menu.append( new MenuItem(
 								delegate(MenuItem m) { // the action to perform if that menu entry is selected
