@@ -230,60 +230,53 @@ protected:
 		bottom = -10;
 		top    =  10;
 	}
+	void get_global_bottom_top(out double bottom, out double top) {
+		default_bottom_top(bottom, top);
+		bool first_assignment = true;
+		foreach(drawable; _drawables) {
+			double b, t;
+			if (_session.getDrawable(drawable).getBottomTopInLeftRight(b, t, _vbox.getLeft, _vbox.getRight)) {
+				import std.algorithm;
+				if (first_assignment) {
+					bottom = b;
+					top    = t;
+					first_assignment = false;
+				}
+				bottom = min(bottom, b);
+				top    = max(top   , t);
+			}
+		}		
+	}
 	void draw_content_autoscale_y(ref Scoped!Context cr, ulong color_idx, ulong drawable_idx, int row, int column, int width, int height) {
 		synchronized {
-				double global_top = 10, global_bottom = -10;
-				bool first_assignment = true;
+				double global_top, global_bottom;
+				default_bottom_top(global_bottom, global_top);
+
+				// in overlay mode find the global top and bottom extents
 				if (_overlay) {
-					foreach(drawable; _drawables) {
-						double bottom, top;
-						if (_session.getDrawable(drawable).getBottomTopInLeftRight(bottom, top, _vbox.getLeft, _vbox.getRight)) {
-							import std.algorithm;
-							if (first_assignment) {
-								global_bottom = bottom;
-								global_top    = top;
-								first_assignment = false;
-							}
-							global_bottom = min(global_bottom, bottom);
-							global_top    = max(global_top   , top);
-						}
-					}
+					get_global_bottom_top(global_bottom, global_top);
 					add_bottom_top_margin(global_bottom, global_top);
 				}
 
+				// find the bottom top extend in grid mode
+				double bottom = global_bottom;
+				double top    = global_top;
 				shared Drawable drawable;
-				if (_drawables.length > drawable_idx) {
+				if (_drawables !is null && _drawables.length > drawable_idx) {
 					drawable = _session.getDrawable(_drawables[drawable_idx]);
 				}
-				double bottom      = _vbox.getBottom;
-				double bottom_safe = _vbox.getBottom;
-				double top         = _vbox.getTop;
-				double top_safe    = _vbox.getTop;
-				double delta_y = _vbox._delta_y;
-				double scale_y = _vbox._scale_y;
+				if (!_overlay && drawable !is null && _drawables.length > drawable_idx && 
+					drawable.getBottomTopInLeftRight(bottom, top, _vbox.getLeft, _vbox.getRight)) {
+					add_bottom_top_margin(bottom, top);
+				} 
 
-				// safe the vbox extents in grid mode in case of autoscaling
-				if (!_overlay) { 
-					if (_drawables.length > drawable_idx && 
-						drawable.getBottomTopInLeftRight(bottom, top, _vbox.getLeft, _vbox.getRight)) {
-						add_bottom_top_margin(bottom, top);
-					} else {
-						default_bottom_top(bottom, top);
-					}
-				} else {
-					bottom = global_bottom;
-					top    = global_top;
-				}
-				_vbox._bottom = bottom;
-				_vbox._top = top;
-				_vbox._delta_y = 0;
-				_vbox._scale_y = 1;
-
+				// prepare the transformations 
+				_vbox.setBottomTop(bottom, top);
 				_vbox.update_coefficients(row, column, width, height);
 				cr.save();
+					setContextClip(cr,_vbox);
 					if (drawable_idx == 0 || !_overlay) { 
 						// draw a grid
-						setContextClip(cr,_vbox);
 						cr.setLineWidth(1);
 						if (_draw_grid_horizontal) {
 							drawGridHorizontal(cr, _vbox, width, height);
@@ -294,14 +287,15 @@ protected:
 						cr.stroke();
 					}
 					// draw the content
-					if (_drawables.length > drawable_idx) {
+					if (drawable !is null && _drawables.length > drawable_idx) {
 						color_idx %= _color_table.length;
 						cr.setSourceRgba(_color_table[color_idx][0], _color_table[color_idx][1], _color_table[color_idx][2], 1.0);
 						cr.setLineWidth( 2);
 						drawable.draw(cr, _vbox);
 						cr.stroke();
 					}
-					if (drawable_idx == _drawables.length-1 || !_overlay) { // in case we do overlay, we have to draw the numbers only once
+					writeln("draw numbers? ", drawable_idx, " " , _drawables.length-1, " ", _drawables, "\r");
+					if (drawable_idx == _drawables.length-1 || _drawables is null || !_overlay) { // in case we do overlay, we have to draw the numbers only once
 						// draw a box and the grid numbers
 						cr.setSourceRgba(0.4, 0.4, 0.4, 1.0);
 						cr.setLineWidth( 3);
@@ -315,14 +309,6 @@ protected:
 					}
 				cr.restore();
 
-				//if (!_overlay) { // in case we do overlay, we have to draw the numbers only once
-				//	//_vbox._bottom = bottom_safe;
-				//	//_vbox._top    = top_safe;
-				//	//_vbox._delta_y = delta_y;
-				//	//_vbox._scale_y = scale_y;
-				//}
-
-//			}
 		}
 	}
 

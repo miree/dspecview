@@ -136,6 +136,9 @@ class Gui : ApplicationWindow
 			add_item(item_fullname, _folders);
 		}
 
+		if (_items is null) {
+			return;
+		}
 		// expand all treeview rows that were expanded before
 		foreach(expanded_name; _expanded.byKey().array().sort().array)
 		{

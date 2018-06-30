@@ -18,11 +18,26 @@ struct ViewBox
 	double getWidth() {return (_right - _left)*_scale_x;}
 	double getHeight(){return (_top   - _bottom)*_scale_y;}
 
+	void setBottomTop(double bottom, double top) {
+		_bottom = bottom;
+		_top    = top;
+		// this freezes all movements and scaling actions in y direction
+		_scale_y = 1;
+		_delta_y = 0;
+	}
+	void setLeftRight(double left, double right) {
+		_left  = left;
+		_right = right;
+		// this freezes all movements and scaling actions in x direction
+		_scale_x = 1;
+		_delta_x = 0;
+	}
+
 	// coefficients for linear transformation
 	double _a_x, _b_x, _a_y, _b_y;
 	// calculate coefficients for the tile (row,column) in order to draw on a canvas 
 	//  with width and height, and if there is a tiling of rows and columns
-	// this must be called before using the ViewBox after any of row,column,width,height changed
+	// this must be called before using the ViewBox after any of row,column,width,height change
 	void update_coefficients(int row, int column, int width, int height)
 	{
 		// canvas properties
