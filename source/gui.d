@@ -125,7 +125,7 @@ class Gui : ApplicationWindow
 	}
 
 	void updateSession()
-	{
+	{		
 		_treestore.clear();
 		TreeIter[string] _folders;
 		synchronized {
@@ -136,15 +136,14 @@ class Gui : ApplicationWindow
 			add_item(item_fullname, _folders);
 		}
 
+		// expand all treeview rows that were expanded before
 		foreach(expanded_name; _expanded.byKey().array().sort().array)
 		{
-			//writeln("expand ", expanded_name, "\r");
 			string mypath = get_path_name_from_name(expanded_name, _items);
 			TreeIter iter;
 			_treestore.getIterFromString(iter, mypath);
 			TreePath path = _treestore.getPath(iter);
 			string theirpath = _treestore.getStringFromIter(iter);
-			//writeln("mypath = ", mypath, ",    theirpath = ", theirpath, "\r");
 			if (_expanded[expanded_name]) {
 				_treeview.expandRow(path, false);
 			}
@@ -314,9 +313,12 @@ class Gui : ApplicationWindow
 									//{
 										writeln("delete ");
 										auto iters = _treeview.getSelectedIters();
-										foreach(iter; iters) 
-										{
-											_session.removeItem(get_full_name(iter));
+										string[] delete_names;
+										foreach(iter; iters) {
+											delete_names ~= get_full_name(iter);
+										}
+										foreach(delete_name; delete_names) {
+											_session.removeItem(delete_name);
 										}
 										updateSession();
 										//if (iter is null) {

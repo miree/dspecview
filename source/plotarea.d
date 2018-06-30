@@ -126,6 +126,9 @@ public:
 	}
 
 	@property bool isEmpty() {
+		if (_drawables is null) {
+			return true;
+		}
 		return _drawables.length == 0;
 	}
 
