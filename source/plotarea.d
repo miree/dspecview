@@ -50,6 +50,7 @@ public:
 		if (!_drawables.canFind(drawable)) {
 			_drawables ~= drawable;
 		}
+		update_drawable_list();
 	}
 
 	override void getPreferredHeightForWidth(int width, out int minimumHeight, out int naturalHeight)
@@ -81,9 +82,23 @@ public:
 	void setDrawGridVertical(bool draw) {
 		_draw_grid_vertical = draw;
 	}
+	void update_drawable_list() {
+		writeln("update_drawable_list()\n\rdrawables before : " , _drawables, "\r");
+		string[] new_drawables;
+		synchronized {
+			foreach(drawable; _drawables) {
+				if (_session.getDrawable(drawable) !is null) {
+					new_drawables ~= drawable;
+				}
+			}
+		}
+		writeln("drawables after : " , new_drawables, "\r");
+		_drawables = new_drawables;
+	}
 
 	void setFit() {
 		writeln("setFit()");
+		update_drawable_list();
 		double global_top, global_bottom, global_left, global_right;
 		synchronized {
 			foreach(idx, drawable; _drawables) {
@@ -352,6 +367,7 @@ protected:
 	//Override default signal handler:
 	bool drawCallback(Scoped!Context cr, Widget widget)
 	{
+		update_drawable_list();
 		// This is where we draw on the window
 		GtkAllocation size;
 		getAllocation(size);

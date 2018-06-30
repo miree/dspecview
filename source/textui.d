@@ -102,7 +102,7 @@ extern(C) void completion(const char *buf, linenoiseCompletions *lc) {
     // see if we find this in the list of items
     string[] items;
 	synchronized {
-		 items = _session.getItems().byKey().array().sort().array;
+		 items = _session.getItemList();
 	}
     foreach(item; items) {
     	auto an_item = '/' ~ item ~ '\0';

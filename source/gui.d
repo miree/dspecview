@@ -129,7 +129,8 @@ class Gui : ApplicationWindow
 		_treestore.clear();
 		TreeIter[string] _folders;
 		synchronized {
-			_items = _session.getItems().byKey().array().sort().array;
+			//_items = _session.getItems().byKey().array().sort().array;
+			_items = _session.getItemList();
 		}
 		foreach(item_fullname; _items) {
 			add_item(item_fullname, _folders);
