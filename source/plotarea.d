@@ -255,8 +255,8 @@ protected:
 				// in overlay mode find the global top and bottom extents
 				if (_overlay) {
 					get_global_bottom_top(global_bottom, global_top);
-					add_bottom_top_margin(global_bottom, global_top);
 				}
+				add_bottom_top_margin(global_bottom, global_top);
 
 				// find the bottom top extend in grid mode
 				double bottom = global_bottom;
@@ -298,7 +298,7 @@ protected:
 					if (drawable_idx == _drawables.length-1 || _drawables is null || !_overlay) { // in case we do overlay, we have to draw the numbers only once
 						// draw a box and the grid numbers
 						cr.setSourceRgba(0.4, 0.4, 0.4, 1.0);
-						cr.setLineWidth( 3);
+						cr.setLineWidth(4);
 						cr.setLineCap(cairo_line_cap_t.ROUND);
 						//drawLine(cr, _vbox, -1,0, 1,0);
 						//drawLine(cr, _vbox,  0,-1,0,1);
@@ -341,7 +341,7 @@ protected:
 			if (_drawables.length == 0 || drawable_idx == _drawables.length-1 || !_overlay) { // in case we do overlay, we have to draw the numbers only once
 				// draw a box and the grid numbers
 				cr.setSourceRgba(0.4, 0.4, 0.4, 1.0);
-				cr.setLineWidth( 3);
+				cr.setLineWidth(4);
 				cr.setLineCap(cairo_line_cap_t.ROUND);
 				//drawLine(cr, _vbox, -1,0, 1,0);
 				//drawLine(cr, _vbox,  0,-1,0,1);
