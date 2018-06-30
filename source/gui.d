@@ -461,8 +461,8 @@ class Gui : ApplicationWindow
 		_radio_colmajor = new RadioButton("13\n24");
 		_radio_colmajor.joinGroup(_radio_rowmajor);
 
-		auto _grid_autoscale_y_label = new Label("autoscale Y        ");
-		auto _check_grid_autoscale_y = new CheckButton();
+		auto autoscale_label = new Label("autoscale");
+		_check_grid_autoscale_y = new CheckButton("Y");
 		_check_grid_autoscale_y.addOnToggled(
 							delegate void(ToggleButton button) {
 								//writeln("overlay button toggled ", button.getActive(), "\r");
@@ -470,23 +470,21 @@ class Gui : ApplicationWindow
 								_box.queueDraw();
 							} );
 
-		auto logx_label = new Label("logX");
-		_check_logx = new CheckButton();
-		auto logy_label = new Label("logY");
-		_check_logy = new CheckButton();
-		auto logz_label = new Label("logZ");
-		_check_logz = new CheckButton();
+		auto log_label = new Label("log");
+		_check_logx = new CheckButton("X");
+		_check_logy = new CheckButton("Y");
+		_check_logz = new CheckButton("Z");
 
-		auto gridx_label = new Label("grid x");
-		_check_gridx = new CheckButton();
+
+		auto grid_label = new Label("grid");
+		_check_gridx = new CheckButton("X");
 		_check_gridx.addOnToggled(
 			delegate void(ToggleButton button) {
 								_plot_area.setDrawGridVertical(button.getActive());
 								_box.queueDraw();
 							}
 			);
-		auto gridy_label = new Label("grid y");
-		_check_gridy = new CheckButton();
+		_check_gridy = new CheckButton("Y");
 		_check_gridy.addOnToggled(
 			delegate void(ToggleButton button) {
 								_plot_area.setDrawGridHorizontal(button.getActive());
@@ -503,18 +501,18 @@ class Gui : ApplicationWindow
 		layout_box.add(columns_label);
 		layout_box.add(_radio_rowmajor);
 		layout_box.add(_radio_colmajor);
+
+		layout_box.add(autoscale_label);
 		layout_box.add(_check_grid_autoscale_y);
-		layout_box.add(_grid_autoscale_y_label);
+
+		layout_box.add(log_label);
 		layout_box.add(_check_logx);
-		layout_box.add(logx_label);
 		layout_box.add(_check_logy);
-		layout_box.add(logy_label);
 		layout_box.add(_check_logz);
-		layout_box.add(logz_label);
+
+		layout_box.add(grid_label);
 		layout_box.add(_check_gridx);
-		layout_box.add(gridx_label);
 		layout_box.add(_check_gridy);
-		layout_box.add(gridy_label);
 
 		//_radio_overlay.show();
 		//_radio_grid.show();
@@ -532,6 +530,7 @@ class Gui : ApplicationWindow
 	RadioButton _radio_overlay, _radio_grid;
 	SpinButton _spin_columns;
 	RadioButton _radio_rowmajor, _radio_colmajor;
+	CheckButton _check_grid_autoscale_y;
 	CheckButton _check_logx, _check_logy, _check_logz;
 	CheckButton _check_gridx, _check_gridy;
 
