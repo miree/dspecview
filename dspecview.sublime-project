@@ -3,7 +3,7 @@
 	[
 		{
 			"name": "compile",
-			"shell_cmd": "dub build --build=debug  && terminix -x ./run.sh",
+			"shell_cmd": "dub build --build=debug  && tilix -x ./run.sh --gui",
 			"working_dir": "$project_path"
 		}
 	],

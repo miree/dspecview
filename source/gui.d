@@ -472,8 +472,26 @@ class Gui : ApplicationWindow
 
 		auto log_label = new Label("log");
 		_check_logx = new CheckButton("X");
+		_check_logx.addOnToggled(
+			delegate void(ToggleButton button) {
+								_plot_area.setLogscaleX(button.getActive());
+								_box.queueDraw();
+							}
+			);
 		_check_logy = new CheckButton("Y");
+		_check_logy.addOnToggled(
+			delegate void(ToggleButton button) {
+								_plot_area.setLogscaleY(button.getActive());
+								_box.queueDraw();
+							}
+			);
 		_check_logz = new CheckButton("Z");
+		_check_logz.addOnToggled(
+			delegate void(ToggleButton button) {
+								_plot_area.setLogscaleZ(button.getActive());
+								_box.queueDraw();
+							}
+			);
 
 
 		auto grid_label = new Label("grid");

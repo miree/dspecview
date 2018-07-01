@@ -1,10 +1,12 @@
 import drawable;
 import view;
 import primitives;
+import logscale;
 
 import cairo.Context;
 import cairo.Surface;
 import std.algorithm, std.stdio;
+
 
 // this can be asked for data and can be 
 // represented by a real dataset or just 
@@ -75,7 +77,7 @@ synchronized class Hist1Visualizer : Drawable
 		}
 	}
 
-	override bool getBottomTopInLeftRight(ref double bottom, ref double top, in double left, in double right) {
+	override bool getBottomTopInLeftRight(ref double bottom, ref double top, in double left, in double right, bool logy) {
 		if (_bin_data is null) {
 			refresh();
 		}
@@ -97,12 +99,12 @@ synchronized class Hist1Visualizer : Drawable
 			import std.algorithm;
 			assert(i >= 0 && i < _bin_data.length);
 			if (initialize) {
-				minimum = _bin_data[i];
-				maximum = _bin_data[i];
+				minimum = log_y_value_of(_bin_data[i], logy);
+				maximum = log_y_value_of(_bin_data[i], logy);
 				initialize = false;
 			}
-			minimum = min(minimum, _bin_data[i]);
-			maximum = max(maximum, _bin_data[i]);
+			minimum = min(minimum, log_y_value_of(_bin_data[i], logy));
+			maximum = max(maximum, log_y_value_of(_bin_data[i], logy));
 		}
 		//if (minimum < maximum) {
 		//	double height = maximum - minimum;
@@ -117,7 +119,7 @@ synchronized class Hist1Visualizer : Drawable
 		return true;
 	}
 
-	override void draw(ref Scoped!Context cr, ViewBox box) {
+	override void draw(ref Scoped!Context cr, ViewBox box, bool logy) {
 		//writeln("Hist1Visualizer.draw() called\r");
 		if (_bin_data is null) {
 			refresh();
@@ -128,14 +130,14 @@ synchronized class Hist1Visualizer : Drawable
 		auto pixel_width = box.get_pixel_width();
 		auto bin_width = 1;
 		if (bin_width > pixel_width) {
-			drawHistogram(cr,box, 0,_bin_data.length, _bin_data);
+			drawHistogram(cr,box, 0,_bin_data.length, _bin_data, logy);
 		} else {
 			int mipmap_idx = 0;
 			for (;;) {
 				bin_width *= 2;
 				++mipmap_idx;
 				if (mipmap_idx == _mipmap_data.length-1 || bin_width > pixel_width) {
-					drawMipMapHistogram(cr,box, 0, _bin_data.length, _mipmap_data[mipmap_idx-1]);
+					drawMipMapHistogram(cr,box, 0, _bin_data.length, _mipmap_data[mipmap_idx-1], logy);
 					break;
 				}
 			}

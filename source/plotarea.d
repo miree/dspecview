@@ -82,6 +82,15 @@ public:
 	void setDrawGridVertical(bool draw) {
 		_draw_grid_vertical = draw;
 	}
+	void setLogscaleX(bool logscale) {
+		_logscale_x = logscale;
+	}
+	void setLogscaleY(bool logscale) {
+		_logscale_y = logscale;
+	}
+	void setLogscaleZ(bool logscale) {
+		_logscale_z = logscale;
+	}
 	void update_drawable_list() {
 		//writeln("update_drawable_list()\n\rdrawables before : " , _drawables, "\r");
 		string[] new_drawables;
@@ -98,6 +107,7 @@ public:
 	}
 
 	void setFit() {
+		import logscale;
 		//writeln("setFit()");
 		update_drawable_list();
 		double global_top, global_bottom, global_left, global_right;
@@ -107,13 +117,13 @@ public:
 				item.refresh();
 				import std.algorithm;
 				if (idx == 0) {
-					global_bottom = item.getBottom();
-					global_top 	  = item.getTop();
+					global_bottom = log_y_value_of(item.getBottom(), _logscale_y);
+					global_top 	  = log_y_value_of(item.getTop(),    _logscale_y);
 					global_left   = item.getLeft();
 					global_right  = item.getRight();
 				}
-				global_bottom = min(global_bottom, item.getBottom());
-				global_top 	  = max(global_top 	 , item.getTop());
+				global_bottom = min(global_bottom, log_y_value_of(item.getBottom(), _logscale_y));
+				global_top 	  = max(global_top 	 , log_y_value_of(item.getTop(), _logscale_y));
 				global_left   = min(global_left  , item.getLeft());
 				global_right  = max(global_right , item.getRight());
 			}
@@ -236,7 +246,7 @@ protected:
 		bool first_assignment = true;
 		foreach(drawable; _drawables) {
 			double b, t;
-			if (_session.getDrawable(drawable).getBottomTopInLeftRight(b, t, _vbox.getLeft, _vbox.getRight)) {
+			if (_session.getDrawable(drawable).getBottomTopInLeftRight(b, t, _vbox.getLeft, _vbox.getRight, _logscale_y)) {
 				import std.algorithm;
 				if (first_assignment) {
 					bottom = b;
@@ -267,7 +277,7 @@ protected:
 					drawable = _session.getDrawable(_drawables[drawable_idx]);
 				}
 				if (!_overlay && drawable !is null && _drawables.length > drawable_idx && 
-					drawable.getBottomTopInLeftRight(bottom, top, _vbox.getLeft, _vbox.getRight)) {
+					drawable.getBottomTopInLeftRight(bottom, top, _vbox.getLeft, _vbox.getRight, _logscale_y)) {
 					add_bottom_top_margin(bottom, top);
 				} 
 
@@ -280,10 +290,18 @@ protected:
 						// draw a grid
 						cr.setLineWidth(1);
 						if (_draw_grid_horizontal) {
-							drawGridHorizontal(cr, _vbox, width, height);
+							if (_logscale_y) {
+								drawGridHorizontalLog(cr, _vbox, width, height);
+							} else {
+								drawGridHorizontal(cr, _vbox, width, height);
+							}
 						}
 						if (_draw_grid_vertical) {
-							drawGridVertical(cr, _vbox, width, height);
+							if (_logscale_x) {
+								drawGridVerticalLog(cr, _vbox, width, height);
+							} else {
+								drawGridVertical(cr, _vbox, width, height);
+							}
 						}
 						cr.stroke();
 					}
@@ -292,7 +310,7 @@ protected:
 						color_idx %= _color_table.length;
 						cr.setSourceRgba(_color_table[color_idx][0], _color_table[color_idx][1], _color_table[color_idx][2], 1.0);
 						cr.setLineWidth( 2);
-						drawable.draw(cr, _vbox);
+						drawable.draw(cr, _vbox, _logscale_y);
 						cr.stroke();
 					}
 					//writeln("draw numbers? ", drawable_idx, " " , _drawables.length-1, " ", _drawables, "\r");
@@ -321,10 +339,18 @@ protected:
 				setContextClip(cr,_vbox);
 				cr.setLineWidth(1);
 				if (_draw_grid_horizontal) {
-					drawGridHorizontal(cr, _vbox, width, height);
+					if (_logscale_y) {
+						drawGridHorizontalLog(cr, _vbox, width, height);
+					} else {
+						drawGridHorizontal(cr, _vbox, width, height);
+					}
 				}
 				if (_draw_grid_vertical) {
-					drawGridVertical(cr, _vbox, width, height);
+					if (_logscale_x) {
+						drawGridVerticalLog(cr, _vbox, width, height);
+					} else {
+						drawGridVertical(cr, _vbox, width, height);
+					}
 				}
 				cr.stroke();
 			}
@@ -335,7 +361,7 @@ protected:
 			synchronized {
 				if (_drawables.length > drawable_idx) {
 					auto drawable = _session.getDrawable(_drawables[drawable_idx]);
-					drawable.draw(cr, _vbox);
+					drawable.draw(cr, _vbox, _logscale_y);
 				}
 			}
 			cr.stroke();
@@ -418,6 +444,10 @@ protected:
 	bool _row_major = true;
 
 	bool _grid_autoscale_y = false;
+
+	bool _logscale_x = false;
+	bool _logscale_y = false;
+	bool _logscale_z = false;
 
 	bool _draw_grid_horizontal = false;
 	bool _draw_grid_vertical = false;

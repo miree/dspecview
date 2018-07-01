@@ -71,8 +71,8 @@ do
 		}
 	}
 }
-
-void drawHistogram(T)(ref Scoped!Context cr, ViewBox box, double min, double max, T[] bins)
+import logscale;
+void drawHistogram(T)(ref Scoped!Context cr, ViewBox box, double min, double max, T[] bins, bool logy = true)
 in {
 	assert(bins.length > 0);
 	assert(min < max);
@@ -80,14 +80,14 @@ in {
 	double bin_width = (max-min)/bins.length;
 	double xhist = min;
 	double x = box.transform_box2canvas_x(xhist);
-	double y = box.transform_box2canvas_y(bins[0]);
+	double y = box.transform_box2canvas_y(log_y_value_of(bins[0],box,logy));
 	cr.moveTo(x,y);
 	xhist += bin_width;
 	x = box.transform_box2canvas_x(xhist);
 	cr.lineTo(x,y);
 	foreach(bin; bins[1..$])
 	{
-		y = box.transform_box2canvas_y(bin);
+		y = box.transform_box2canvas_y(log_y_value_of(bin,box,logy));
 		cr.lineTo(x,y);
 		xhist += bin_width;
 		x = box.transform_box2canvas_x(xhist);
@@ -97,7 +97,7 @@ in {
 		}
 	}
 }
-void drawMipMapHistogram(MinMax)(ref Scoped!Context cr, ViewBox box, double min, double max, MinMax[] data)
+void drawMipMapHistogram(MinMax)(ref Scoped!Context cr, ViewBox box, double min, double max, MinMax[] data, bool logy = true)
 in {
 	assert (data.length > 0);
 	assert (min < max);
@@ -105,8 +105,8 @@ in {
 	double bin_width = (max-min)/data.length;
 	double xhist = min + bin_width/2;
 	foreach(idx, vline; data) {
-		double vmin = vline.min;
-		double vmax = vline.max;
+		double vmin = log_y_value_of(vline.min, box, logy);
+		double vmax = log_y_value_of(vline.max, box, logy);
 		if (vmin == vmax) {
 			drawHorizontalLine(cr,box, vmin, xhist+bin_width, xhist);
 		} else {
@@ -191,6 +191,61 @@ void drawGridHorizontal(ref Scoped!Context cr, ViewBox box, int canvas_width, in
 	}	
 
 }
+
+void drawGridVerticalLog(ref Scoped!Context cr, ViewBox box, int canvas_width, int canvas_height)
+{
+	import std.math;
+
+	// vertical lines
+	double log_left = log(1);
+	double log_right = log(box.getRight);
+	double bottom = box.getBottom;
+	double top    = box.getTop;
+	while (log_left < box.getLeft) log_left += log(10);
+	while (log_left > box.getLeft) log_left -= log(10);
+
+	do {
+		double color = 0.5;
+		cr.setSourceRgba(color, color, color, 1.0);
+		drawVerticalLine(cr, box, log_left, bottom, top);
+		cr.stroke();
+		color = 0.8;
+		cr.setSourceRgba(color, color, color, 1.0);
+		foreach(i ; 2..9) {
+			drawVerticalLine(cr, box, log_left+log(i), bottom, top);
+		}
+		cr.stroke();
+		log_left += log(10);
+	} while (log_left <= box.getRight);
+}
+
+void drawGridHorizontalLog(ref Scoped!Context cr, ViewBox box, int canvas_width, int canvas_height)
+{
+	import std.math, std.stdio;
+
+	// vertical lines
+	double left = box.getLeft;
+	double right = box.getRight;
+	double log_bottom = log(1);
+	double log_top    = log(box.getTop);
+	while (log_bottom < box.getBottom) log_bottom += log(10);
+	while (log_bottom > box.getBottom) log_bottom -= log(10);
+	//writeln("bottom = ", bottom, " box.bottom = ", box.getBottom, "\r");
+	do {
+		double color = 0.5;
+		cr.setSourceRgba(color, color, color, 1.0);
+		drawHorizontalLine(cr, box, log_bottom, left, right);
+		cr.stroke();
+		color = 0.8;
+		cr.setSourceRgba(color, color, color, 1.0);
+		foreach(i ; 2..9) {
+			drawHorizontalLine(cr, box, log_bottom+log(i), left, right);
+		}
+		cr.stroke();
+		log_bottom += log(10);
+	} while (log_bottom <= box.getTop);
+}
+
 
 void drawGridNumbers(ref Scoped!Context cr, ViewBox box, int canvas_width, int canvas_height)
 {
