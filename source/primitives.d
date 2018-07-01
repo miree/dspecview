@@ -369,7 +369,7 @@ void drawGridNumbersLogX(ref Scoped!Context cr, ViewBox box, int canvas_width, i
 	while (log_left > box.getLeft) log_left -= log(10);
 
 	do {
-		double color = 0.5;
+		double color = 0.0;
 		cr.setSourceRgba(color, color, color, 1.0);
 		//drawVerticalLine(cr, box, log_left, bottom, top);
 		import std.conv;
@@ -404,7 +404,7 @@ void drawGridNumbersLogY(ref Scoped!Context cr, ViewBox box, int canvas_width, i
 	while (log_bottom > box.getBottom) log_bottom -= log(10);
 	//writeln("bottom = ", bottom, " box.bottom = ", box.getBottom, "\r");
 	do {
-		double color = 0.5;
+		double color = 0.0;
 		cr.setSourceRgba(color, color, color, 1.0);
 		//drawHorizontalLine(cr, box, log_bottom, left, right);
 		import std.conv;

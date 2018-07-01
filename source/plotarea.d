@@ -87,6 +87,7 @@ public:
 	}
 	void setLogscaleY(bool logscale) {
 		_logscale_y = logscale;
+		setFitY();
 	}
 	void setLogscaleZ(bool logscale) {
 		_logscale_z = logscale;
@@ -97,7 +98,7 @@ public:
 		synchronized {
 			foreach(drawable; _drawables) {
 				if (_session.getDrawable(drawable) !is null) {
-					writeln(drawable, "\r");
+					//writeln(drawable, "\r");
 					new_drawables ~= drawable;
 				}
 			}
@@ -107,10 +108,61 @@ public:
 	}
 
 	void setFit() {
+		setFitX();
+		setFitY();
+		//import logscale;
+		////writeln("setFit()");
+		//update_drawable_list();
+		//double global_top, global_bottom, global_left, global_right;
+		//synchronized {
+		//	foreach(idx, drawable; _drawables) {
+		//		auto item = _session.getDrawable(drawable);
+		//		item.refresh();
+		//		import std.algorithm;
+		//		if (idx == 0) {
+		//			global_bottom = log_y_value_of(item.getBottom(), _logscale_y);
+		//			global_top 	  = log_y_value_of(item.getTop(),    _logscale_y);
+		//			global_left   = item.getLeft();
+		//			global_right  = item.getRight();
+		//		}
+		//		global_bottom = min(global_bottom, log_y_value_of(item.getBottom(), _logscale_y));
+		//		global_top 	  = max(global_top 	 , log_y_value_of(item.getTop(), _logscale_y));
+		//		global_left   = min(global_left  , item.getLeft());
+		//		global_right  = max(global_right , item.getRight());
+		//	}
+		//}
+		//double height = global_top - global_bottom;
+		//_vbox._left   = global_left;
+		//_vbox._right  = global_right;
+		//_vbox._bottom = global_bottom - 0.1*height ;
+		//_vbox._top    = global_top    + 0.1*height;
+		////writeln("setFit() done ", global_left, global_right, global_top, global_bottom);
+	}
+
+	void setFitX() {
 		import logscale;
-		//writeln("setFit()");
 		update_drawable_list();
-		double global_top, global_bottom, global_left, global_right;
+		double global_left, global_right;
+		synchronized {
+			foreach(idx, drawable; _drawables) {
+				auto item = _session.getDrawable(drawable);
+				item.refresh();
+				import std.algorithm;
+				if (idx == 0) {
+					global_left   = item.getLeft();
+					global_right  = item.getRight();
+				}
+				global_left   = min(global_left  , item.getLeft());
+				global_right  = max(global_right , item.getRight());
+			}
+		}
+		_vbox._left   = global_left;
+		_vbox._right  = global_right;
+	}
+	void setFitY() {
+		import logscale;
+		update_drawable_list();
+		double global_top, global_bottom;
 		synchronized {
 			foreach(idx, drawable; _drawables) {
 				auto item = _session.getDrawable(drawable);
@@ -119,21 +171,14 @@ public:
 				if (idx == 0) {
 					global_bottom = log_y_value_of(item.getBottom(), _logscale_y);
 					global_top 	  = log_y_value_of(item.getTop(),    _logscale_y);
-					global_left   = item.getLeft();
-					global_right  = item.getRight();
 				}
 				global_bottom = min(global_bottom, log_y_value_of(item.getBottom(), _logscale_y));
 				global_top 	  = max(global_top 	 , log_y_value_of(item.getTop(), _logscale_y));
-				global_left   = min(global_left  , item.getLeft());
-				global_right  = max(global_right , item.getRight());
 			}
 		}
 		double height = global_top - global_bottom;
-		_vbox._left   = global_left;
-		_vbox._right  = global_right;
 		_vbox._bottom = global_bottom - 0.1*height ;
 		_vbox._top    = global_top    + 0.1*height;
-		//writeln("setFit() done ", global_left, global_right, global_top, global_bottom);
 	}
 
 	@property bool isEmpty() {
