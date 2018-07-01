@@ -15,3 +15,21 @@ double log_y_value_of(shared double y, bool logy) {
 	}
 	return y;
 }
+
+double log_x_value_of(double x, ViewBox box, bool logx) {
+	import std.math;
+	if (logx) {
+		return (x>0)?log(x):box.getLeft;
+	}
+	return x;
+}
+
+double log_x_value_of(shared double x, bool logx) {
+	import std.math;
+	if (logx) {
+		return (x>0)?log(x):log(0.5);
+	}
+	return x;
+}
+
+

@@ -84,6 +84,7 @@ public:
 	}
 	void setLogscaleX(bool logscale) {
 		_logscale_x = logscale;
+		setFitX();
 	}
 	void setLogscaleY(bool logscale) {
 		_logscale_y = logscale;
@@ -149,11 +150,11 @@ public:
 				item.refresh();
 				import std.algorithm;
 				if (idx == 0) {
-					global_left   = item.getLeft();
-					global_right  = item.getRight();
+					global_left   = log_x_value_of(item.getLeft(),  _logscale_x);
+					global_right  = log_x_value_of(item.getRight(), _logscale_x);
 				}
-				global_left   = min(global_left  , item.getLeft());
-				global_right  = max(global_right , item.getRight());
+				global_left   = min(global_left  , log_x_value_of(item.getLeft(),  _logscale_x));
+				global_right  = max(global_right , log_x_value_of(item.getRight(), _logscale_x));
 			}
 		}
 		_vbox._left   = global_left;
@@ -291,7 +292,7 @@ protected:
 		bool first_assignment = true;
 		foreach(drawable; _drawables) {
 			double b, t;
-			if (_session.getDrawable(drawable).getBottomTopInLeftRight(b, t, _vbox.getLeft, _vbox.getRight, _logscale_y)) {
+			if (_session.getDrawable(drawable).getBottomTopInLeftRight(b, t, _vbox.getLeft, _vbox.getRight, _logscale_y, _logscale_x)) {
 				import std.algorithm;
 				if (first_assignment) {
 					bottom = b;
@@ -322,7 +323,7 @@ protected:
 					drawable = _session.getDrawable(_drawables[drawable_idx]);
 				}
 				if (!_overlay && drawable !is null && _drawables.length > drawable_idx && 
-					drawable.getBottomTopInLeftRight(bottom, top, _vbox.getLeft, _vbox.getRight, _logscale_y)) {
+					drawable.getBottomTopInLeftRight(bottom, top, _vbox.getLeft, _vbox.getRight, _logscale_y, _logscale_x)) {
 					add_bottom_top_margin(bottom, top);
 				} 
 
@@ -355,7 +356,7 @@ protected:
 						color_idx %= _color_table.length;
 						cr.setSourceRgba(_color_table[color_idx][0], _color_table[color_idx][1], _color_table[color_idx][2], 1.0);
 						cr.setLineWidth( 2);
-						drawable.draw(cr, _vbox, _logscale_y);
+						drawable.draw(cr, _vbox, _logscale_y, _logscale_x);
 						cr.stroke();
 					}
 					//writeln("draw numbers? ", drawable_idx, " " , _drawables.length-1, " ", _drawables, "\r");
@@ -415,7 +416,7 @@ protected:
 			synchronized {
 				if (_drawables.length > drawable_idx) {
 					auto drawable = _session.getDrawable(_drawables[drawable_idx]);
-					drawable.draw(cr, _vbox, _logscale_y);
+					drawable.draw(cr, _vbox, _logscale_y, _logscale_x);
 				}
 			}
 			cr.stroke();

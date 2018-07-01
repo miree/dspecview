@@ -77,9 +77,25 @@ synchronized class Hist1Visualizer : Drawable
 		}
 	}
 
-	override bool getBottomTopInLeftRight(ref double bottom, ref double top, in double left, in double right, bool logy) {
+	override bool getBottomTopInLeftRight(ref double bottom, ref double top, double left, double right, bool logy, bool logx) {
 		if (_bin_data is null) {
 			refresh();
+		}
+		import std.math;
+		if (logx) { // special treatment for logx case
+			if (left >= log(getRight) || right <= log(getLeft)) {
+				return false;
+			}
+			if (right < log(getRight)) {
+				right = exp(right);
+			} else {
+				right = _bin_data.length;
+			}
+			if (left > log(getLeft)) {
+				left = exp(left);
+			} else {
+				left = 0;
+			}
 		}
 		if (left >= getRight || right <= getLeft) {
 			return false;
@@ -119,7 +135,7 @@ synchronized class Hist1Visualizer : Drawable
 		return true;
 	}
 
-	override void draw(ref Scoped!Context cr, ViewBox box, bool logy) {
+	override void draw(ref Scoped!Context cr, ViewBox box, bool logy, bool logx) {
 		//writeln("Hist1Visualizer.draw() called\r");
 		if (_bin_data is null) {
 			refresh();
@@ -129,8 +145,8 @@ synchronized class Hist1Visualizer : Drawable
 		//writeln("pixel width = ", box.get_pixel_width() , "\r");
 		auto pixel_width = box.get_pixel_width();
 		auto bin_width = 1;
-		if (bin_width > pixel_width) {
-			drawHistogram(cr,box, 0,_bin_data.length, _bin_data, logy);
+		if (bin_width > pixel_width || logx) { // there is no mipmap impelemntation for logx histogram drawing
+			drawHistogram(cr,box, 0,_bin_data.length, _bin_data, logy, logx);
 		} else {
 			int mipmap_idx = 0;
 			for (;;) {

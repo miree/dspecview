@@ -42,14 +42,14 @@ synchronized class Drawable : Item
 	double getTop()	{
 		return _top;
 	}
-	bool getBottomTopInLeftRight(ref double bottom, ref double top, in double left, in double right, bool logy) {
+	bool getBottomTopInLeftRight(ref double bottom, ref double top, double left, double right, bool logy, bool logx) {
 			return false;
 	}
 	final double getWidth() { return getRight() - getLeft(); }
 	final double getHeight() { return getTop() - getBottom(); }
 
 
-	void draw(ref Scoped!Context cr, ViewBox box, bool logy) {}; // show the Drawable on a cairo context
+	void draw(ref Scoped!Context cr, ViewBox box, bool logy, bool logx) {}; // show the Drawable on a cairo context
 
 
 	void setAutoScaleX(bool scale) {

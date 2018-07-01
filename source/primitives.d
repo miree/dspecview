@@ -72,27 +72,27 @@ do
 	}
 }
 import logscale;
-void drawHistogram(T)(ref Scoped!Context cr, ViewBox box, double min, double max, T[] bins, bool logy = true)
+void drawHistogram(T)(ref Scoped!Context cr, ViewBox box, double min, double max, T[] bins, bool logy = true, bool logx = false)
 in {
 	assert(bins.length > 0);
 	assert(min < max);
 } do {
 	double bin_width = (max-min)/bins.length;
 	double xhist = min;
-	double x = box.transform_box2canvas_x(xhist);
+	double x = box.transform_box2canvas_x(log_x_value_of(xhist,box,logx));
 	double y = box.transform_box2canvas_y(log_y_value_of(bins[0],box,logy));
 	cr.moveTo(x,y);
 	xhist += bin_width;
-	x = box.transform_box2canvas_x(xhist);
+	x = box.transform_box2canvas_x(log_x_value_of(xhist, box, logx));
 	cr.lineTo(x,y);
 	foreach(bin; bins[1..$])
 	{
 		y = box.transform_box2canvas_y(log_y_value_of(bin,box,logy));
 		cr.lineTo(x,y);
 		xhist += bin_width;
-		x = box.transform_box2canvas_x(xhist);
+		x = box.transform_box2canvas_x(log_x_value_of(xhist, box, logx));
 		cr.lineTo(x,y);
-		if (xhist > box.getRight) {
+		if (log_x_value_of(xhist, box, logx) > box.getRight) {
 			break;
 		}
 	}
