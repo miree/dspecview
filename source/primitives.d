@@ -247,7 +247,7 @@ void drawGridHorizontalLog(ref Scoped!Context cr, ViewBox box, int canvas_width,
 }
 
 
-void drawGridNumbers(ref Scoped!Context cr, ViewBox box, int canvas_width, int canvas_height)
+void drawGridNumbersX(ref Scoped!Context cr, ViewBox box, int canvas_width, int canvas_height)
 {
 	import std.math;
 
@@ -297,8 +297,12 @@ void drawGridNumbers(ref Scoped!Context cr, ViewBox box, int canvas_width, int c
 			cr.stroke();
 		}
 	}
+}
 
 
+void drawGridNumbersY(ref Scoped!Context cr, ViewBox box, int canvas_width, int canvas_height)
+{
+	import std.math;
 	// y axis numers
 	//for( int i = 2; i >= 0; --i)
 	{
@@ -349,6 +353,77 @@ void drawGridNumbers(ref Scoped!Context cr, ViewBox box, int canvas_width, int c
 			cr.stroke();
 		}
 	}	
-
-
 }
+
+
+void drawGridNumbersLogX(ref Scoped!Context cr, ViewBox box, int canvas_width, int canvas_height)
+{
+	import std.math;
+
+	// vertical lines
+	double log_left = log(1);
+	double log_right = log(box.getRight);
+	double bottom = box.getBottom;
+	double top    = box.getTop;
+	while (log_left < box.getLeft) log_left += log(10);
+	while (log_left > box.getLeft) log_left -= log(10);
+
+	do {
+		double color = 0.5;
+		cr.setSourceRgba(color, color, color, 1.0);
+		//drawVerticalLine(cr, box, log_left, bottom, top);
+		import std.conv;
+		double number = exp(log_left);
+		auto text = to!string(number);
+		cairo_text_extents_t cte;
+		cr.textExtents(text,&cte);
+		cr.moveTo(box.transform_box2canvas_x(log_left)-cte.width/2, box.transform_box2canvas_y(bottom)-cte.height/3);
+		cr.showText(text);
+		cr.stroke();
+		cr.stroke();
+		//color = 0.8;
+		//cr.setSourceRgba(color, color, color, 1.0);
+		//foreach(i ; 2..9) {
+		//	drawVerticalLine(cr, box, log_left+log(i), bottom, top);
+		//}
+		//cr.stroke();
+		log_left += log(10);
+	} while (log_left <= box.getRight);
+}
+
+void drawGridNumbersLogY(ref Scoped!Context cr, ViewBox box, int canvas_width, int canvas_height)
+{
+	import std.math, std.stdio;
+
+	// vertical lines
+	double left = box.getLeft;
+	double right = box.getRight;
+	double log_bottom = log(1);
+	double log_top    = log(box.getTop);
+	while (log_bottom < box.getBottom) log_bottom += log(10);
+	while (log_bottom > box.getBottom) log_bottom -= log(10);
+	//writeln("bottom = ", bottom, " box.bottom = ", box.getBottom, "\r");
+	do {
+		double color = 0.5;
+		cr.setSourceRgba(color, color, color, 1.0);
+		//drawHorizontalLine(cr, box, log_bottom, left, right);
+		import std.conv;
+		double number = exp(log_bottom);
+		auto text = to!string(number);
+		cairo_text_extents_t cte;
+		cr.textExtents(text,&cte);
+		cr.moveTo(box.transform_box2canvas_x(left), box.transform_box2canvas_y(log_bottom)+cte.height/2);
+		cr.showText(text);
+		cr.stroke();
+		//color = 0.8;
+		//cr.setSourceRgba(color, color, color, 1.0);
+		//foreach(i ; 2..9) {
+		//	//drawHorizontalLine(cr, box, log_bottom+log(i), left, right);
+		//}
+		//cr.stroke();
+		log_bottom += log(10);
+	} while (log_bottom <= box.getTop);
+}
+
+
+

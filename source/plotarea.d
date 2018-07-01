@@ -323,7 +323,16 @@ protected:
 						//drawLine(cr, _vbox,  0,-1,0,1);
 						drawBox(cr, _vbox, _vbox.getLeft(),_vbox.getBottom(), _vbox.getRight(),_vbox.getTop() );
 						cr.stroke();
-						drawGridNumbers(cr, _vbox, width, height);
+						if (_logscale_x) {
+							drawGridNumbersLogX(cr, _vbox, width, height);
+						} else {
+							drawGridNumbersX(cr, _vbox, width, height);
+						}
+						if (_logscale_y) {
+							drawGridNumbersLogY(cr, _vbox, width, height);
+						} else {
+							drawGridNumbersY(cr, _vbox, width, height);
+						}
 						cr.stroke();
 					}
 				cr.restore();
@@ -374,7 +383,16 @@ protected:
 				//drawLine(cr, _vbox,  0,-1,0,1);
 				drawBox(cr, _vbox, _vbox.getLeft(),_vbox.getBottom(), _vbox.getRight(),_vbox.getTop() );
 				cr.stroke();
-				drawGridNumbers(cr, _vbox, width, height);
+				if (_logscale_x) {
+					drawGridNumbersLogX(cr, _vbox, width, height);
+				} else {
+					drawGridNumbersX(cr, _vbox, width, height);
+				}
+				if (_logscale_y) {
+					drawGridNumbersLogY(cr, _vbox, width, height);
+				} else {
+					drawGridNumbersY(cr, _vbox, width, height);
+				}
 				cr.stroke();
 			}
 		cr.restore();
