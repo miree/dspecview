@@ -141,16 +141,33 @@ class Gui : ApplicationWindow
 			return;
 		}
 		// expand all treeview rows that were expanded before
+
+		string[] removed_expansions;
 		foreach(expanded_name; _expanded.byKey().array().sort().array)
 		{
-			string mypath = get_path_name_from_name(expanded_name, _items);
-			TreeIter iter;
-			_treestore.getIterFromString(iter, mypath);
-			TreePath path = _treestore.getPath(iter);
-			string theirpath = _treestore.getStringFromIter(iter);
-			if (_expanded[expanded_name]) {
-				_treeview.expandRow(path, false);
+			// test if this folder is still present
+			bool present = false;
+			foreach(item; _items) {
+				if (item.startsWith(expanded_name)) {
+					present = true;
+					break;
+				} 
 			}
+			if (present) {
+				string mypath = get_path_name_from_name(expanded_name, _items);
+				TreeIter iter;
+				_treestore.getIterFromString(iter, mypath);
+				TreePath path = _treestore.getPath(iter);
+				string theirpath = _treestore.getStringFromIter(iter);
+				if (_expanded[expanded_name]) {
+					_treeview.expandRow(path, false);
+				}
+			} else {
+				removed_expansions ~= expanded_name;
+			}
+		}
+		foreach(rem_ex; removed_expansions) {
+			_expanded.remove(rem_ex);
 		}
 	}
 
@@ -295,7 +312,7 @@ class Gui : ApplicationWindow
 							));
 		popup_menu.append( new MenuItem(
 								delegate(MenuItem m) { // the action to perform if that menu entry is selected
-									writeln("show selected: ");
+									//writeln("show selected: ");
 									auto iters = _treeview.getSelectedIters();
 									foreach(iter; iters)
 									{
@@ -316,7 +333,7 @@ class Gui : ApplicationWindow
 							));
 		popup_menu.append( new MenuItem(
 								delegate(MenuItem m) { // the action to perform if that menu entry is selected
-									writeln("show selected recusive: ");
+									//writeln("show selected recusive: ");
 									auto iters = _treeview.getSelectedIters();
 									auto itemlist = _session.getItemList();
 									foreach(iter; iters)
@@ -337,28 +354,15 @@ class Gui : ApplicationWindow
 							));
 		popup_menu.append( new MenuItem(
 								delegate(MenuItem m) { // the action to perform if that menu entry is selected
-									//for (;;)
-									//{
-										writeln("delete ");
-										auto iters = _treeview.getSelectedIters();
-										string[] delete_names;
-										foreach(iter; iters) {
-											delete_names ~= get_full_name(iter);
-										}
-										foreach(delete_name; delete_names) {
-											_session.removeItem(delete_name);
-										}
-										updateSession();
-										//if (iter is null) {
-										//	writeln("nothing selected");
-										//	//break;
-										//} else {
-										//	//writeln(iter.getValueString(0));
-										//	//writeln(get_full_name(iter));
-										//	_session.removeItem(get_full_name(iter));
-										//	//_treestore.remove(iter);
-										//}
-									//}
+									auto iters = _treeview.getSelectedIters();
+									string[] delete_names;
+									foreach(iter; iters) {
+										delete_names ~= get_full_name(iter);
+									}
+									foreach(delete_name; delete_names) {
+										_session.removeItem(delete_name);
+									}
+									updateSession();
 									_box.queueDraw();
 								}, 
 								"delete",  // menu entry label
