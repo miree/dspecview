@@ -7,6 +7,7 @@ import gio.Application : GioApplication = Application;
 import gtk.Application;
 import gtk.ApplicationWindow;
 import gtk.Button;
+import gtk.Separator;
 import gtk.ToggleButton;
 import gtk.RadioButton;
 import gtk.SpinButton;
@@ -462,15 +463,16 @@ class Gui : ApplicationWindow
 		_radio_colmajor.joinGroup(_radio_rowmajor);
 
 		auto autoscale_label = new Label("autoscale");
-		_check_grid_autoscale_y = new CheckButton("Y");
+		_check_grid_autoscale_y = new CheckButton("_Y",true);
 		_check_grid_autoscale_y.addOnToggled(
 							delegate void(ToggleButton button) {
 								//writeln("overlay button toggled ", button.getActive(), "\r");
 								_plot_area.setGridAutoscaleY(button.getActive());
 								_box.queueDraw();
 							} );
+		_check_grid_autoscale_y.setActive(true);
 
-		auto log_label = new Label("log");
+		auto log_label = new Label("  log");
 		_check_logx = new CheckButton("X");
 		_check_logx.addOnToggled(
 			delegate void(ToggleButton button) {
@@ -485,6 +487,7 @@ class Gui : ApplicationWindow
 								_box.queueDraw();
 							}
 			);
+		_check_logy.setActive(true);
 		_check_logz = new CheckButton("Z");
 		_check_logz.addOnToggled(
 			delegate void(ToggleButton button) {
@@ -494,7 +497,7 @@ class Gui : ApplicationWindow
 			);
 
 
-		auto grid_label = new Label("grid");
+		auto grid_label = new Label("  grid");
 		_check_gridx = new CheckButton("X");
 		_check_gridx.addOnToggled(
 			delegate void(ToggleButton button) {
@@ -502,6 +505,7 @@ class Gui : ApplicationWindow
 								_box.queueDraw();
 							}
 			);
+		_check_gridx.setActive(true);
 		_check_gridy = new CheckButton("Y");
 		_check_gridy.addOnToggled(
 			delegate void(ToggleButton button) {
@@ -509,28 +513,34 @@ class Gui : ApplicationWindow
 								_box.queueDraw();
 							}
 			);
+		_check_gridy.setActive(true);
 
 
 
 		auto layout_box = new Box(GtkOrientation.HORIZONTAL,0);
-		layout_box.add(_radio_overlay);
-		layout_box.add(_radio_grid);
-		layout_box.add(_spin_columns);
-		layout_box.add(columns_label);
-		layout_box.add(_radio_rowmajor);
-		layout_box.add(_radio_colmajor);
-
+		layout_box.add(new Separator(GtkOrientation.VERTICAL));
 		layout_box.add(autoscale_label);
 		layout_box.add(_check_grid_autoscale_y);
 
+		layout_box.add(new Separator(GtkOrientation.VERTICAL));
 		layout_box.add(log_label);
 		layout_box.add(_check_logx);
 		layout_box.add(_check_logy);
 		layout_box.add(_check_logz);
 
+		layout_box.add(new Separator(GtkOrientation.VERTICAL));
 		layout_box.add(grid_label);
 		layout_box.add(_check_gridx);
 		layout_box.add(_check_gridy);
+
+		layout_box.add(new Separator(GtkOrientation.VERTICAL));
+		layout_box.add(_radio_overlay);
+		layout_box.add(_radio_grid);
+		layout_box.add(_radio_rowmajor);
+		layout_box.add(_radio_colmajor);
+		layout_box.add(_spin_columns);
+		layout_box.add(columns_label);
+
 
 		//_radio_overlay.show();
 		//_radio_grid.show();

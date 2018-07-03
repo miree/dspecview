@@ -35,6 +35,11 @@ public:
 		super.addOnButtonRelease(&onButtonReleaseEvent);
 		super.addOnScroll(&onScrollEvent);
 
+		super.addOnKeyPress(&onKeyPressEvent); // doesn't work .... have to enable some mask on the window that holds this widget
+
+		setFitY();
+		setFitX();		
+
 		//auto f = new File("hist.dat");
 		//import std.array;
 		//import std.conv;
@@ -45,6 +50,8 @@ public:
 		//	}
 		//}
 	}
+
+
 	void add_drawable(string drawable) {
 		import std.algorithm;
 		if (!_drawables.canFind(drawable)) {
@@ -111,39 +118,15 @@ public:
 	void setFit() {
 		setFitX();
 		setFitY();
-		//import logscale;
-		////writeln("setFit()");
-		//update_drawable_list();
-		//double global_top, global_bottom, global_left, global_right;
-		//synchronized {
-		//	foreach(idx, drawable; _drawables) {
-		//		auto item = _session.getDrawable(drawable);
-		//		item.refresh();
-		//		import std.algorithm;
-		//		if (idx == 0) {
-		//			global_bottom = log_y_value_of(item.getBottom(), _logscale_y);
-		//			global_top 	  = log_y_value_of(item.getTop(),    _logscale_y);
-		//			global_left   = item.getLeft();
-		//			global_right  = item.getRight();
-		//		}
-		//		global_bottom = min(global_bottom, log_y_value_of(item.getBottom(), _logscale_y));
-		//		global_top 	  = max(global_top 	 , log_y_value_of(item.getTop(), _logscale_y));
-		//		global_left   = min(global_left  , item.getLeft());
-		//		global_right  = max(global_right , item.getRight());
-		//	}
-		//}
-		//double height = global_top - global_bottom;
-		//_vbox._left   = global_left;
-		//_vbox._right  = global_right;
-		//_vbox._bottom = global_bottom - 0.1*height ;
-		//_vbox._top    = global_top    + 0.1*height;
-		////writeln("setFit() done ", global_left, global_right, global_top, global_bottom);
 	}
 
 	void setFitX() {
 		import logscale;
 		update_drawable_list();
 		double global_left, global_right;
+		default_left_right(global_left, global_right);
+		global_left = log_x_value_of(global_left, _logscale_x);
+		global_right = log_x_value_of(global_right, _logscale_x);
 		synchronized {
 			foreach(idx, drawable; _drawables) {
 				auto item = _session.getDrawable(drawable);
@@ -164,6 +147,9 @@ public:
 		import logscale;
 		update_drawable_list();
 		double global_top, global_bottom;
+		default_bottom_top(global_bottom, global_top);
+		global_top  = log_y_value_of(global_top, _logscale_y);
+		global_bottom = log_y_value_of(global_bottom, _logscale_y);
 		synchronized {
 			foreach(idx, drawable; _drawables) {
 				auto item = _session.getDrawable(drawable);
@@ -272,6 +258,13 @@ protected:
 		return true;
 	}
 
+	bool onKeyPressEvent(GdkEventKey *event_key, Widget w)
+	{
+		writeln("key pressed " , event_key.keyval);
+		return true;
+	}
+
+
 	void add_bottom_top_margin(ref double bottom, ref double top) {
 		if (bottom < top) {
 			double margin_factor = 0.1;
@@ -284,10 +277,21 @@ protected:
 		}
 	}
 	void default_bottom_top(out double bottom, out double top) {
+		import logscale;
 		bottom = -10;
 		top    =  10;
+		bottom = log_y_value_of(bottom, _logscale_y);
+		top    = log_y_value_of(top, _logscale_y);
+
 	}
-	void get_global_bottom_top(out double bottom, out double top) {
+	void default_left_right(out double left, out double right) {
+		import logscale;
+		left  = -10;
+		right =  10;
+		left  = log_x_value_of(left,  _logscale_x);
+		right = log_x_value_of(right, _logscale_x);
+	}
+	bool get_global_bottom_top(out double bottom, out double top) {
 		default_bottom_top(bottom, top);
 		bool first_assignment = true;
 		foreach(drawable; _drawables) {
@@ -302,146 +306,49 @@ protected:
 				bottom = min(bottom, b);
 				top    = max(top   , t);
 			}
-		}		
-	}
-	void draw_content_autoscale_y(ref Scoped!Context cr, ulong color_idx, ulong drawable_idx, int row, int column, int width, int height) {
-		synchronized {
-				double global_top, global_bottom;
-				default_bottom_top(global_bottom, global_top);
-
-				// in overlay mode find the global top and bottom extents
-				if (_overlay) {
-					get_global_bottom_top(global_bottom, global_top);
-				}
-				add_bottom_top_margin(global_bottom, global_top);
-
-				// find the bottom top extend in grid mode
-				double bottom = global_bottom;
-				double top    = global_top;
-				shared Drawable drawable;
-				if (_drawables !is null && _drawables.length > drawable_idx) {
-					drawable = _session.getDrawable(_drawables[drawable_idx]);
-				}
-				if (!_overlay && drawable !is null && _drawables.length > drawable_idx && 
-					drawable.getBottomTopInLeftRight(bottom, top, _vbox.getLeft, _vbox.getRight, _logscale_y, _logscale_x)) {
-					add_bottom_top_margin(bottom, top);
-				} 
-
-				// prepare the transformations 
-				_vbox.setBottomTop(bottom, top);
-				_vbox.update_coefficients(row, column, width, height);
-				cr.save();
-					setContextClip(cr,_vbox);
-					if (drawable_idx == 0 || !_overlay) { 
-						// draw a grid
-						cr.setLineWidth(1);
-						if (_draw_grid_horizontal) {
-							if (_logscale_y) {
-								drawGridHorizontalLog(cr, _vbox, width, height);
-							} else {
-								drawGridHorizontal(cr, _vbox, width, height);
-							}
-						}
-						if (_draw_grid_vertical) {
-							if (_logscale_x) {
-								drawGridVerticalLog(cr, _vbox, width, height);
-							} else {
-								drawGridVertical(cr, _vbox, width, height);
-							}
-						}
-						cr.stroke();
-					}
-					// draw the content
-					if (drawable !is null && _drawables.length > drawable_idx) {
-						color_idx %= _color_table.length;
-						cr.setSourceRgba(_color_table[color_idx][0], _color_table[color_idx][1], _color_table[color_idx][2], 1.0);
-						cr.setLineWidth( 2);
-						drawable.draw(cr, _vbox, _logscale_y, _logscale_x);
-						cr.stroke();
-					}
-					//writeln("draw numbers? ", drawable_idx, " " , _drawables.length-1, " ", _drawables, "\r");
-					if (drawable_idx == _drawables.length-1 || _drawables is null || !_overlay) { // in case we do overlay, we have to draw the numbers only once
-						// draw a box and the grid numbers
-						cr.setSourceRgba(0.4, 0.4, 0.4, 1.0);
-						cr.setLineWidth(4);
-						cr.setLineCap(cairo_line_cap_t.ROUND);
-						//drawLine(cr, _vbox, -1,0, 1,0);
-						//drawLine(cr, _vbox,  0,-1,0,1);
-						drawBox(cr, _vbox, _vbox.getLeft(),_vbox.getBottom(), _vbox.getRight(),_vbox.getTop() );
-						cr.stroke();
-						if (_logscale_x) {
-							drawGridNumbersLogX(cr, _vbox, width, height);
-						} else {
-							drawGridNumbersX(cr, _vbox, width, height);
-						}
-						if (_logscale_y) {
-							drawGridNumbersLogY(cr, _vbox, width, height);
-						} else {
-							drawGridNumbersY(cr, _vbox, width, height);
-						}
-						cr.stroke();
-					}
-				cr.restore();
-
 		}
+		return !first_assignment; // false if there was now drawable in the plotarea		
 	}
 
-	void draw_content(ref Scoped!Context cr, ulong color_idx, ulong drawable_idx, int row, int column, int width, int height) {
-		_vbox.update_coefficients(row, column, width, height);
-		cr.save();
-			if (drawable_idx == 0 || !_overlay) { // in case we do overlay, we have to draw the grid only once
-				// draw a grid
-				setContextClip(cr,_vbox);
-				cr.setLineWidth(1);
-				if (_draw_grid_horizontal) {
-					if (_logscale_y) {
-						drawGridHorizontalLog(cr, _vbox, width, height);
-					} else {
-						drawGridHorizontal(cr, _vbox, width, height);
-					}
-				}
-				if (_draw_grid_vertical) {
-					if (_logscale_x) {
-						drawGridVerticalLog(cr, _vbox, width, height);
-					} else {
-						drawGridVertical(cr, _vbox, width, height);
-					}
-				}
-				cr.stroke();
+	void draw_box(ref Scoped!Context cr)
+	{
+		cr.setLineWidth(2);
+		cr.setSourceRgba(0.3, 0.3, 0.3, 1);   
+		drawBox(cr, _vbox, _vbox.getLeft(),_vbox.getBottom(), _vbox.getRight(),_vbox.getTop() );
+		cr.stroke();
+	}
+	void draw_grid(ref Scoped!Context cr, int width, int height) 
+	{
+		cr.setLineWidth(1);
+		if (_draw_grid_horizontal) {
+			if (_logscale_y) {
+				drawGridHorizontalLog(cr, _vbox, width, height);
+			} else {
+				drawGridHorizontal(cr, _vbox, width, height);
 			}
-			// draw the content
-			color_idx %= _color_table.length;
-			cr.setSourceRgba(_color_table[color_idx][0], _color_table[color_idx][1], _color_table[color_idx][2], 1.0);
-			cr.setLineWidth( 2);
-			synchronized {
-				if (_drawables.length > drawable_idx) {
-					auto drawable = _session.getDrawable(_drawables[drawable_idx]);
-					drawable.draw(cr, _vbox, _logscale_y, _logscale_x);
-				}
+		}
+		if (_draw_grid_vertical) {
+			if (_logscale_x) {
+				drawGridVerticalLog(cr, _vbox, width, height);
+			} else {
+				drawGridVertical(cr, _vbox, width, height);
 			}
-			cr.stroke();
-			if (_drawables.length == 0 || drawable_idx == _drawables.length-1 || !_overlay) { // in case we do overlay, we have to draw the numbers only once
-				// draw a box and the grid numbers
-				cr.setSourceRgba(0.4, 0.4, 0.4, 1.0);
-				cr.setLineWidth(4);
-				cr.setLineCap(cairo_line_cap_t.ROUND);
-				//drawLine(cr, _vbox, -1,0, 1,0);
-				//drawLine(cr, _vbox,  0,-1,0,1);
-				drawBox(cr, _vbox, _vbox.getLeft(),_vbox.getBottom(), _vbox.getRight(),_vbox.getTop() );
-				cr.stroke();
-				if (_logscale_x) {
-					drawGridNumbersLogX(cr, _vbox, width, height);
-				} else {
-					drawGridNumbersX(cr, _vbox, width, height);
-				}
-				if (_logscale_y) {
-					drawGridNumbersLogY(cr, _vbox, width, height);
-				} else {
-					drawGridNumbersY(cr, _vbox, width, height);
-				}
-				cr.stroke();
-			}
-		cr.restore();
+		}
+		cr.stroke();
+	}
+	void draw_numbers(ref Scoped!Context cr, int width, int height) 
+	{
+		if (_logscale_x) {
+			drawGridNumbersLogX(cr, _vbox, width, height);
+		} else {
+			drawGridNumbersX(cr, _vbox, width, height);
+		}
+		if (_logscale_y) {
+			drawGridNumbersLogY(cr, _vbox, width, height);
+		} else {
+			drawGridNumbersY(cr, _vbox, width, height);
+		}
+		cr.stroke();
 	}
 
 	//Override default signal handler:
@@ -461,14 +368,30 @@ protected:
 			_vbox._rows = 1;
 			_vbox._columns = 1;
 			import std.algorithm;
-			foreach (idx; 0..max(1, _drawables.length)) {
+			if (_grid_autoscale_y) {
+				double global_bottom, global_top;
+				if (!get_global_bottom_top(global_bottom, global_top)) {
+					default_bottom_top(global_bottom, global_top);
+				}
+				add_bottom_top_margin(global_bottom, global_top);
+				_vbox.setBottomTop(global_bottom, global_top);
+			}
+			_vbox.update_coefficients(0, 0, size.width, size.height);
+			setContextClip(cr, _vbox);
+			draw_grid(cr, size.width, size.height);
+			draw_box(cr);
+			foreach (idx, drawable_name; _drawables) {
 				ulong color_idx = idx;
-				if (_grid_autoscale_y) {
-					draw_content_autoscale_y(cr, color_idx, idx, 0, 0, size.width, size.height);
-				} else {
-					draw_content(cr, color_idx, idx, 0, 0, size.width, size.height);
+				color_idx %= _color_table.length;
+				cr.setSourceRgba(_color_table[color_idx][0], _color_table[color_idx][1], _color_table[color_idx][2], 1.0);
+				cr.setLineWidth( 2);
+				auto drawable = _session.getDrawable(drawable_name);
+				if (drawable !is null) {
+					drawable.draw(cr, _vbox, _logscale_y, _logscale_x);
+					cr.stroke();
 				}
 			}
+			draw_numbers(cr, size.width, size.height);
 		} else { // grid mode
 			int rows = 1;
 			while (_columns * rows < _drawables.length) {
@@ -484,11 +407,32 @@ protected:
 					}
 					ulong color_idx = idx; // same color as in overlay mode
 					//ulong color_idx = 0; // same color for all in grid mode
-					if (_grid_autoscale_y) {
-						draw_content_autoscale_y(cr, color_idx, idx, cast(int)row, cast(int)column, size.width, size.height);
-					} else {
-						draw_content(cr, color_idx, idx, cast(int)row, cast(int)column, size.width, size.height);
+					shared Drawable drawable = null;
+					if (_drawables !is null && idx < _drawables.length) {
+						drawable = _session.getDrawable(_drawables[idx]);
 					}
+					if (_grid_autoscale_y) {
+						// first determine the height of the view
+						double bottom, top;
+						default_bottom_top(bottom, top);
+						if (drawable !is null) {
+							drawable.getBottomTopInLeftRight(bottom, top, _vbox.getLeft, _vbox.getRight, _logscale_y, _logscale_x);
+							add_bottom_top_margin(bottom, top);
+							_vbox.setBottomTop(bottom, top);
+						}
+					}
+					_vbox.update_coefficients(row, column, size.width, size.height);
+					//draw_content_autoscale_y(cr, color_idx, idx, cast(int)row, cast(int)column, size.width, size.height);
+					setContextClip(cr, _vbox);
+					draw_grid(cr, size.width, size.height);
+					draw_box(cr);
+					cr.setSourceRgba(_color_table[color_idx][0], _color_table[color_idx][1], _color_table[color_idx][2], 1.0);
+					cr.setLineWidth( 2);
+					if (drawable !is null) {
+						drawable.draw(cr, _vbox, _logscale_y, _logscale_x);
+						cr.stroke();
+					}
+					draw_numbers(cr, size.width, size.height);
 				}
 			}
 		}

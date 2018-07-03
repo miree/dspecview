@@ -160,6 +160,8 @@ void drawGridVertical(ref Scoped!Context cr, ViewBox box, int canvas_width, int 
 
 void drawGridHorizontal(ref Scoped!Context cr, ViewBox box, int canvas_width, int canvas_height)
 {
+	import std.stdio;
+	//writefln("horizontal grid: %s %s %s %s\r", box.getBottom, box.getTop, box.getLeft, box.getRight);
 	// horizontal lines
 	import std.math;
 	for( int i = 2; i >= 0; --i)
