@@ -69,9 +69,9 @@ public:
 	void setOverlay() {
 		_overlay = true;
 	}
-	void setGrid(int columns) {
+	void setGrid(int columns_or_rows) {
 		_overlay = false;
-		_columns = columns;
+		_columns_or_rows = columns_or_rows;
 	}
 
 	void setGridRowMajor() {
@@ -392,17 +392,22 @@ protected:
 			}
 			draw_numbers(cr, size.width, size.height);
 		} else { // grid mode
-			int rows = 1;
-			while (_columns * rows < _drawables.length) {
-				++rows;
+			int rows    = _row_major?1:_columns_or_rows;
+			int columns = _row_major?_columns_or_rows:1;
+			while (columns * rows < _drawables.length) {
+				if (_row_major) {
+					++rows;
+				} else {
+					++columns;
+				}
 			}
 			_vbox._rows    = rows;
-			_vbox._columns = _columns;
+			_vbox._columns = columns;
 			foreach (row; 0.._vbox.getRows) {
 				foreach (column; 0.._vbox.getColumns) {
 					ulong idx = column * rows + row;
 					if (_row_major) {
-						idx = row * _columns + column;
+						idx = row * columns + column;
 					}
 					ulong color_idx = idx % _color_table.length; // same color as in overlay mode
 					//ulong color_idx = 0; // same color for all in grid mode
@@ -446,7 +451,7 @@ protected:
 
 	auto _vbox = ViewBox(1,1 , -5,5,-5,5 );
 	bool _overlay = true;
-	int _columns = 1;
+	int _columns_or_rows = 1;
 
 	bool _row_major = true;
 

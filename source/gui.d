@@ -440,7 +440,7 @@ class Gui : ApplicationWindow
 
 		_radio_grid = new RadioButton("grid");
 		_radio_grid.joinGroup(_radio_overlay);
-		auto columns_label = new Label("columns   ");
+		auto columns_label = new Label("columns");
 		_spin_columns = new SpinButton(1,50,1);
 		_spin_columns.addOnValueChanged(
 							delegate void(SpinButton button) {
@@ -458,8 +458,10 @@ class Gui : ApplicationWindow
 								//writeln("overlay button toggled ", button.getActive(), "\r");
 								if (button.getActive()) {
 									_plot_area.setGridRowMajor();
+									columns_label.setLabel("columns");
 								} else {
 									_plot_area.setGridColMajor();
+									columns_label.setLabel("rows");
 								}
 								_box.queueDraw();
 							} );
