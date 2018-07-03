@@ -381,8 +381,7 @@ protected:
 			draw_grid(cr, size.width, size.height);
 			draw_box(cr);
 			foreach (idx, drawable_name; _drawables) {
-				ulong color_idx = idx;
-				color_idx %= _color_table.length;
+				ulong color_idx = idx % _color_table.length;
 				cr.setSourceRgba(_color_table[color_idx][0], _color_table[color_idx][1], _color_table[color_idx][2], 1.0);
 				cr.setLineWidth( 2);
 				auto drawable = _session.getDrawable(drawable_name);
@@ -405,7 +404,7 @@ protected:
 					if (_row_major) {
 						idx = row * _columns + column;
 					}
-					ulong color_idx = idx; // same color as in overlay mode
+					ulong color_idx = idx % _color_table.length; // same color as in overlay mode
 					//ulong color_idx = 0; // same color for all in grid mode
 					shared Drawable drawable = null;
 					if (_drawables !is null && idx < _drawables.length) {
