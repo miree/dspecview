@@ -41,7 +41,7 @@ bool on_button_press_event(GdkEventButton* e, Widget w)
 	// do whatever we want
 	writeln("button press event");
 
-	return w.onButtonPressEvent(e); // worward the event to widget to get the default action
+	return w.onButtonPressEvent(e); // forward the event to widget to get the default action
 }
 
 extern(C) nothrow static int threadIdleProcess(void* data) {
@@ -243,6 +243,30 @@ class Gui : ApplicationWindow
 		
 		super(application);
 		_application = application;
+
+
+		//addEvents(EventMask.KEY_PRESS_MASK);
+		addOnKeyPress(delegate bool(GdkEventKey* e, Widget w) { // the action to perform if that menu entry is selected
+							writeln("key press: ", e.keyval, "\r");
+							switch(e.keyval) {
+								case 'y':
+									_check_grid_autoscale_y.setActive(!_check_grid_autoscale_y.getActive());
+								break;
+								case 'l':
+									_check_logy.setActive(!_check_logy.getActive());
+								break;
+								case 'g':
+									if (_radio_overlay.getActive()) {
+										_radio_grid.setActive(true);
+									}
+									else {
+										_radio_overlay.setActive(true);
+									}
+								break;
+								default:
+							}
+							return true;
+						});
 
 		setTitle("gtkD Spectrum Viewer");
 		setDefaultSize( 300, 500 );

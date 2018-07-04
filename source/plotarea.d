@@ -27,6 +27,7 @@ public:
 		//Attach our expose callback, which will draw the window.
 		addOnDraw(&drawCallback);
 
+
 		// set mimium size of this Widget
 		super.setSizeRequest(200,130);
 
@@ -35,7 +36,7 @@ public:
 		super.addOnButtonRelease(&onButtonReleaseEvent);
 		super.addOnScroll(&onScrollEvent);
 
-		super.addOnKeyPress(&onKeyPressEvent); // doesn't work .... have to enable some mask on the window that holds this widget
+		//super.addOnKeyPress(&onKeyPressEvent); // doesn't work .... have to enable some mask on the window that holds this widget
 
 		setFitY();
 		setFitX();		
@@ -237,10 +238,10 @@ protected:
 		final switch(event_scroll.direction)
 		{
 			import gdk.Event;
-			case GdkScrollDirection.UP: 
+			case GdkScrollDirection.DOWN: 
 				_vbox.scale_one_step(event_scroll.x, event_scroll.y, size.width, size.height, delta, delta);
 			break;
-			case GdkScrollDirection.DOWN:	
+			case GdkScrollDirection.UP:	
 				_vbox.scale_one_step(event_scroll.x, event_scroll.y, size.width, size.height, -delta, -delta);
 			break;
 			case GdkScrollDirection.LEFT: 
@@ -258,11 +259,11 @@ protected:
 		return true;
 	}
 
-	bool onKeyPressEvent(GdkEventKey *event_key, Widget w)
-	{
-		writeln("key pressed " , event_key.keyval);
-		return true;
-	}
+	//bool onKeyPressEvent(GdkEventKey *event_key, Widget w)
+	//{
+	//	writeln("key pressed " , event_key.keyval, "\r");
+	//	return true;
+	//}
 
 
 	void add_bottom_top_margin(ref double bottom, ref double top) {
