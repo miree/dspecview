@@ -276,8 +276,30 @@ class Gui : ApplicationWindow
 		_treestore = new TreeStore([GType.STRING,GType.STRING]);
 		_treeview = new TreeView(_treestore);
 
-		auto b1 = new Button("Hallo"); 
-		     b1.addOnClicked(button => say_hello(button));
+		auto b1 = new Button("open"); 
+		b1.addOnClicked(delegate void(Button b) {
+				import gtk.FileChooserNative;
+				import gtk.FileChooserDialog;
+				import std.file;
+				import std.string;
+				auto file_chooser = new FileChooserNative(
+											"open file or directory",
+											this,
+											GtkFileChooserAction.OPEN,
+											"open", "cancel");
+				//writeln("result of file_chooser.run() = ", 
+				if (ResponseType.ACCEPT == file_chooser.run()) {
+					//writeln(getcwd(), ": file_chooser filename: ", , "\r");
+					auto filename = file_chooser.getFilename().chompPrefix(getcwd()~"/"); 
+					//writeln("filename = " , filename, "\r");
+					synchronized {
+						import hist1;
+						_session.addItem(filename, new shared Hist1Visualizer(filename, new shared Hist1Filesource(filename)));
+						updateSession();
+					}
+				}
+			});
+		     //b1.addOnClicked(button => say_hello(button));
 
 		auto b2 = new Button("clear");  
 			 b2.addOnClicked(button => _treestore.clear());
