@@ -247,7 +247,7 @@ class Gui : ApplicationWindow
 
 		//addEvents(EventMask.KEY_PRESS_MASK);
 		addOnKeyPress(delegate bool(GdkEventKey* e, Widget w) { // the action to perform if that menu entry is selected
-							writeln("key press: ", e.keyval, "\r");
+							//writeln("key press: ", e.keyval, "\r");
 							switch(e.keyval) {
 								case 'f':
 									_plot_area.setFitX();
@@ -574,9 +574,16 @@ class Gui : ApplicationWindow
 			);
 		_check_gridy.setActive(true);
 
+		_clear_plot_area = new Button("clear");
+		_clear_plot_area.addOnClicked(delegate void(Button b) {
+				_plot_area.clear();
+				_plot_area.queueDraw();
+			});
 
 
 		auto layout_box = new Box(GtkOrientation.HORIZONTAL,0);
+
+		layout_box.add(_clear_plot_area);		
 		layout_box.add(new Separator(GtkOrientation.VERTICAL));
 		layout_box.add(autoscale_label);
 		layout_box.add(_check_grid_autoscale_y);
@@ -625,6 +632,7 @@ class Gui : ApplicationWindow
 	CheckButton _check_grid_autoscale_y;
 	CheckButton _check_logx, _check_logy, _check_logz;
 	CheckButton _check_gridx, _check_gridy;
+	Button _clear_plot_area;
 
 
 	PlotArea  _plot_area;

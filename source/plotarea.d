@@ -169,6 +169,10 @@ public:
 		_vbox._top    = global_top    + 0.1*height;
 	}
 
+	void clear() {
+		_drawables.length = 0;
+	}
+
 	@property bool isEmpty() {
 		if (_drawables is null) {
 			return true;
