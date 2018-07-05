@@ -249,6 +249,11 @@ class Gui : ApplicationWindow
 		addOnKeyPress(delegate bool(GdkEventKey* e, Widget w) { // the action to perform if that menu entry is selected
 							writeln("key press: ", e.keyval, "\r");
 							switch(e.keyval) {
+								case 'f':
+									_plot_area.setFitX();
+									_plot_area.setFitY();
+									_plot_area.queueDraw();
+								break;
 								case 'y':
 									_check_grid_autoscale_y.setActive(!_check_grid_autoscale_y.getActive());
 								break;
@@ -272,6 +277,7 @@ class Gui : ApplicationWindow
 		setDefaultSize( 300, 500 );
 
 		_box = new Box(GtkOrientation.VERTICAL,0);
+		_view_box = new Box(GtkOrientation.VERTICAL,0);
 
 		_treestore = new TreeStore([GType.STRING,GType.STRING]);
 		_treeview = new TreeView(_treestore);
@@ -351,7 +357,7 @@ class Gui : ApplicationWindow
 										}
 										//writeln(itemname, "\r");
 									}
-									_box.queueDraw();
+									_plot_area.queueDraw();
 								},
 								"refresh", // menu entry label
 								"refresh data content"// description
@@ -372,7 +378,7 @@ class Gui : ApplicationWindow
 											}
 										}
 									}
-									_box.queueDraw();
+									_plot_area.queueDraw();
 								},
 								"show selected", // menu entry label
 								"show seleted items"// description
@@ -393,7 +399,7 @@ class Gui : ApplicationWindow
 										//_plot_area.add_drawable(itemname);
 									}
 									_plot_area.setFit();
-									_box.queueDraw();
+									_plot_area.queueDraw();
 								},
 								"show selected recusive", // menu entry label
 								"show seleted items and all items in selected folders"// description
@@ -409,7 +415,7 @@ class Gui : ApplicationWindow
 										_session.removeItem(delete_name);
 									}
 									updateSession();
-									_box.queueDraw();
+									_plot_area.queueDraw();
 								}, 
 								"delete",  // menu entry label
 								"delete selected item" // description
@@ -457,15 +463,16 @@ class Gui : ApplicationWindow
 		//    ... with scrolling
 		auto scrollwin = new ScrolledWindow();
 		scrollwin.setPropagateNaturalHeight(true);
+		scrollwin.setPropagateNaturalWidth(true);
 		scrollwin.add(_treeview);
 		_box.add(scrollwin); 
 		//    ... without scrolling
 		//_box.add(treeview);
 
 		_plot_area = new PlotArea(_session, in_other_thread);
-		_box.add(_plot_area);
+		_view_box.add(_plot_area);
 		//plot_area.setSizeRequest(200,200);
-		_box.setChildPacking(_plot_area,true,true,0,GtkPackType.START);
+		_view_box.setChildPacking(_plot_area,true,true,0,GtkPackType.START);
 		_plot_area.show();
 
 		b1.show();
@@ -481,7 +488,7 @@ class Gui : ApplicationWindow
 								} else {
 									_plot_area.setGrid(cast(int)_spin_columns.getValue());
 								}
-								_box.queueDraw();
+								_plot_area.queueDraw();
 							} );
 
 		_radio_grid = new RadioButton("grid");
@@ -496,7 +503,7 @@ class Gui : ApplicationWindow
 								} else {
 									_plot_area.setGrid(cast(int)_spin_columns.getValue());
 								}
-								_box.queueDraw();
+								_plot_area.queueDraw();
 							} );
 		_radio_rowmajor = new RadioButton("1 2\n34");
 		_radio_rowmajor.addOnToggled(
@@ -509,7 +516,7 @@ class Gui : ApplicationWindow
 									_plot_area.setGridColMajor();
 									columns_label.setLabel("rows");
 								}
-								_box.queueDraw();
+								_plot_area.queueDraw();
 							} );
 		_radio_colmajor = new RadioButton("13\n24");
 		_radio_colmajor.joinGroup(_radio_rowmajor);
@@ -520,7 +527,7 @@ class Gui : ApplicationWindow
 							delegate void(ToggleButton button) {
 								//writeln("overlay button toggled ", button.getActive(), "\r");
 								_plot_area.setGridAutoscaleY(button.getActive());
-								_box.queueDraw();
+								_plot_area.queueDraw();
 							} );
 		_check_grid_autoscale_y.setActive(true);
 
@@ -529,14 +536,14 @@ class Gui : ApplicationWindow
 		_check_logx.addOnToggled(
 			delegate void(ToggleButton button) {
 								_plot_area.setLogscaleX(button.getActive());
-								_box.queueDraw();
+								_plot_area.queueDraw();
 							}
 			);
 		_check_logy = new CheckButton("Y");
 		_check_logy.addOnToggled(
 			delegate void(ToggleButton button) {
 								_plot_area.setLogscaleY(button.getActive());
-								_box.queueDraw();
+								_plot_area.queueDraw();
 							}
 			);
 		_check_logy.setActive(true);
@@ -544,7 +551,7 @@ class Gui : ApplicationWindow
 		_check_logz.addOnToggled(
 			delegate void(ToggleButton button) {
 								_plot_area.setLogscaleZ(button.getActive());
-								_box.queueDraw();
+								_plot_area.queueDraw();
 							}
 			);
 
@@ -554,7 +561,7 @@ class Gui : ApplicationWindow
 		_check_gridx.addOnToggled(
 			delegate void(ToggleButton button) {
 								_plot_area.setDrawGridVertical(button.getActive());
-								_box.queueDraw();
+								_plot_area.queueDraw();
 							}
 			);
 		_check_gridx.setActive(true);
@@ -562,7 +569,7 @@ class Gui : ApplicationWindow
 		_check_gridy.addOnToggled(
 			delegate void(ToggleButton button) {
 								_plot_area.setDrawGridHorizontal(button.getActive());
-								_box.queueDraw();
+								_plot_area.queueDraw();
 							}
 			);
 		_check_gridy.setActive(true);
@@ -598,15 +605,20 @@ class Gui : ApplicationWindow
 		//_radio_grid.show();
 		//_spin_rows.show();
 
-		_box.add(layout_box);
+		_view_box.add(layout_box);
 
-		add(_box);
+		Box main_box = new Box(GtkOrientation.HORIZONTAL,0);
+		main_box.add(_box);
+		main_box.add(_view_box);
+		main_box.setChildPacking(_view_box,true,true,0,GtkPackType.START);
+
+		add(main_box);
 		showAll();
 	}
 
 	Application _application;
 
-	Box _box;
+	Box _box, _view_box;
 	RadioButton _radio_overlay, _radio_grid;
 	SpinButton _spin_columns;
 	RadioButton _radio_rowmajor, _radio_colmajor;
