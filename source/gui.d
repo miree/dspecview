@@ -33,7 +33,6 @@ import session;
 import plotarea;
 import item;
 import drawable;
-import plotwindow;
 
 
 bool on_button_press_event(GdkEventButton* e, Widget w)
@@ -44,6 +43,8 @@ bool on_button_press_event(GdkEventButton* e, Widget w)
 	return w.onButtonPressEvent(e); // forward the event to widget to get the default action
 }
 
+Gui[] gui_windows;
+
 extern(C) nothrow static int threadIdleProcess(void* data) {
 	//Don't let D exceptions get thrown from function
 	try{
@@ -52,8 +53,10 @@ extern(C) nothrow static int threadIdleProcess(void* data) {
 		import std.datetime;
 		// get messages from parent thread
 		receiveTimeout(dur!"usecs"(10),(int i) { 
-					Gui gui = cast(Gui)data;
-					gui.updateSession();
+					//Gui gui = cast(Gui)data;
+					foreach(gui; gui_windows) {
+						gui.updateSession();
+					}
 				}
 			);
 		//writeln("idle called");
@@ -78,11 +81,14 @@ class Gui : ApplicationWindow
 
 	void say_hello(Button button)
 	{
-		writeln("button_clicked ", button.getLabel());
-
-		auto child_window = new PlotWindow(_application, _session, _in_other_thread);
+		writeln("hello button_clicked ", button.getLabel());
+	}
+	void new_window(Button button)
+	{
+		auto child_window = new Gui(_application, _session, _in_other_thread, true, true);
 		child_window.show();
 	}
+
 
 
 	TreeIter* add_folder(string name, ref TreeIter[string] folders) {
@@ -235,8 +241,9 @@ class Gui : ApplicationWindow
 		return _treestore.getPath(iter).toString();
 	}
 
-	this(Application application, shared Session session, bool in_other_thread)
+	this(Application application, shared Session session, bool in_other_thread, bool show_treeview_side = true, bool show_plotarea_side = false )
 	{
+		gui_windows ~= this;
 		_session = session;
 		_in_other_thread = in_other_thread;
 		import std.stdio;
@@ -274,13 +281,24 @@ class Gui : ApplicationWindow
 						});
 
 		setTitle("gtkD Spectrum Viewer");
-		setDefaultSize( 300, 500 );
+		setDefaultSize( 300, 300 );
 
 		_box = new Box(GtkOrientation.VERTICAL,0);
 		_view_box = new Box(GtkOrientation.VERTICAL,0);
 
 		_treestore = new TreeStore([GType.STRING,GType.STRING]);
 		_treeview = new TreeView(_treestore);
+		_treeview.enableModelDragSource(ModifierType.BUTTON1_MASK, null, DragAction.LINK);
+
+		auto b00 = new Button("hide PlotArea");
+			 b00.addOnClicked(delegate void(Button b) {
+				_view_box.hide();
+				this.resize(100,this.getHeight());
+
+				});
+
+		auto b0 = new Button("new win"); 
+		     b0.addOnClicked(button => new_window(button));
 
 		auto b1 = new Button("open"); 
 		b1.addOnClicked(delegate void(Button b) {
@@ -301,7 +319,9 @@ class Gui : ApplicationWindow
 					synchronized {
 						import hist1;
 						_session.addItem(filename, new shared Hist1Visualizer(filename, new shared Hist1Filesource(filename)));
-						updateSession();
+						foreach(gui; gui_windows) {
+							gui.updateSession();
+						}
 					}
 				}
 			});
@@ -383,6 +403,27 @@ class Gui : ApplicationWindow
 								"show selected", // menu entry label
 								"show seleted items"// description
 							));
+
+		popup_menu.append( new MenuItem(
+								delegate(MenuItem m) { // the action to perform if that menu entry is selected
+									//writeln("show selected: ");
+									auto child_window = new Gui(_application, _session, _in_other_thread, false, true);
+									auto iters = _treeview.getSelectedIters();
+									foreach(iter; iters)
+									{  
+										string itemname = get_full_name(iter);
+										auto itemlist = _session.getItemList();
+										if (itemlist.canFind(itemname)) {
+											child_window._plot_area.add_drawable(itemname);
+										}
+									}
+									child_window._plot_area.setFit();
+									child_window.show();
+								},
+								"show selected in new window", // menu entry label
+								"show seleted items"// description
+							));
+
 		popup_menu.append( new MenuItem(
 								delegate(MenuItem m) { // the action to perform if that menu entry is selected
 									//writeln("show selected recusive: ");
@@ -455,17 +496,20 @@ class Gui : ApplicationWindow
 		updateSession();
 
 		// add buttons 
+		_box.add(b00);
+		_box.add(b0);
 		_box.add(b1);
 		_box.add(b2);
 		_box.add(b3);
 
 		// add the treeview ...
 		//    ... with scrolling
-		auto scrollwin = new ScrolledWindow();
-		scrollwin.setPropagateNaturalHeight(true);
-		scrollwin.setPropagateNaturalWidth(true);
-		scrollwin.add(_treeview);
-		_box.add(scrollwin); 
+		_treeview_scrollwin = new ScrolledWindow();
+		_treeview_scrollwin.setPropagateNaturalHeight(true);
+		_treeview_scrollwin.setPropagateNaturalWidth(true);
+		_treeview_scrollwin.add(_treeview);
+		_box.add(_treeview_scrollwin); 
+		_box.setChildPacking(_treeview_scrollwin,true,true,0,GtkPackType.START);
 		//    ... without scrolling
 		//_box.add(treeview);
 
@@ -612,20 +656,34 @@ class Gui : ApplicationWindow
 		//_radio_grid.show();
 		//_spin_rows.show();
 
-		_view_box.add(layout_box);
+		auto layout_scrollwin = new ScrolledWindow();
+		layout_scrollwin.setPropagateNaturalHeight(true);
+		layout_scrollwin.setPropagateNaturalWidth(true);
+		layout_scrollwin.add(layout_box);
+		_view_box.add(layout_scrollwin); 
 
-		Box main_box = new Box(GtkOrientation.HORIZONTAL,0);
-		main_box.add(_box);
-		main_box.add(_view_box);
-		main_box.setChildPacking(_view_box,true,true,0,GtkPackType.START);
+		// without scrolling
+		//_view_box.add(layout_box);
 
-		add(main_box);
+		Box _main_box = new Box(GtkOrientation.HORIZONTAL,0);
+		if (show_treeview_side)  {
+			_main_box.add(_box);
+			if (!show_plotarea_side) {
+				_main_box.setChildPacking(_box,true,true,0,GtkPackType.START);
+			}
+		}
+		if (show_plotarea_side) {
+			_main_box.add(_view_box);
+			_main_box.setChildPacking(_view_box,true,true,0,GtkPackType.START);
+		}
+
+		add(_main_box);
 		showAll();
 	}
 
 	Application _application;
 
-	Box _box, _view_box;
+	Box _main_box, _box, _view_box;
 	RadioButton _radio_overlay, _radio_grid;
 	SpinButton _spin_columns;
 	RadioButton _radio_rowmajor, _radio_colmajor;
@@ -638,6 +696,7 @@ class Gui : ApplicationWindow
 	PlotArea  _plot_area;
 	TreeStore _treestore;
 	TreeView  _treeview;
+	ScrolledWindow _treeview_scrollwin;
 	string[] _items; // the session items that are currently in the _treestore
 	bool[string] _expanded; // safe which treeview rows are expanded
 	//TreeIter[string] _folders;

@@ -33,9 +33,11 @@ synchronized class Hist1Filesource : Hist1Datasource
 		double[] result;
 		try {
 			foreach(line; file.byLine)	{
-				foreach(number; split(line.dup(), " ")) {
-					if (number.length > 0)
-						result ~= to!double(number);
+				if (!line.startsWith("#") && line.length > 0) {
+					foreach(number; split(line.dup(), " ")) {
+						if (number.length > 0)
+							result ~= to!double(number);
+					}
 				}
 			}
 		} catch (Exception e) {

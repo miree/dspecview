@@ -29,7 +29,7 @@ public:
 
 
 		// set mimium size of this Widget
-		super.setSizeRequest(200,130);
+		super.setSizeRequest(100,100);
 
 		super.addOnMotionNotify(&onMotionNotify);
 		super.addOnButtonPress(&onButtonPressEvent);
@@ -40,6 +40,14 @@ public:
 
 		setFitY();
 		setFitX();		
+
+		super.dragDestSet(DestDefaults.ALL, null, DragAction.LINK);
+
+		import gdk.DragContext;
+		import gtk.SelectionData;
+		super.addOnDragDataReceived(delegate void (DragContext drag_context, int a , int b , SelectionData data , uint c, uint d, Widget w) {
+				writeln("drag data received: ", data, "\r");
+			});
 
 		//auto f = new File("hist.dat");
 		//import std.array;
@@ -193,6 +201,10 @@ protected:
 			_vbox.scale_ongoing(event_motion.x, event_motion.y);
 			queueDrawArea(0,0, size.width, size.height);
 		}
+		return true;
+	}
+
+	bool onDragDataReceived(GdkEventButton *e, Widget) {
 		return true;
 	}
 

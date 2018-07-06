@@ -213,7 +213,7 @@ void drawGridVerticalLog(ref Scoped!Context cr, ViewBox box, int canvas_width, i
 		cr.stroke();
 		color = 0.8;
 		cr.setSourceRgba(color, color, color, 1.0);
-		foreach(i ; 2..9) {
+		foreach(i ; 2..10) {
 			drawVerticalLine(cr, box, log_left+log(i), bottom, top);
 		}
 		cr.stroke();
@@ -240,7 +240,7 @@ void drawGridHorizontalLog(ref Scoped!Context cr, ViewBox box, int canvas_width,
 		cr.stroke();
 		color = 0.8;
 		cr.setSourceRgba(color, color, color, 1.0);
-		foreach(i ; 2..9) {
+		foreach(i ; 2..10) {
 			drawHorizontalLine(cr, box, log_bottom+log(i), left, right);
 		}
 		cr.stroke();
