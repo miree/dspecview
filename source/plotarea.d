@@ -381,6 +381,33 @@ protected:
 			cr.paint();
 		cr.restore();
 
+		import cairo.ImageSurface;
+		auto image_surface = ImageSurface.createFromPng("my_image.png");
+		//import gdk.Pixbuf;
+		//auto image = new Pixbuf("my_image.png");
+		import gdk.Cairo;
+		//cr.setSourcePixbuf(image, 300, 200);
+		import cairo.Pattern;
+		auto surface_pattern = Pattern.createForSurface(image_surface);
+		surface_pattern.setFilter(CairoFilter.NEAREST);
+		//auto pattern = Pattern.create(image);
+		cr.save();
+		cr.scale(_vbox._b_x, -_vbox._b_y);
+		cr.translate(_vbox._a_x/_vbox._b_x, - 200 -_vbox._a_y/_vbox._b_y);
+		cr.rectangle(0,0, 200,200);
+		cr.setSource(surface_pattern);
+
+		//cr.rectangle(_vbox.transform_box2canvas_x(0.0),_vbox.transform_box2canvas_y(0.0), 
+		//	         _vbox.transform_box2canvas_x(image.getWidth()), _vbox.transform_box2canvas_y(image.getHeight()));
+		cr.fill();
+		cr.restore();
+			//Glib::RefPtr<Gdk::Pixbuf> image = Gdk::Pixbuf::create_from_file("myimage.png");
+			//  // Draw the image at 110, 90, except for the outermost 10 pixels.
+			//  Gdk::Cairo::set_source_pixbuf(cr, image, 100, 80);
+			//  cr->rectangle(110, 90, image->get_width()-20, image->get_height()-20);
+			//  cr->fill();
+			//  return true;
+
 		if (_overlay) {
 			_vbox._rows = 1;
 			_vbox._columns = 1;
@@ -457,6 +484,8 @@ protected:
 				}
 			}
 		}
+
+		
 
 
 		if (_in_other_thread) {
