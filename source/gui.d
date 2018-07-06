@@ -307,7 +307,7 @@ class Gui : ApplicationWindow
 				import std.file;
 				import std.string;
 				auto file_chooser = new FileChooserNative(
-											"open file or directory",
+											"open file",
 											this,
 											GtkFileChooserAction.OPEN,
 											"open", "cancel");
@@ -315,7 +315,8 @@ class Gui : ApplicationWindow
 				if (ResponseType.ACCEPT == file_chooser.run()) {
 					//writeln(getcwd(), ": file_chooser filename: ", , "\r");
 					auto filename = file_chooser.getFilename().chompPrefix(getcwd()~"/"); 
-					//writeln("filename = " , filename, "\r");
+					filename = filename.chompPrefix("/");
+					writeln("filename = " , filename, "\r");
 					synchronized {
 						import hist1;
 						_session.addItem(filename, new shared Hist1Visualizer(filename, new shared Hist1Filesource(filename)));
@@ -404,25 +405,6 @@ class Gui : ApplicationWindow
 								"show seleted items"// description
 							));
 
-		popup_menu.append( new MenuItem(
-								delegate(MenuItem m) { // the action to perform if that menu entry is selected
-									//writeln("show selected: ");
-									auto child_window = new Gui(_application, _session, _in_other_thread, false, true);
-									auto iters = _treeview.getSelectedIters();
-									foreach(iter; iters)
-									{  
-										string itemname = get_full_name(iter);
-										auto itemlist = _session.getItemList();
-										if (itemlist.canFind(itemname)) {
-											child_window._plot_area.add_drawable(itemname);
-										}
-									}
-									child_window._plot_area.setFit();
-									child_window.show();
-								},
-								"show selected in new window", // menu entry label
-								"show seleted items"// description
-							));
 
 		popup_menu.append( new MenuItem(
 								delegate(MenuItem m) { // the action to perform if that menu entry is selected
@@ -445,6 +427,49 @@ class Gui : ApplicationWindow
 								"show selected recusive", // menu entry label
 								"show seleted items and all items in selected folders"// description
 							));
+
+		popup_menu.append( new MenuItem(
+								delegate(MenuItem m) { // the action to perform if that menu entry is selected
+									//writeln("show selected: ");
+									auto child_window = new Gui(_application, _session, _in_other_thread, false, true);
+									auto iters = _treeview.getSelectedIters();
+									foreach(iter; iters)
+									{  
+										string itemname = get_full_name(iter);
+										auto itemlist = _session.getItemList();
+										if (itemlist.canFind(itemname)) {
+											child_window._plot_area.add_drawable(itemname);
+										}
+									}
+									child_window._plot_area.setFit();
+									child_window.show();
+								},
+								"show selected in new window", // menu entry label
+								"show seleted items"// description
+							));
+		popup_menu.append( new MenuItem(
+								delegate(MenuItem m) { // the action to perform if that menu entry is selected
+									//writeln("show selected: ");
+									auto child_window = new Gui(_application, _session, _in_other_thread, false, true);
+									auto iters = _treeview.getSelectedIters();
+									foreach(iter; iters)
+									{  
+										string itemname = get_full_name(iter);
+										auto itemlist = _session.getItemList();
+										foreach(item; itemlist) {
+											if (item.startsWith(itemname)) {
+												child_window._plot_area.add_drawable(item);
+											}
+										}
+									}
+									child_window._plot_area.setFit();
+									child_window.show();
+								},
+								"show selected in new window recusive", // menu entry label
+								"show seleted items"// description
+							));
+
+
 		popup_menu.append( new MenuItem(
 								delegate(MenuItem m) { // the action to perform if that menu entry is selected
 									auto iters = _treeview.getSelectedIters();

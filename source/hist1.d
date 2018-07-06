@@ -28,8 +28,22 @@ synchronized class Hist1Filesource : Hist1Datasource
 	double[] getData()
 	{
 		import std.array, std.algorithm, std.stdio, std.conv;
-		//writeln("opening file ", _filename);
-		auto file = File(_filename);
+		File file;
+		try {
+			writeln("opening file ", _filename);
+			file = File(_filename);
+		} catch (Exception e) {
+			try {
+				if (!_filename.startsWith('/')) {
+					_filename = "/" ~ _filename;
+				}
+				writeln("opening file ", _filename);
+				file = File(_filename);
+			} catch (Exception e) {
+				writeln("unable to open file ", _filename);
+				return null;
+			}
+		} 
 		double[] result;
 		try {
 			foreach(line; file.byLine)	{

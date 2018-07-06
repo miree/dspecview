@@ -10,6 +10,8 @@ synchronized class Session
 public:
 	void addItem(string name, shared Item item)
 	{
+		import std.stdio;
+		writeln("Session.addItem ", name, "\r");
 		_items[name] = item;
 	}
 	void removeItem(string name)
