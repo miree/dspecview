@@ -30,6 +30,10 @@ synchronized class Drawable : Item
 		_name = cast(shared string)name;
 	}
 
+	override int getDim() {
+		return 0;
+	}
+
 	double getLeft()	{
 		return _left;
 	}

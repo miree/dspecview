@@ -74,6 +74,11 @@ synchronized class Hist1Visualizer : Drawable
 		return "empty histogram";
 	}
 
+	override int getDim() {
+		return 1;
+	}
+
+
 	// get fresh data from the underlying source
 	override void refresh() 
 	{

@@ -241,7 +241,7 @@ class Gui : ApplicationWindow
 		return _treestore.getPath(iter).toString();
 	}
 
-	this(Application application, shared Session session, bool in_other_thread, bool show_treeview_side = true, bool show_plotarea_side = false )
+	this(Application application, shared Session session, bool in_other_thread, bool show_treeview_side = true, bool show_plotarea_side = false, bool mode2d = false)
 	{
 		gui_windows ~= this;
 		_session = session;
@@ -268,12 +268,13 @@ class Gui : ApplicationWindow
 									_check_logy.setActive(!_check_logy.getActive());
 								break;
 								case 'g':
-									if (_radio_overlay.getActive()) {
-										_radio_grid.setActive(true);
-									}
-									else {
-										_radio_overlay.setActive(true);
-									}
+									//if (_radio_overlay.getActive()) {
+									//	_radio_grid.setActive(true);
+									//}
+									//else {
+									//	_radio_overlay.setActive(true);
+									//}
+									_check_overlay.setActive(!_check_overlay.getActive());
 								break;
 								default:
 							}
@@ -300,7 +301,7 @@ class Gui : ApplicationWindow
 		auto b0 = new Button("new win"); 
 		     b0.addOnClicked(button => new_window(button));
 
-		auto b1 = new Button("open"); 
+		auto b1 = new Button("open hist1"); 
 		b1.addOnClicked(delegate void(Button b) {
 				import gtk.FileChooserNative;
 				import gtk.FileChooserDialog;
@@ -327,6 +328,32 @@ class Gui : ApplicationWindow
 				}
 			});
 		     //b1.addOnClicked(button => say_hello(button));
+		auto b11 = new Button("open hist2"); 
+		b11.addOnClicked(delegate void(Button b) {
+				import gtk.FileChooserNative;
+				import gtk.FileChooserDialog;
+				import std.file;
+				import std.string;
+				auto file_chooser = new FileChooserNative(
+											"open file",
+											this,
+											GtkFileChooserAction.OPEN,
+											"open", "cancel");
+				//writeln("result of file_chooser.run() = ", 
+				if (ResponseType.ACCEPT == file_chooser.run()) {
+					//writeln(getcwd(), ": file_chooser filename: ", , "\r");
+					auto filename = file_chooser.getFilename().chompPrefix(getcwd()~"/"); 
+					filename = filename.chompPrefix("/");
+					writeln("filename = " , filename, "\r");
+					synchronized {
+						import hist2;
+						_session.addItem(filename, new shared Hist2Visualizer(filename, new shared Hist2Filesource(filename)));
+						foreach(gui; gui_windows) {
+							gui.updateSession();
+						}
+					}
+				}
+			});
 
 		auto b2 = new Button("clear");  
 			 b2.addOnClicked(button => _treestore.clear());
@@ -450,15 +477,32 @@ class Gui : ApplicationWindow
 		popup_menu.append( new MenuItem(
 								delegate(MenuItem m) { // the action to perform if that menu entry is selected
 									//writeln("show selected: ");
-									auto child_window = new Gui(_application, _session, _in_other_thread, false, true);
+									int dim_max = 0;
 									auto iters = _treeview.getSelectedIters();
+									import std.algorithm;
+									foreach(iter; iters) {  
+										string itemname = get_full_name(iter);
+										auto itemlist = _session.getItemList();
+										foreach(itemlistname; itemlist) {
+											if (itemlistname.startsWith(itemname)) {
+												writeln("itemname = " , itemname , "\r");
+												auto item = _session.getItem(itemlistname);
+												if (item !is null) {
+													dim_max = max(dim_max, item.getDim());
+												}
+											}
+										}
+									}
+									writeln("dim_max = " , dim_max, "\r");
+									auto child_window = new Gui(_application, _session, _in_other_thread, false, true, dim_max == 2);
+									iters = _treeview.getSelectedIters();
 									foreach(iter; iters)
 									{  
 										string itemname = get_full_name(iter);
 										auto itemlist = _session.getItemList();
-										foreach(item; itemlist) {
-											if (item.startsWith(itemname)) {
-												child_window._plot_area.add_drawable(item);
+										foreach(itemlistname; itemlist) {
+											if (itemlistname.startsWith(itemname)) {
+												child_window._plot_area.add_drawable(itemlistname);
 											}
 										}
 									}
@@ -524,6 +568,7 @@ class Gui : ApplicationWindow
 		_box.add(b00);
 		_box.add(b0);
 		_box.add(b1);
+		_box.add(b11);
 		_box.add(b2);
 		_box.add(b3);
 
@@ -538,7 +583,7 @@ class Gui : ApplicationWindow
 		//    ... without scrolling
 		//_box.add(treeview);
 
-		_plot_area = new PlotArea(_session, in_other_thread);
+		_plot_area = new PlotArea(_session, in_other_thread, mode2d);
 		_view_box.add(_plot_area);
 		//plot_area.setSizeRequest(200,200);
 		_view_box.setChildPacking(_plot_area,true,true,0,GtkPackType.START);
@@ -548,8 +593,37 @@ class Gui : ApplicationWindow
 		b2.show();
 		_treeview.show();
 
-		_radio_overlay = new RadioButton("overlay");
-		_radio_overlay.addOnToggled(
+
+		//_radio_overlay = new RadioButton("overlay");
+		//_radio_overlay.addOnToggled(
+		//					delegate void(ToggleButton button) {
+		//						//writeln("overlay button toggled ", button.getActive(), "\r");
+		//						if (button.getActive()) {
+		//							_plot_area.setOverlay();
+		//						} else {
+		//							_plot_area.setGrid(cast(int)_spin_columns.getValue());
+		//						}
+		//						_plot_area.queueDraw();
+		//					} );
+
+		//_radio_grid = new RadioButton("grid");
+		//_radio_grid.joinGroup(_radio_overlay);
+
+		auto columns_label = new Label("columns");
+		_spin_columns = new SpinButton(1,50,1);
+		_spin_columns.addOnValueChanged(
+							delegate void(SpinButton button) {
+								//writeln("spin button changed ", button.getValue(), "\r");
+								if (_check_overlay.getActive()) {
+									_plot_area.setOverlay();
+								} else {
+									_plot_area.setGrid(cast(int)_spin_columns.getValue());
+								}
+								_plot_area.queueDraw();
+							} );
+
+		_check_overlay = new CheckButton("overlay");
+		_check_overlay.addOnToggled(
 							delegate void(ToggleButton button) {
 								//writeln("overlay button toggled ", button.getActive(), "\r");
 								if (button.getActive()) {
@@ -559,21 +633,11 @@ class Gui : ApplicationWindow
 								}
 								_plot_area.queueDraw();
 							} );
+		_plot_area.setGrid(cast(int)_spin_columns.getValue());
+		if (mode2d == false) _check_overlay.setActive(true);
 
-		_radio_grid = new RadioButton("grid");
-		_radio_grid.joinGroup(_radio_overlay);
-		auto columns_label = new Label("columns");
-		_spin_columns = new SpinButton(1,50,1);
-		_spin_columns.addOnValueChanged(
-							delegate void(SpinButton button) {
-								//writeln("spin button changed ", button.getValue(), "\r");
-								if (_radio_overlay.getActive()) {
-									_plot_area.setOverlay();
-								} else {
-									_plot_area.setGrid(cast(int)_spin_columns.getValue());
-								}
-								_plot_area.queueDraw();
-							} );
+
+
 		_radio_rowmajor = new RadioButton("1 2\n34");
 		_radio_rowmajor.addOnToggled(
 							delegate void(ToggleButton button) {
@@ -598,7 +662,7 @@ class Gui : ApplicationWindow
 								_plot_area.setGridAutoscaleY(button.getActive());
 								_plot_area.queueDraw();
 							} );
-		_check_grid_autoscale_y.setActive(true);
+		if (mode2d == false) _check_grid_autoscale_y.setActive(true);
 
 		auto log_label = new Label("  log");
 		_check_logx = new CheckButton("X");
@@ -615,7 +679,8 @@ class Gui : ApplicationWindow
 								_plot_area.queueDraw();
 							}
 			);
-		_check_logy.setActive(true);
+		if (mode2d == false) _check_logy.setActive(true);
+
 		_check_logz = new CheckButton("Z");
 		_check_logz.addOnToggled(
 			delegate void(ToggleButton button) {
@@ -623,6 +688,7 @@ class Gui : ApplicationWindow
 								_plot_area.queueDraw();
 							}
 			);
+		if (mode2d == true) _check_logz.setActive(true);
 
 
 		auto grid_label = new Label("  grid");
@@ -634,6 +700,7 @@ class Gui : ApplicationWindow
 							}
 			);
 		_check_gridx.setActive(true);
+
 		_check_gridy = new CheckButton("Y");
 		_check_gridy.addOnToggled(
 			delegate void(ToggleButton button) {
@@ -642,6 +709,16 @@ class Gui : ApplicationWindow
 							}
 			);
 		_check_gridy.setActive(true);
+
+		_check_grid_ontop = new CheckButton("top");
+		_check_grid_ontop.addOnToggled(
+			delegate void(ToggleButton button) {
+								_plot_area.setGridOnTop(button.getActive());
+								_plot_area.queueDraw();
+							}
+			);
+		if (mode2d == true) _check_grid_ontop.setActive(true);
+
 
 		_clear_plot_area = new Button("clear");
 		_clear_plot_area.addOnClicked(delegate void(Button b) {
@@ -667,10 +744,12 @@ class Gui : ApplicationWindow
 		layout_box.add(grid_label);
 		layout_box.add(_check_gridx);
 		layout_box.add(_check_gridy);
+		layout_box.add(_check_grid_ontop);
 
 		layout_box.add(new Separator(GtkOrientation.VERTICAL));
-		layout_box.add(_radio_overlay);
-		layout_box.add(_radio_grid);
+		//layout_box.add(_radio_overlay);
+		//layout_box.add(_radio_grid);
+		layout_box.add(_check_overlay);
 		layout_box.add(_radio_rowmajor);
 		layout_box.add(_radio_colmajor);
 		layout_box.add(_spin_columns);
@@ -709,12 +788,13 @@ class Gui : ApplicationWindow
 	Application _application;
 
 	Box _main_box, _box, _view_box;
+	CheckButton _check_overlay;
 	RadioButton _radio_overlay, _radio_grid;
 	SpinButton _spin_columns;
 	RadioButton _radio_rowmajor, _radio_colmajor;
 	CheckButton _check_grid_autoscale_y;
 	CheckButton _check_logx, _check_logy, _check_logz;
-	CheckButton _check_gridx, _check_gridy;
+	CheckButton _check_gridx, _check_gridy, _check_grid_ontop;
 	Button _clear_plot_area;
 
 

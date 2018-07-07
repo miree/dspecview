@@ -20,8 +20,10 @@ import session;
 class PlotArea : DrawingArea
 {
 public:
-	this(shared Session session, bool in_other_thread)
+
+	this(shared Session session, bool in_other_thread, bool mode2d)
 	{
+		_mode2d = mode2d;
 		_session = session;
 		_in_other_thread = in_other_thread;
 		//Attach our expose callback, which will draw the window.
@@ -91,6 +93,9 @@ public:
 	}
 	void setGridAutoscaleY(bool autoscale) {
 		_grid_autoscale_y = autoscale;
+	}
+	void setGridOnTop(bool ontop) {
+		_grid_ontop = ontop;
 	}
 	void setDrawGridHorizontal(bool draw) {
 		_draw_grid_horizontal = draw;
@@ -413,8 +418,9 @@ protected:
 			}
 			_vbox.update_coefficients(0, 0, size.width, size.height);
 			setContextClip(cr, _vbox);
-			draw_grid(cr, size.width, size.height);
-			draw_box(cr);
+			if (_grid_ontop == false) {
+				draw_grid(cr, size.width, size.height);
+			}
 			foreach (idx, drawable_name; _drawables) {
 				ulong color_idx = idx % _color_table.length;
 				cr.setSourceRgba(_color_table[color_idx][0], _color_table[color_idx][1], _color_table[color_idx][2], 1.0);
@@ -425,6 +431,10 @@ protected:
 					cr.stroke();
 				}
 			}
+			if (_grid_ontop == true) {
+				draw_grid(cr, size.width, size.height);
+			}
+			draw_box(cr);
 			draw_numbers(cr, size.width, size.height);
 		} else { // grid mode
 			int rows    = _row_major?1:_columns_or_rows;
@@ -475,14 +485,19 @@ protected:
 		//cr.fill();
 		//cr.restore();
 
-					draw_grid(cr, size.width, size.height);
-					draw_box(cr);
+					if (_grid_ontop == false) {
+						draw_grid(cr, size.width, size.height);
+					}
 					cr.setSourceRgba(_color_table[color_idx][0], _color_table[color_idx][1], _color_table[color_idx][2], 1.0);
 					cr.setLineWidth( 2);
 					if (drawable !is null) {
 						drawable.draw(cr, _vbox, _logscale_y, _logscale_x, _logscale_z);
 						cr.stroke();
 					}
+					if (_grid_ontop == true) {
+						draw_grid(cr, size.width, size.height);
+					}
+					draw_box(cr);
 					draw_numbers(cr, size.width, size.height);
 				}
 			}
@@ -513,7 +528,7 @@ protected:
 
 	bool _draw_grid_horizontal = false;
 	bool _draw_grid_vertical = false;
-
+	bool _grid_ontop = false;
 
 	bool _in_other_thread = false;
 
@@ -521,6 +536,8 @@ protected:
 
 	double m_radius = 0.40;
 	double m_lineWidth = 0.065;
+
+	bool _mode2d; // optimized startup and drawing for 1d or 2d plotting
 
 	string[] _drawables;
 	shared Session _session;

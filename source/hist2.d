@@ -25,6 +25,7 @@ synchronized class Hist2Filesource : Hist2Datasource
 		_filename = filename;		
 	}
 
+
 	double[] getData(out ulong w, out ulong h)
 	{
 		import std.array, std.algorithm, std.stdio, std.conv;
@@ -90,6 +91,10 @@ synchronized class Hist2Visualizer : Drawable
 		return "empty 2d histogram";
 	}
 
+	override int getDim() {
+		return 2;
+	}
+
 	// 0 <= c <= 1 is mapped to a color
 	void get_rgb(double c, shared ubyte *rgb) {
 		c *= 3;
@@ -131,13 +136,13 @@ synchronized class Hist2Visualizer : Drawable
 
 		// fill the _image_surface
 			//int stride = Cairo::ImageSurface::format_stride_for_width(format, width);		
-		writeln("_bins_x = ", _bins_x);
+		//writeln("_bins_x = ", _bins_x);
 		auto stride = ImageSurface.formatStrideForWidth(CairoFormat.RGB24, _bins_x);
-		writeln("stride = ", stride, "\r");
+		//writeln("stride = ", stride, "\r");
 		_rgb_data = new shared ubyte[_bin_data.length*(stride/_bins_x)];
 		_log_rgb_data = new shared ubyte[_bin_data.length*(stride/_bins_x)];
 		double max_bin = maxElement(_bin_data);
-		writeln("max_bin = ", max_bin, "\r");
+		//writeln("max_bin = ", max_bin, "\r");
 		foreach(idx, bin; _bin_data) {
 			ulong rgb_idx = 3*idx;
 			auto x = idx%_bins_x;
