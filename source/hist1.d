@@ -14,7 +14,7 @@ import std.algorithm, std.stdio;
 // read on request
 synchronized interface Hist1Datasource
 {
-	double[] getData();
+	double[] getData(out double hist_left, out double hist_right);
 }
 
 synchronized class Hist1Filesource : Hist1Datasource 
@@ -25,7 +25,7 @@ synchronized class Hist1Filesource : Hist1Datasource
 		_filename = filename;		
 	}
 
-	double[] getData()
+	double[] getData(out double hist_left, out double hist_right)
 	{
 		import std.array, std.algorithm, std.stdio, std.conv;
 		File file;
@@ -47,6 +47,22 @@ synchronized class Hist1Filesource : Hist1Datasource
 		double[] result;
 		try {
 			foreach(line; file.byLine)	{
+				if (line.startsWith("#")) {
+					import std.format;
+					//# 2 500 0 0 3 500 1 0 3
+					int dim, nbins;
+					string name;
+					double left, binwidth;
+					try {
+						line.formattedRead("# %s %s %s %s %s", dim, nbins, name, left, binwidth);
+						hist_left = left;
+						hist_right = left+binwidth*nbins;
+						writeln("left = ", hist_left, " right = ", hist_right, "\r");
+					} catch (Exception e) {
+						writeln("Exception caught\r");
+					}
+
+				}
 				if (!line.startsWith("#") && line.length > 0) {
 					foreach(number; split(line.dup(), " ")) {
 						if (number.length > 0)
@@ -58,6 +74,8 @@ synchronized class Hist1Filesource : Hist1Datasource
 			writeln("there was an Exeption ");
 		}
 
+		if (hist_left is double.init) hist_left = 0;
+		if (hist_right is double.init) hist_right = result.length;
 		//writeln(file.byLine().map!(a => to!double(a)).array);
 		return result;
 	}
@@ -83,13 +101,14 @@ synchronized class Hist1Visualizer : Drawable
 	override void refresh() 
 	{
 		//writeln("Hist1Visualizer.refresh called()");
-		_bin_data = cast(shared(double[]))_source.getData();
+		double left, right;
+		_bin_data = cast(shared(double[]))_source.getData(left, right);
 		mipmap_data();
 		if (_bin_data !is null) {
 			_top    = maxElement(_bin_data);
 			_bottom = minElement(_bin_data);
-			_left   = 0;
-			_right  = _bin_data.length;
+			_left   = left;
+			_right  = right;
 		} else {
 			_bottom = -1;
 			_top    =  1;
@@ -104,21 +123,15 @@ synchronized class Hist1Visualizer : Drawable
 		}
 		import std.math;
 		if (logx) { // special treatment for logx case
-			if (left >= log(getRight) || right <= log(getLeft)) {
-				return false;
-			}
-			if (right < log(getRight)) {
-				right = exp(right);
-			} else {
-				right = _bin_data.length;
-			}
-			if (left > log(getLeft)) {
-				left = exp(left);
-			} else {
-				left = 0;
-			}
+			right = exp(right);
+			left = exp(left);
 		}
-		if (left >= getRight || right <= getLeft) {
+
+		// transform into bin numbers
+		left  = (left-getLeft)/getBinWidth;
+		right = (right-getLeft)/getBinWidth;
+
+		if (left >= _bin_data.length || right <= 0) {
 			return false;
 		}
 		double bottom_safe = bottom;
@@ -126,7 +139,9 @@ synchronized class Hist1Visualizer : Drawable
 
 		double minimum, maximum;
 		bool initialize = true;
-		foreach(i ; cast(int)left..cast(int)right+1){
+		int leftbin = cast(int)(max(left,0));
+		int rightbin = cast(int)(min(right,_bin_data.length));
+		foreach(i ; leftbin..rightbin+1){
 			if (i < 0) {
 				continue;
 			}
@@ -143,16 +158,8 @@ synchronized class Hist1Visualizer : Drawable
 			minimum = min(minimum, log_y_value_of(_bin_data[i], logy));
 			maximum = max(maximum, log_y_value_of(_bin_data[i], logy));
 		}
-		//if (minimum < maximum) {
-		//	double height = maximum - minimum;
-			bottom = minimum;
-			top    = maximum;
-		//} else { 
-		//	// minimum == maximum 
-		//	// (or minumum > maximum which shouldn't happen at all)
-		//	bottom = -10;
-		//	top    =  10;
-		//}
+		bottom = minimum;
+		top    = maximum;
 		return true;
 	}
 
@@ -165,16 +172,16 @@ synchronized class Hist1Visualizer : Drawable
 
 		//writeln("pixel width = ", box.get_pixel_width() , "\r");
 		auto pixel_width = box.get_pixel_width();
-		auto bin_width = 1;
+		auto bin_width = getBinWidth;
 		if (bin_width > pixel_width || logx) { // there is no mipmap impelemntation for logx histogram drawing
-			drawHistogram(cr,box, 0,_bin_data.length, _bin_data, logy, logx);
+			drawHistogram(cr,box, getLeft, getRight, _bin_data, logy, logx);
 		} else {
 			int mipmap_idx = 0;
 			for (;;) {
 				bin_width *= 2;
 				++mipmap_idx;
 				if (mipmap_idx == _mipmap_data.length-1 || bin_width > pixel_width) {
-					drawMipMapHistogram(cr,box, 0, _bin_data.length, _mipmap_data[mipmap_idx-1], logy);
+					drawMipMapHistogram(cr,box, getLeft, getRight, _mipmap_data[mipmap_idx-1], logy);
 					break;
 				}
 			}
