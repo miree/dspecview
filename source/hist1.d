@@ -160,6 +160,8 @@ synchronized class Hist1Visualizer : Drawable
 		}
 		bottom = minimum;
 		top    = maximum;
+		bottom = bottom - 0.1*(top-bottom);
+		top    = top    + 0.1*(top-bottom);
 		return true;
 	}
 

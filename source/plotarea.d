@@ -178,8 +178,8 @@ public:
 			}
 		}
 		double height = global_top - global_bottom;
-		_vbox._bottom = global_bottom - 0.1*height ;
-		_vbox._top    = global_top    + 0.1*height;
+		_vbox._bottom = global_bottom ;//- 0.1*height ;
+		_vbox._top    = global_top    ;//+ 0.1*height;
 	}
 
 	void clear() {
@@ -413,7 +413,7 @@ protected:
 				if (!get_global_bottom_top(global_bottom, global_top)) {
 					default_bottom_top(global_bottom, global_top);
 				}
-				add_bottom_top_margin(global_bottom, global_top);
+				//add_bottom_top_margin(global_bottom, global_top);
 				_vbox.setBottomTop(global_bottom, global_top);
 			}
 			_vbox.update_coefficients(0, 0, size.width, size.height);
@@ -466,7 +466,7 @@ protected:
 						default_bottom_top(bottom, top);
 						if (drawable !is null) {
 							drawable.getBottomTopInLeftRight(bottom, top, _vbox.getLeft, _vbox.getRight, _logscale_y, _logscale_x);
-							add_bottom_top_margin(bottom, top);
+							//add_bottom_top_margin(bottom, top);
 							_vbox.setBottomTop(bottom, top);
 						}
 					}

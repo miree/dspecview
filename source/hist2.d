@@ -14,7 +14,7 @@ import std.algorithm, std.stdio;
 // read on request
 synchronized interface Hist2Datasource
 {
-	double[] getData(out ulong w, out ulong h);
+	double[] getData(out ulong w, out ulong h, out double hist_left, out double hist_right, out double hist_bottom, out double hist_top);
 }
 
 synchronized class Hist2Filesource : Hist2Datasource 
@@ -26,19 +26,19 @@ synchronized class Hist2Filesource : Hist2Datasource
 	}
 
 
-	double[] getData(out ulong w, out ulong h)
+	double[] getData(out ulong w, out ulong h, out double hist_left, out double hist_right, out double hist_bottom, out double hist_top)
 	{
 		import std.array, std.algorithm, std.stdio, std.conv;
 		File file;
 		try {
-			writeln("opening file ", _filename);
+			//writeln("opening file ", _filename);
 			file = File(_filename);
 		} catch (Exception e) {
 			try {
 				if (!_filename.startsWith('/')) {
 					_filename = "/" ~ _filename;
 				}
-				writeln("opening file ", _filename);
+				//writeln("opening file ", _filename);
 				file = File(_filename);
 			} catch (Exception e) {
 				writeln("unable to open file ", _filename);
@@ -50,6 +50,30 @@ synchronized class Hist2Filesource : Hist2Datasource
 			ulong max_width = 0;
 			import std.algorithm;
 			foreach(line; file.byLine)	{
+				if (line.startsWith("#")) { // read meta information left offset and bin width
+					import std.format;
+					//# 2 500 0 0 3 500 1 0 3
+					int dim;
+					int    xbins;
+					string xname;
+					double left, xbinwidth;
+					int    ybins;
+					string yname;
+					double bottom, ybinwidth;
+
+					try {
+						line.formattedRead("# %s %s %s %s %s %s %s %s %s", dim, xbins, xname, left, xbinwidth, ybins, yname, bottom, ybinwidth);
+						hist_left = left;
+						hist_right = left+xbinwidth*xbins;
+						//writeln("left = ", hist_left, " right = ", hist_right, "\r");
+						hist_bottom = bottom;
+						hist_top = bottom+ybinwidth*ybins;
+						//writeln("bottom = ", hist_bottom, " top = ", hist_top, "\r");
+					} catch (Exception e) {
+						writeln("Exception caught\r");
+					}
+
+				}
 				if (!line.startsWith("#") && line.length > 0) {
 					auto line_split = split(line.dup(), " ");
 					ulong width = 0;
@@ -74,7 +98,10 @@ synchronized class Hist2Filesource : Hist2Datasource
 		} catch (Exception e) {
 			writeln("there was an Exception ");
 		}
-
+		if (hist_left is double.init) hist_left = 0;
+		if (hist_right is double.init) hist_right = w;
+		if (hist_bottom is double.init) hist_bottom = 0;
+		if (hist_top is double.init) hist_top = h;
 		//writeln(file.byLine().map!(a => to!double(a)).array);
 		return result;
 	}
@@ -110,16 +137,21 @@ synchronized class Hist2Visualizer : Drawable
 	{
 		//writeln("Hist1Visualizer.refresh called()");
 		ulong width, height;
-		_bin_data = cast(shared(double[]))_source.getData(width, height);
+		double left, right, bottom, top;
+		_bin_data = cast(shared(double[]))_source.getData(width, height, left, right, bottom, top );
 
 		_bins_x = cast(uint)width;
 		_bins_y = cast(uint)height;
+
+		//writeln("width = " , width, "   height = ", height, "\r");
+		//writeln("left = ", left, " right = ", right, "\r");
+		//writeln("bottom = ", bottom, " top = ", top, "\r");
 		//mipmap_data();
 		if (_bin_data !is null) {
-			_bottom = 0;
-			_top    = height;
-			_left   = 0;
-			_right  = width;
+			_bottom = bottom;
+			_top    = top;
+			_left   = left;
+			_right  = right;
 		} else {
 			_bottom = -1;
 			_top    =  1;
@@ -127,12 +159,9 @@ synchronized class Hist2Visualizer : Drawable
 			_right  =  1;
 		}
 
-
 		if (_image_surface !is null) {
 			(cast(ImageSurface)_image_surface).destroy();
 		}
-		
-
 
 		// fill the _image_surface
 			//int stride = Cairo::ImageSurface::format_stride_for_width(format, width);		
@@ -206,10 +235,10 @@ synchronized class Hist2Visualizer : Drawable
 				foreach(x_idx; 0.._bins_x) {
 					double value = _bin_data[idx++];
 					//writeln("value = ", value, "\r");
-					double x      = box.transform_box2canvas_x(log_x_value_of(x_idx,box,logx));
-					double xplus1 = box.transform_box2canvas_x(log_x_value_of(x_idx+1,box,logx));
-					double y      = box.transform_box2canvas_y(log_y_value_of(y_idx,box,logy));
-					double yplus1 = box.transform_box2canvas_y(log_y_value_of(y_idx+1,box,logy));
+					double x      = box.transform_box2canvas_x(log_x_value_of(getLeft+getWidth*(x_idx)/_bins_x,box,logx));
+					double xplus1 = box.transform_box2canvas_x(log_x_value_of(getLeft+getWidth*(x_idx+1)/_bins_x,box,logx));
+					double y      = box.transform_box2canvas_y(log_y_value_of(getBottom+getHeight*(y_idx)/_bins_y,box,logy));
+					double yplus1 = box.transform_box2canvas_y(log_y_value_of(getBottom+getHeight*(y_idx+1)/_bins_y,box,logy));
 					double width = xplus1-x;
 					double height = yplus1-y;
 					ubyte[3] rgb;
@@ -230,9 +259,13 @@ synchronized class Hist2Visualizer : Drawable
 		} else {
 			// linear drawing can be done very fast using the image surface pattern
 			cr.save();
-				cr.scale(box._b_x, box._b_y);
-				cr.translate(box._a_x/box._b_x,  +box._a_y/box._b_y);
-				cr.rectangle(0,0, _right,_top);
+				//cr.scale(0.5, 1);
+				cr.scale(box._b_x*getBinWidth(), box._b_y*getBinHeight());
+				cr.translate(getLeft()/getBinWidth()+box._a_x/(box._b_x*getBinWidth()),  getBottom()/getBinHeight()+box._a_y/(box._b_y*getBinHeight()));
+				//cr.rectangle(getLeft,getBottom, getRight-getLeft,getTop-getBottom);
+				cr.rectangle(0,0,_bins_x, _bins_y);
+				//writeln("get: ", getLeft , " ", getRight, " ", getBottom, " " , getTop, "\r");
+				//cr.setSourceRgba(1, 0, 0, 1);
 				if (logz) {
 					cr.setSource(cast(Pattern)_log_image_surface_pattern);
 				} else {
@@ -250,28 +283,21 @@ synchronized class Hist2Visualizer : Drawable
 		_source = /*cast(shared Hist2Datasource)*/source;
 	}
 
-	this(string name, double[] bin_data, double left, double right)
-	{
-		super(name);
-		_left = left;
-		_right = right;
-		this._bin_data = cast(shared double[])bin_data.dup;
-		//mipmap_data();
-		if (_bin_data.length > 0) {
-			_top    = maxElement(_bin_data);
-			_bottom = minElement(_bin_data);
-		} else {
-			_top    =  1;
-			_bottom = -1;
-		}
-	}
+
 
 	double getBinWidth()
 	{
-		if (_bin_data is null || _bin_data.length == 0) {
+		if (_bin_data is null || _bins_x == 0) {
 			return double.init;
 		}
-		return (_right - _left) / _bin_data.length;
+		return (_right - _left) / _bins_x;
+	}
+	double getBinHeight()
+	{
+		if (_bin_data is null || _bins_y == 0) {
+			return double.init;
+		}
+		return (_top - _bottom) / _bins_y;
 	}
 
 
