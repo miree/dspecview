@@ -18,6 +18,7 @@ import gui;
 import session;
 import item;
 import hist1;
+import hist2;
 
 shared Session _session;
 
@@ -49,6 +50,22 @@ void addHist1(immutable string[] args, shared Session session)
     	writeln("wrong number of arguments:");
     	writeln("   hist1 <filename>");
     	writeln("   hist1 bins left right");
+    	return;
+    }
+}
+
+void addHist2(immutable string[] args, shared Session session)
+{
+    writeln("hist2 called with args: ", args);
+    if (args.length == 1) {
+	    session.addItem(args[0], new shared Hist2Visualizer(args[0], new shared Hist2Filesource(args[0])));
+	    if (guiTid != Tid.init) {
+	    	send(guiTid,1);
+	    }
+    	return;
+    } else {
+    	writeln("wrong number of arguments:");
+    	writeln("   hist2 <filename>");
     	return;
     }
 }
@@ -133,6 +150,7 @@ int run(immutable string[] args, shared Session session)
     list_of_commands["gui"]         = &startguithread;
     list_of_commands["calc"]        = &calculator;
     list_of_commands["hist1"]       = &addHist1;
+    list_of_commands["hist2"]       = &addHist2;
 
 
     char *line;

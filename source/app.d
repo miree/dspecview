@@ -21,6 +21,15 @@ int main(immutable string[] args)
  //   session.addItem("x/b/c/y", new shared Hist1(new double[](10), 0, 10));
 
 
+ //synchronized {
+ //	import hist2;
+ //	shared filename = "LYSO_SiPM_vs_NaJ.dat";
+ //	shared h2 = new shared Hist2Filesource(filename);
+ //	ulong w,h;
+ //	h2.getData(w,h);
+ //}
+
+
 	return textui.run(args, session);
 }
 

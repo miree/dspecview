@@ -129,7 +129,8 @@ void drawGridVertical(ref Scoped!Context cr, ViewBox box, int canvas_width, int 
 	import std.math;
 
 	// vertical lines
-	for( int i = 2; i >= 0; --i)
+	//for( int i = 2; i >= 0; --i)
+	for( int i = 0; i < 2; ++i)
 	{
 		double width = box.getWidth()*1000/(canvas_width/box.getColumns());
 		double oomx = 1; // order of magnitude X
@@ -144,7 +145,7 @@ void drawGridVertical(ref Scoped!Context cr, ViewBox box, int canvas_width, int 
 		double top     = box.getTop();
 
 		double line_strength = 2*oomx/width;
-		double color = (0.9-line_strength)^^2;
+		double color = (0.9-line_strength);
 		cr.setLineWidth(1);
 		cr.setSourceRgba(color, color, color, 1.0);
 
@@ -164,7 +165,8 @@ void drawGridHorizontal(ref Scoped!Context cr, ViewBox box, int canvas_width, in
 	//writefln("horizontal grid: %s %s %s %s\r", box.getBottom, box.getTop, box.getLeft, box.getRight);
 	// horizontal lines
 	import std.math;
-	for( int i = 2; i >= 0; --i)
+	//for( int i = 2; i >= 0; --i)
+	for( int i = 0; i < 2; ++i)
 	{
 		double height  = box.getHeight()*1000/(canvas_height/box.getRows());
 		double oomy = 1; // order of magnitude Y
@@ -180,7 +182,7 @@ void drawGridHorizontal(ref Scoped!Context cr, ViewBox box, int canvas_width, in
 		double top     = box.getTop();
 
 		double line_strength = 2*oomy/height;
-		double color = (0.9-line_strength)^^2;
+		double color = (0.9-line_strength);
 		cr.setSourceRgba(color, color, color, 1.0);
 
 		double bottom_oom = (cast(int)(bottom/oomy))*oomy;
