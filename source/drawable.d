@@ -49,7 +49,7 @@ synchronized class Drawable : Item
 	final double getHeight() { return getTop() - getBottom(); }
 
 
-	void draw(ref Scoped!Context cr, ViewBox box, bool logy, bool logx) {}; // show the Drawable on a cairo context
+	void draw(ref Scoped!Context cr, ViewBox box, bool logy, bool logx, bool logz) {}; // show the Drawable on a cairo context
 
 
 	void setAutoScaleX(bool scale) {

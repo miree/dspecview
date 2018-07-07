@@ -124,6 +124,8 @@ in {
 	}
 }
 
+
+
 void drawGridVertical(ref Scoped!Context cr, ViewBox box, int canvas_width, int canvas_height)
 {
 	import std.math;

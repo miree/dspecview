@@ -151,7 +151,7 @@ synchronized class Hist1Visualizer : Drawable
 		return true;
 	}
 
-	override void draw(ref Scoped!Context cr, ViewBox box, bool logy, bool logx) {
+	override void draw(ref Scoped!Context cr, ViewBox box, bool logy, bool logx, bool logz) {
 		//writeln("Hist1Visualizer.draw() called\r");
 		if (_bin_data is null) {
 			refresh();

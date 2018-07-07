@@ -421,7 +421,7 @@ protected:
 				cr.setLineWidth( 2);
 				auto drawable = _session.getDrawable(drawable_name);
 				if (drawable !is null) {
-					drawable.draw(cr, _vbox, _logscale_y, _logscale_x);
+					drawable.draw(cr, _vbox, _logscale_y, _logscale_x, _logscale_z);
 					cr.stroke();
 				}
 			}
@@ -480,7 +480,7 @@ protected:
 					cr.setSourceRgba(_color_table[color_idx][0], _color_table[color_idx][1], _color_table[color_idx][2], 1.0);
 					cr.setLineWidth( 2);
 					if (drawable !is null) {
-						drawable.draw(cr, _vbox, _logscale_y, _logscale_x);
+						drawable.draw(cr, _vbox, _logscale_y, _logscale_x, _logscale_z);
 						cr.stroke();
 					}
 					draw_numbers(cr, size.width, size.height);
