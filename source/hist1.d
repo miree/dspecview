@@ -30,14 +30,14 @@ synchronized class Hist1Filesource : Hist1Datasource
 		import std.array, std.algorithm, std.stdio, std.conv;
 		File file;
 		try {
-			writeln("opening file ", _filename);
+			//writeln("opening file ", _filename);
 			file = File(_filename);
 		} catch (Exception e) {
 			try {
 				if (!_filename.startsWith('/')) {
 					_filename = "/" ~ _filename;
 				}
-				writeln("opening file ", _filename);
+				//writeln("opening file ", _filename);
 				file = File(_filename);
 			} catch (Exception e) {
 				writeln("unable to open file ", _filename);
@@ -57,7 +57,7 @@ synchronized class Hist1Filesource : Hist1Datasource
 						line.formattedRead("# %s %s %s %s %s", dim, nbins, name, left, binwidth);
 						hist_left = left;
 						hist_right = left+binwidth*nbins;
-						writeln("left = ", hist_left, " right = ", hist_right, "\r");
+						//writeln("left = ", hist_left, " right = ", hist_right, "\r");
 					} catch (Exception e) {
 						writeln("Exception caught\r");
 					}
@@ -116,8 +116,19 @@ synchronized class Hist1Visualizer : Drawable
 			_right  =  1;
 		}
 	}
-
+	void add_bottom_top_margin(ref double bottom, ref double top) {
+		if (bottom < top) {
+			double margin_factor = 0.1;
+			double height = top - bottom;
+			top    += margin_factor * height;
+			bottom -= margin_factor * height;
+		} else {
+			top    += 1;
+			bottom -= 1;
+		}
+	}
 	override bool getBottomTopInLeftRight(ref double bottom, ref double top, double left, double right, bool logy, bool logx) {
+		//writeln("getBottomTopInLeftRight ", left, " ", right, "\r");
 		if (_bin_data is null) {
 			refresh();
 		}
@@ -131,7 +142,10 @@ synchronized class Hist1Visualizer : Drawable
 		left  = (left-getLeft)/getBinWidth;
 		right = (right-getLeft)/getBinWidth;
 
+		//writeln("getBottomTopInLeftRight ", left, " ", right, "\r");
+
 		if (left >= _bin_data.length || right <= 0) {
+			//writeln("done false\r");
 			return false;
 		}
 		double bottom_safe = bottom;
@@ -141,6 +155,7 @@ synchronized class Hist1Visualizer : Drawable
 		bool initialize = true;
 		int leftbin = cast(int)(max(left,0));
 		int rightbin = cast(int)(min(right,_bin_data.length));
+		assert (leftbin <= rightbin);
 		foreach(i ; leftbin..rightbin+1){
 			if (i < 0) {
 				continue;
@@ -160,8 +175,8 @@ synchronized class Hist1Visualizer : Drawable
 		}
 		bottom = minimum;
 		top    = maximum;
-		bottom = bottom - 0.1*(top-bottom);
-		top    = top    + 0.1*(top-bottom);
+		add_bottom_top_margin(bottom, top);
+		//writeln("done false\r");
 		return true;
 	}
 
@@ -176,8 +191,10 @@ synchronized class Hist1Visualizer : Drawable
 		auto pixel_width = box.get_pixel_width();
 		auto bin_width = getBinWidth;
 		if (bin_width > pixel_width || logx) { // there is no mipmap impelemntation for logx histogram drawing
+			//writeln("hist1 draw\r");
 			drawHistogram(cr,box, getLeft, getRight, _bin_data, logy, logx);
 		} else {
+			//writeln("hist1 draw mipmap\r");
 			int mipmap_idx = 0;
 			for (;;) {
 				bin_width *= 2;

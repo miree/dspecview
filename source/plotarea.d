@@ -376,6 +376,7 @@ protected:
 	//Override default signal handler:
 	bool drawCallback(Scoped!Context cr, Widget widget)
 	{
+		//writeln("drawCallback\r");
 		update_drawable_list();
 		// This is where we draw on the window
 		GtkAllocation size;
@@ -405,38 +406,49 @@ protected:
 			//  return true;
 
 		if (_overlay) {
+			//writeln("overlay true\r");
+
 			_vbox._rows = 1;
 			_vbox._columns = 1;
 			import std.algorithm;
 			if (_grid_autoscale_y) {
+				//writeln("grid autoscale\r");
 				double global_bottom, global_top;
 				if (!get_global_bottom_top(global_bottom, global_top)) {
 					default_bottom_top(global_bottom, global_top);
 				}
 				//add_bottom_top_margin(global_bottom, global_top);
+				//writeln("global_bottom = ", global_bottom, "   global_top = ", global_top, "\r");
 				_vbox.setBottomTop(global_bottom, global_top);
 			}
 			_vbox.update_coefficients(0, 0, size.width, size.height);
+			//writeln("setContextClip\r");
 			setContextClip(cr, _vbox);
 			if (_grid_ontop == false) {
+				//writeln("draw_grid\r");
 				draw_grid(cr, size.width, size.height);
 			}
+			//writeln("draw content\r");
 			foreach (idx, drawable_name; _drawables) {
 				ulong color_idx = idx % _color_table.length;
 				cr.setSourceRgba(_color_table[color_idx][0], _color_table[color_idx][1], _color_table[color_idx][2], 1.0);
 				cr.setLineWidth( 2);
 				auto drawable = _session.getDrawable(drawable_name);
 				if (drawable !is null) {
+					//writeln("draw\r");
 					drawable.draw(cr, _vbox, _logscale_y, _logscale_x, _logscale_z);
 					cr.stroke();
 				}
 			}
 			if (_grid_ontop == true) {
+				//writeln("draw_grid\r");
 				draw_grid(cr, size.width, size.height);
 			}
 			draw_box(cr);
 			draw_numbers(cr, size.width, size.height);
+			//writeln("donw\r");
 		} else { // grid mode
+			//writeln("overlay false\r");
 			int rows    = _row_major?1:_columns_or_rows;
 			int columns = _row_major?_columns_or_rows:1;
 			while (columns * rows < _drawables.length) {

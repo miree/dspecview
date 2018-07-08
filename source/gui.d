@@ -320,7 +320,8 @@ class Gui : ApplicationWindow
 					writeln("filename = " , filename, "\r");
 					synchronized {
 						import hist1;
-						_session.addItem(filename, new shared Hist1Visualizer(filename, new shared Hist1Filesource(filename)));
+						auto treeview_name = filename;
+						_session.addItem(treeview_name, new shared Hist1Visualizer(treeview_name, new shared Hist1Filesource(filename)));
 						foreach(gui; gui_windows) {
 							gui.updateSession();
 						}
@@ -347,7 +348,8 @@ class Gui : ApplicationWindow
 					writeln("filename = " , filename, "\r");
 					synchronized {
 						import hist2;
-						_session.addItem(filename, new shared Hist2Visualizer(filename, new shared Hist2Filesource(filename)));
+						auto treeview_name = filename;
+						_session.addItem(treeview_name, new shared Hist2Visualizer(treeview_name, new shared Hist2Filesource(filename)));
 						foreach(gui; gui_windows) {
 							gui.updateSession();
 						}
@@ -458,8 +460,25 @@ class Gui : ApplicationWindow
 		popup_menu.append( new MenuItem(
 								delegate(MenuItem m) { // the action to perform if that menu entry is selected
 									//writeln("show selected: ");
-									auto child_window = new Gui(_application, _session, _in_other_thread, false, true);
+									int dim_max = 0;
 									auto iters = _treeview.getSelectedIters();
+									import std.algorithm;
+									foreach(iter; iters) {  
+										string itemname = get_full_name(iter);
+										auto itemlist = _session.getItemList();
+										foreach(itemlistname; itemlist) {
+											if (itemlistname.startsWith(itemname)) {
+												writeln("itemname = " , itemname , "\r");
+												auto item = _session.getItem(itemlistname);
+												if (item !is null) {
+													dim_max = max(dim_max, item.getDim());
+												}
+											}
+										}
+									}
+									writeln("dim_max = " , dim_max, "\r");
+									auto child_window = new Gui(_application, _session, _in_other_thread, false, true, dim_max == 2);
+									iters = _treeview.getSelectedIters();
 									foreach(iter; iters)
 									{  
 										string itemname = get_full_name(iter);

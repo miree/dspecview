@@ -194,14 +194,14 @@ synchronized class Hist2Visualizer : Drawable
 			(cast(Pattern)_image_surface_pattern).destroy();
 		}
 		_image_surface_pattern = cast(shared Pattern)Pattern.createForSurface(cast(ImageSurface)_image_surface);
-		(cast(Pattern)_image_surface_pattern).setFilter(CairoFilter.NEAREST);
+		(cast(Pattern)_image_surface_pattern).setFilter(CairoFilter.BILINEAR);
 
 		_log_image_surface = cast(shared ImageSurface)ImageSurface.createForData(cast(ubyte*)(&_log_rgb_data[0]), CairoFormat.RGB24, cast(int)_bins_x, cast(int)_bins_y, stride);
 		if (_log_image_surface_pattern !is null) {
 			(cast(Pattern)_log_image_surface_pattern).destroy();
 		}
 		_log_image_surface_pattern = cast(shared Pattern)Pattern.createForSurface(cast(ImageSurface)_log_image_surface);
-		(cast(Pattern)_log_image_surface_pattern).setFilter(CairoFilter.NEAREST);
+		(cast(Pattern)_log_image_surface_pattern).setFilter(CairoFilter.BILINEAR);
 
 
 	}
@@ -227,13 +227,22 @@ synchronized class Hist2Visualizer : Drawable
 		//} 
 
 		if (logy || logx) {
-			// log drawing has to be done bin by bin for now...
+			// log drawing has to be done bin by bin for now... only the bins != 0
+			cr.setSourceRgba(1, 1, 1, 1);
+			cr.rectangle(box.transform_box2canvas_x(log_x_value_of(getLeft, box, logx)),
+						 box.transform_box2canvas_y(log_y_value_of(getBottom, box, logy)),
+						 box.transform_box2canvas_x(log_x_value_of(getRight, box, logx)) - box.transform_box2canvas_x(log_x_value_of(getLeft, box, logx)),
+						 box.transform_box2canvas_y(log_y_value_of(getTop, box, logy)) - box.transform_box2canvas_y(log_y_value_of(getBottom, box, logy)));
+			cr.fill();
 			double max_bin = maxElement(_bin_data);
 			//writeln("max_bin = ", max_bin, "\r");
 			ulong idx = 0;//y_idx*_bins_x+x_idx;
 			foreach(y_idx; 0.._bins_y) {
 				foreach(x_idx; 0.._bins_x) {
 					double value = _bin_data[idx++];
+					if (value == 0) {
+						continue;
+					}
 					//writeln("value = ", value, "\r");
 					double x      = box.transform_box2canvas_x(log_x_value_of(getLeft+getWidth*(x_idx)/_bins_x,box,logx));
 					double xplus1 = box.transform_box2canvas_x(log_x_value_of(getLeft+getWidth*(x_idx+1)/_bins_x,box,logx));
