@@ -578,6 +578,37 @@ class Gui : ApplicationWindow
 					_expanded[expanded_row] = false;
 				}
 			);
+		// maybe add the activated item to the on window plot area
+		//_treeview.addOnRowActivated(
+		//		delegate void(TreePath path, TreeViewColumn col, TreeView view) {
+		//			writeln("addOnRowActivated() ", path.toString(), "\r");
+		//			//string expanded_row = get_full_name_from_path(path.toString(), _items);
+		//			////writeln(expanded_row, "\r");
+		//			//_expanded[expanded_row] = true;
+		//		}
+		//	);
+		_treeview.addOnCursorChanged( // add selected items to the preview plot area
+				delegate void(TreeView view) {
+					//_preview_plot_area.clear();
+					auto iters = _treeview.getSelectedIters();
+					writeln("addOnCursorChanged() ", iters.length ,"\r");
+					foreach(iter; iters)
+					{  
+						string itemname = get_full_name(iter);
+						writeln(itemname, "\r");
+						auto itemlist = _session.getItemList();
+						if (itemlist.canFind(itemname)) {
+							_preview_plot_area.add_drawable(itemname);
+						}
+					}
+					import std.math;
+					_preview_plot_area.setLogscaleZ(true);
+					_preview_plot_area.setLogscaleX(false);
+					_preview_plot_area.setLogscaleY(false);
+					_preview_plot_area.setFit();
+					queueDraw();
+				}
+			);
 
 
 
@@ -601,6 +632,14 @@ class Gui : ApplicationWindow
 		_box.setChildPacking(_treeview_scrollwin,true,true,0,GtkPackType.START);
 		//    ... without scrolling
 		//_box.add(treeview);
+
+		_preview_plot_area = new PlotArea(_session, in_other_thread, false);
+		_preview_plot_area.setGrid(3);
+		_box.add(_preview_plot_area);
+		_box.setChildPacking(_preview_plot_area,true,true,0,GtkPackType.END);
+		_preview_plot_area.show();
+
+
 
 		_plot_area = new PlotArea(_session, in_other_thread, mode2d);
 		_view_box.add(_plot_area);
@@ -817,6 +856,7 @@ class Gui : ApplicationWindow
 	Button _clear_plot_area;
 
 
+	PlotArea  _preview_plot_area;
 	PlotArea  _plot_area;
 	TreeStore _treestore;
 	TreeView  _treeview;
