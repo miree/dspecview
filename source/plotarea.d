@@ -31,7 +31,7 @@ public:
 
 
 		// set mimium size of this Widget
-		super.setSizeRequest(100,100);
+		super.setSizeRequest(100,50);
 
 		super.addOnMotionNotify(&onMotionNotify);
 		super.addOnButtonPress(&onButtonPressEvent);
@@ -69,6 +69,8 @@ public:
 			_drawables ~= drawable;
 		}
 		update_drawable_list();
+		auto item = _session.getDrawable(drawable);
+		item.refresh();
 	}
 
 	override void getPreferredHeightForWidth(int width, out int minimumHeight, out int naturalHeight)
@@ -77,6 +79,9 @@ public:
 		naturalHeight = width*130/100;
 	}
 
+	bool getMode2d() {
+		return _mode2d;
+	}
 	void setOverlay() {
 		_overlay = true;
 	}
@@ -91,11 +96,17 @@ public:
 	void setGridColMajor() {
 		_row_major = false;
 	}
-	void setGridAutoscaleY(bool autoscale) {
-		_grid_autoscale_y = autoscale;
+	void setAutoscaleY(bool autoscale) {
+		_autoscale_y = autoscale;
+	}
+	void setAutoscaleX(bool autoscale) {
+		_autoscale_x = autoscale;
 	}
 	void setGridOnTop(bool ontop) {
 		_grid_ontop = ontop;
+	}
+	void setPreviewMode(bool preview) {
+		_preview_mode = preview;
 	}
 	void setDrawGridHorizontal(bool draw) {
 		_draw_grid_horizontal = draw;
@@ -133,6 +144,14 @@ public:
 		setFitX();
 		setFitY();
 	}
+	void refresh() {
+		synchronized {
+			foreach(idx, drawable; _drawables) {
+				auto item = _session.getDrawable(drawable);
+				item.refresh();
+			}
+		}		
+	}
 
 	void setFitX() {
 		import logscale;
@@ -144,7 +163,7 @@ public:
 		synchronized {
 			foreach(idx, drawable; _drawables) {
 				auto item = _session.getDrawable(drawable);
-				item.refresh();
+				//item.refresh();
 				import std.algorithm;
 				if (idx == 0) {
 					global_left   = log_x_value_of(item.getLeft(),  _logscale_x);
@@ -167,7 +186,7 @@ public:
 		synchronized {
 			foreach(idx, drawable; _drawables) {
 				auto item = _session.getDrawable(drawable);
-				item.refresh();
+				//item.refresh();
 				import std.algorithm;
 				if (idx == 0) {
 					global_bottom = log_y_value_of(item.getBottom(), _logscale_y);
@@ -331,6 +350,23 @@ protected:
 		}
 		return !first_assignment; // false if there was now drawable in the plotarea		
 	}
+	bool get_global_left_right(out double left, out double right) {
+		default_left_right(left, right);
+		bool first_assignment = true;
+		foreach(drawable; _drawables) {
+			double l, r;
+			_session.getDrawable(drawable).getLeftRight(l, r, _logscale_y, _logscale_x);
+			import std.algorithm;
+			if (first_assignment) {
+				left  = l;
+				right = r;
+				first_assignment = false;
+			}
+			left  = min(left,  l);
+			right = max(right, r);
+		}
+		return !first_assignment; // false if there was now drawable in the plotarea		
+	}
 
 	void draw_box(ref Scoped!Context cr)
 	{
@@ -405,20 +441,26 @@ protected:
 			//  cr->fill();
 			//  return true;
 
-		if (_overlay) {
+		if (_overlay && !_preview_mode) {
 			//writeln("overlay true\r");
 
 			_vbox._rows = 1;
 			_vbox._columns = 1;
 			import std.algorithm;
-			if (_grid_autoscale_y) {
-				//writeln("grid autoscale\r");
+			if (_autoscale_x) {
+				double global_left, global_right;
+				if (!get_global_left_right(global_left, global_right)) {
+					default_left_right(global_left, global_right);
+				}
+				import logscale;
+				_vbox.setLeftRight(log_x_value_of(global_left,_logscale_x), 
+					               log_x_value_of(global_right,_logscale_x));
+			}
+			if (_autoscale_y) {
 				double global_bottom, global_top;
 				if (!get_global_bottom_top(global_bottom, global_top)) {
 					default_bottom_top(global_bottom, global_top);
 				}
-				//add_bottom_top_margin(global_bottom, global_top);
-				//writeln("global_bottom = ", global_bottom, "   global_top = ", global_top, "\r");
 				_vbox.setBottomTop(global_bottom, global_top);
 			}
 			_vbox.update_coefficients(0, 0, size.width, size.height);
@@ -446,9 +488,19 @@ protected:
 			}
 			draw_box(cr);
 			draw_numbers(cr, size.width, size.height);
+			//if (_autoscale_x) {
+			//	_vbox.release();
+			//}
 			//writeln("donw\r");
 		} else { // grid mode
 			//writeln("overlay false\r");
+			bool _logscale_x_save = _logscale_x;
+			bool _logscale_y_save = _logscale_y;
+			bool _logscale_z_save = _logscale_z;
+			bool _autoscale_x_save = _autoscale_x;
+			bool _autoscale_y_save = _autoscale_y;
+			bool _grid_ontop_save = _grid_ontop;
+
 			int rows    = _row_major?1:_columns_or_rows;
 			int columns = _row_major?_columns_or_rows:1;
 			while (columns * rows < _drawables.length) {
@@ -471,8 +523,34 @@ protected:
 					shared Drawable drawable = null;
 					if (_drawables !is null && idx < _drawables.length) {
 						drawable = _session.getDrawable(_drawables[idx]);
+						if (_preview_mode){ // in preview mode: 1d hists are log xy, 2d hists are log z
+							_autoscale_x = _autoscale_y = true;
+							if (drawable.getDim() == 1) {
+								_logscale_x = _logscale_y = true;
+								_logscale_z = false;
+								_grid_ontop = false;
+							}
+							if (drawable.getDim() == 2) {
+								_logscale_x = _logscale_y = false;
+								_logscale_z = true;
+								_grid_ontop = true;
+							}
+						}
 					}
-					if (_grid_autoscale_y) {
+					if (_autoscale_x) {
+						// first determine the width
+						double left, right;
+						default_left_right(left, right);
+						if (drawable !is null) {
+							drawable.getLeftRight(left, right, _logscale_y, _logscale_x);
+							//add_left_right_margin(left, right);
+							import logscale;
+							//_vbox.freeze();
+							_vbox.setLeftRight(log_x_value_of(left,_logscale_x), 
+								               log_x_value_of(right,_logscale_x));
+						}
+					}
+					if (_autoscale_y) {
 						// first determine the height of the view
 						double bottom, top;
 						default_bottom_top(bottom, top);
@@ -511,8 +589,20 @@ protected:
 					}
 					draw_box(cr);
 					draw_numbers(cr, size.width, size.height);
+
+					//if (_autoscale_x) {
+					//	// first determine the width
+					//	_vbox.release();
+					//}
+
 				}
 			}
+			_logscale_x = _logscale_x_save;
+			_logscale_y = _logscale_y_save;
+			_logscale_z = _logscale_z_save;
+			_autoscale_x = _autoscale_x_save;
+			_autoscale_y = _autoscale_y_save;
+			_grid_ontop  = _grid_ontop_save;
 		}
 
 		
@@ -532,7 +622,8 @@ protected:
 
 	bool _row_major = true;
 
-	bool _grid_autoscale_y = false;
+	bool _autoscale_y = false;
+	bool _autoscale_x = false;
 
 	bool _logscale_x = false;
 	bool _logscale_y = false;
@@ -543,6 +634,8 @@ protected:
 	bool _grid_ontop = false;
 
 	bool _in_other_thread = false;
+
+	bool _preview_mode = false;
 
 	//int _rows = 5, _colums = 1;
 

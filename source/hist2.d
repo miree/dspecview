@@ -194,14 +194,14 @@ synchronized class Hist2Visualizer : Drawable
 			(cast(Pattern)_image_surface_pattern).destroy();
 		}
 		_image_surface_pattern = cast(shared Pattern)Pattern.createForSurface(cast(ImageSurface)_image_surface);
-		(cast(Pattern)_image_surface_pattern).setFilter(CairoFilter.BILINEAR);
+		(cast(Pattern)_image_surface_pattern).setFilter(CairoFilter.NEAREST);
 
 		_log_image_surface = cast(shared ImageSurface)ImageSurface.createForData(cast(ubyte*)(&_log_rgb_data[0]), CairoFormat.RGB24, cast(int)_bins_x, cast(int)_bins_y, stride);
 		if (_log_image_surface_pattern !is null) {
 			(cast(Pattern)_log_image_surface_pattern).destroy();
 		}
 		_log_image_surface_pattern = cast(shared Pattern)Pattern.createForSurface(cast(ImageSurface)_log_image_surface);
-		(cast(Pattern)_log_image_surface_pattern).setFilter(CairoFilter.BILINEAR);
+		(cast(Pattern)_log_image_surface_pattern).setFilter(CairoFilter.NEAREST);
 
 
 	}

@@ -262,10 +262,17 @@ class Gui : ApplicationWindow
 									_plot_area.queueDraw();
 								break;
 								case 'y':
-									_check_grid_autoscale_y.setActive(!_check_grid_autoscale_y.getActive());
+									_check_autoscale_y.setActive(!_check_autoscale_y.getActive());
+								break;
+								case 'x':
+									_check_autoscale_x.setActive(!_check_autoscale_x.getActive());
 								break;
 								case 'l':
-									_check_logy.setActive(!_check_logy.getActive());
+									if (_plot_area.getMode2d()){
+										_check_logz.setActive(!_check_logz.getActive());
+									} else {
+										_check_logy.setActive(!_check_logy.getActive());
+									}
 								break;
 								case 'g':
 									//if (_radio_overlay.getActive()) {
@@ -579,29 +586,44 @@ class Gui : ApplicationWindow
 				}
 			);
 		// maybe add the activated item to the on window plot area
-		//_treeview.addOnRowActivated(
-		//		delegate void(TreePath path, TreeViewColumn col, TreeView view) {
-		//			writeln("addOnRowActivated() ", path.toString(), "\r");
-		//			//string expanded_row = get_full_name_from_path(path.toString(), _items);
-		//			////writeln(expanded_row, "\r");
-		//			//_expanded[expanded_row] = true;
-		//		}
-		//	);
+		_treeview.addOnRowActivated(
+				delegate void(TreePath path, TreeViewColumn col, TreeView view) {
+					//writeln("addOnRowActivated() ", path.toString(), "\r");
+					string expanded_row = get_full_name_from_path(path.toString(), _items);
+					writeln(expanded_row, "\r");
+					auto itemlist = _session.getItemList();
+					//writeln(itemlist,"\r");
+					//_plot_area.add_drawable(expanded_row);
+					if (itemlist.canFind(expanded_row)) {
+						_plot_area.add_drawable(expanded_row);
+					}
+					queueDraw();
+					//_expanded[expanded_row] = true;
+				}
+			);
 		_treeview.addOnCursorChanged( // add selected items to the preview plot area
 				delegate void(TreeView view) {
-					//_preview_plot_area.clear();
+					_preview_plot_area.clear();
 					auto iters = _treeview.getSelectedIters();
 					writeln("addOnCursorChanged() ", iters.length ,"\r");
+					int i = 0;
 					foreach(iter; iters)
 					{  
 						string itemname = get_full_name(iter);
 						writeln(itemname, "\r");
 						auto itemlist = _session.getItemList();
-						if (itemlist.canFind(itemname)) {
-							_preview_plot_area.add_drawable(itemname);
+						//if (itemlist.canFind(itemname)) {
+						//	_preview_plot_area.add_drawable(itemname);
+						//}
+						foreach(itemlistname; itemlist) {
+							if (itemlistname.startsWith(itemname)) {
+								_preview_plot_area.add_drawable(itemlistname);
+								++i;
+							}
 						}
 					}
 					import std.math;
+					_preview_plot_area.setGrid(cast(int)sqrt(1.0*i));
 					_preview_plot_area.setLogscaleZ(true);
 					_preview_plot_area.setLogscaleX(false);
 					_preview_plot_area.setLogscaleY(false);
@@ -634,7 +656,10 @@ class Gui : ApplicationWindow
 		//_box.add(treeview);
 
 		_preview_plot_area = new PlotArea(_session, in_other_thread, false);
-		_preview_plot_area.setGrid(3);
+		_preview_plot_area.setGrid(1);
+		_preview_plot_area.setPreviewMode(true);
+		_preview_plot_area.setDrawGridVertical(true);
+		_preview_plot_area.setDrawGridHorizontal(true);
 		_box.add(_preview_plot_area);
 		_box.setChildPacking(_preview_plot_area,true,true,0,GtkPackType.END);
 		_preview_plot_area.show();
@@ -712,15 +737,37 @@ class Gui : ApplicationWindow
 		_radio_colmajor = new RadioButton("13\n24");
 		_radio_colmajor.joinGroup(_radio_rowmajor);
 
-		auto autoscale_label = new Label("autoscale");
-		_check_grid_autoscale_y = new CheckButton("_Y",true);
-		_check_grid_autoscale_y.addOnToggled(
+		auto _check_overview_mode = new CheckButton("over\nview");
+		_check_overview_mode.addOnToggled(delegate void(ToggleButton button) {
+								//writeln("overlay button toggled ", button.getActive(), "\r");
+								bool active = button.getActive();
+								_plot_area.setPreviewMode(active);
+								_check_logx.setSensitive(!active);
+								_check_logy.setSensitive(!active);
+								_check_logz.setSensitive(!active);
+								_check_autoscale_x.setSensitive(!active);
+								_check_autoscale_y.setSensitive(!active);
+								_check_overlay.setSensitive(!active);
+								_check_grid_ontop.setSensitive(!active);
+								_plot_area.queueDraw();
+							});
+
+		auto autoscale_label = new Label("auto\nscale");
+		_check_autoscale_y = new CheckButton("Y",true);
+		_check_autoscale_y.addOnToggled(
 							delegate void(ToggleButton button) {
 								//writeln("overlay button toggled ", button.getActive(), "\r");
-								_plot_area.setGridAutoscaleY(button.getActive());
+								_plot_area.setAutoscaleY(button.getActive());
 								_plot_area.queueDraw();
 							} );
-		if (mode2d == false) _check_grid_autoscale_y.setActive(true);
+		_check_autoscale_x = new CheckButton("X",false);
+		_check_autoscale_x.addOnToggled(
+							delegate void(ToggleButton button) {
+								//writeln("overlay button toggled ", button.getActive(), "\r");
+								_plot_area.setAutoscaleX(button.getActive());
+								_plot_area.queueDraw();
+							} );
+		if (mode2d == false) _check_autoscale_y.setActive(true);
 
 		auto log_label = new Label("  log");
 		_check_logx = new CheckButton("X");
@@ -789,8 +836,11 @@ class Gui : ApplicationWindow
 
 		layout_box.add(_clear_plot_area);		
 		layout_box.add(new Separator(GtkOrientation.VERTICAL));
+		layout_box.add(_check_overview_mode);
+		layout_box.add(new Separator(GtkOrientation.VERTICAL));
 		layout_box.add(autoscale_label);
-		layout_box.add(_check_grid_autoscale_y);
+		layout_box.add(_check_autoscale_y);
+		layout_box.add(_check_autoscale_x);
 
 		layout_box.add(new Separator(GtkOrientation.VERTICAL));
 		layout_box.add(log_label);
@@ -850,7 +900,8 @@ class Gui : ApplicationWindow
 	RadioButton _radio_overlay, _radio_grid;
 	SpinButton _spin_columns;
 	RadioButton _radio_rowmajor, _radio_colmajor;
-	CheckButton _check_grid_autoscale_y;
+	CheckButton _check_autoscale_y;
+	CheckButton _check_autoscale_x;
 	CheckButton _check_logx, _check_logy, _check_logz;
 	CheckButton _check_gridx, _check_gridy, _check_grid_ontop;
 	Button _clear_plot_area;

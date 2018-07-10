@@ -47,7 +47,11 @@ synchronized class Drawable : Item
 		return _top;
 	}
 	bool getBottomTopInLeftRight(ref double bottom, ref double top, double left, double right, bool logy, bool logx) {
-			return false;
+		return false;
+	}
+	void getLeftRight(ref double left, ref double right, bool logy, bool logx) {
+		left  = getLeft();
+		right = getRight();
 	}
 	final double getWidth() { return getRight() - getLeft(); }
 	final double getHeight() { return getTop() - getBottom(); }
@@ -56,27 +60,10 @@ synchronized class Drawable : Item
 	void draw(ref Scoped!Context cr, ViewBox box, bool logy, bool logx, bool logz) {}; // show the Drawable on a cairo context
 
 
-	void setAutoScaleX(bool scale) {
-		_autoScaleX = scale;
-	}
-	void setAutoScaleY(bool scale) {
-		_autoScaleY = scale;
-	}
-
-	@property bool autoScaleX() {
-		return _autoScaleX;
-	}
-	@property bool autoScaleY() {
-		return _autoScaleY;
-	}
-
 protected:
 
 	shared string _name;
 
 	shared double _left, _right;
 	shared double _bottom, _top;
-
-	bool _autoScaleX = false;
-	bool _autoScaleY = false;
 }
