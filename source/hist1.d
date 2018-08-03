@@ -14,7 +14,35 @@ import std.algorithm, std.stdio;
 // read on request
 synchronized interface Hist1Datasource
 {
-	double[] getData(out double hist_left, out double hist_right);
+	//bool dirty(); // returns true if the data was changed since last call of getData
+	shared(double[]) getData(out double hist_left, out double hist_right);
+}
+
+synchronized class Hist1Memory : Hist1Datasource
+{
+	this(int bins, double left = double.init, double right = double.init)
+	{
+		_bin_data = new double[bins];
+		_bin_data[] = 0;
+		if (left is double.init || right is double.init) {
+			_left = 0;
+			_right = bins;
+		} else {
+			_left = left;
+			_right = right;				
+		}
+	}
+
+	override shared(double[]) getData(out double hist_left, out double hist_right)
+	{
+		hist_right = _right;
+		hist_left  = _left;
+		return _bin_data;
+	}
+private:
+
+	shared double _left, _right;
+	shared double[] _bin_data;
 }
 
 synchronized class Hist1Filesource : Hist1Datasource 
@@ -25,7 +53,8 @@ synchronized class Hist1Filesource : Hist1Datasource
 		_filename = filename;		
 	}
 
-	double[] getData(out double hist_left, out double hist_right)
+
+	override shared(double[]) getData(out double hist_left, out double hist_right)
 	{
 		import std.array, std.algorithm, std.stdio, std.conv;
 		File file;
@@ -44,7 +73,7 @@ synchronized class Hist1Filesource : Hist1Datasource
 				return null;
 			}
 		} 
-		double[] result;
+		shared(double[]) result;
 		try {
 			foreach(line; file.byLine)	{
 				if (line.startsWith("#")) {
@@ -175,6 +204,7 @@ synchronized class Hist1Visualizer : Drawable
 		}
 		bottom = minimum;
 		top    = maximum;
+		//writeln("bottom = " , bottom, "   top = " , top ,"\r");
 		add_bottom_top_margin(bottom, top);
 		//writeln("done false\r");
 		return true;

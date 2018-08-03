@@ -37,19 +37,34 @@ void addItem(immutable string[] args, shared Session session)
     }
 }
 
+void refreshGui()
+{
+    if (guiTid != Tid.init) {
+        send(guiTid,1);
+    }
+}
+
 void addHist1(immutable string[] args, shared Session session)
 {
     writeln("hist1 called with args: ", args);
     if (args.length == 1) {
 	    session.addItem(args[0], new shared Hist1Visualizer(args[0], new shared Hist1Filesource(args[0])));
-	    if (guiTid != Tid.init) {
-	    	send(guiTid,1);
-	    }
+        refreshGui();
+	    //if (guiTid != Tid.init) {
+	    //	send(guiTid,1);
+	    //}
     	return;
+    } else if (args.length == 2) {
+        auto name = args[0];
+        auto bins = to!int(args[1]);
+        writeln("create new histrogram ", name, " with ", bins, " bins");
+        session.addItem(name, new shared Hist1Visualizer(name, new shared Hist1Memory(bins)));
+        refreshGui();
+        return;
     } else {
     	writeln("wrong number of arguments:");
     	writeln("   hist1 <filename>");
-    	writeln("   hist1 bins left right");
+    	writeln("   hist1 <name> <bins> [<left> <right>]");
     	return;
     }
 }

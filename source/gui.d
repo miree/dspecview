@@ -83,9 +83,9 @@ class Gui : ApplicationWindow
 	{
 		writeln("hello button_clicked ", button.getLabel());
 	}
-	void new_window(Button button)
+	void new_window(Button button,bool control_area, bool view_area)
 	{
-		auto child_window = new Gui(_application, _session, _in_other_thread, true, true);
+		auto child_window = new Gui(_application, _session, _in_other_thread, control_area, view_area);
 		child_window.show();
 	}
 
@@ -301,12 +301,16 @@ class Gui : ApplicationWindow
 		auto b00 = new Button("hide PlotArea");
 			 b00.addOnClicked(delegate void(Button b) {
 				_view_box.hide();
-				this.resize(100,this.getHeight());
-
+				//this.resize(100,this.getHeight());
+				//_main_box.setChildPacking(_box,true,true,0,GtkPackType.START);
 				});
 
 		auto b0 = new Button("new win"); 
-		     b0.addOnClicked(button => new_window(button));
+		     b0.addOnClicked(button => new_window(button,true,true));
+		auto b0p = new Button("new plot win"); 
+		     b0p.addOnClicked(button => new_window(button,false,true));
+		auto b0c = new Button("new control win"); 
+		     b0c.addOnClicked(button => new_window(button,true,false));
 
 		auto b1 = new Button("open hist1"); 
 		b1.addOnClicked(delegate void(Button b) {
@@ -639,6 +643,8 @@ class Gui : ApplicationWindow
 		// add buttons 
 		_box.add(b00);
 		_box.add(b0);
+		_box.add(b0p);
+		_box.add(b0c);
 		_box.add(b1);
 		_box.add(b11);
 		_box.add(b2);

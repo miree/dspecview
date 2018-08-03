@@ -196,7 +196,8 @@ public:
 				global_top 	  = max(global_top 	 , log_y_value_of(item.getTop(), _logscale_y));
 			}
 		}
-		double height = global_top - global_bottom;
+		add_bottom_top_margin(global_bottom, global_top);
+		//double height = global_top - global_bottom;
 		_vbox._bottom = global_bottom ;//- 0.1*height ;
 		_vbox._top    = global_top    ;//+ 0.1*height;
 	}
