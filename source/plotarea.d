@@ -444,7 +444,7 @@ protected:
 
 		if (_overlay && !_preview_mode) {
 			//writeln("overlay true\r");
-
+			bool draw_color_key = false;
 			_vbox._rows = 1;
 			_vbox._columns = 1;
 			import std.algorithm;
@@ -480,6 +480,7 @@ protected:
 				if (drawable !is null) {
 					//writeln("draw\r");
 					drawable.draw(cr, _vbox, _logscale_y, _logscale_x, _logscale_z);
+					draw_color_key |= drawable.needsColorKey();
 					cr.stroke();
 				}
 			}
@@ -489,6 +490,10 @@ protected:
 			}
 			draw_box(cr);
 			draw_numbers(cr, size.width, size.height);
+			// draw the color key;
+			if (draw_color_key) {
+				drawColorKey(cr, _vbox, size.width, size.height);
+			}
 			//if (_autoscale_x) {
 			//	_vbox.release();
 			//}
@@ -590,6 +595,12 @@ protected:
 					}
 					draw_box(cr);
 					draw_numbers(cr, size.width, size.height);
+					// draw the color key;
+
+
+					if (drawable !is null && drawable.needsColorKey()) {
+						drawColorKey(cr, _vbox, size.width, size.height);
+					}
 
 					//if (_autoscale_x) {
 					//	// first determine the width

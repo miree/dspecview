@@ -57,7 +57,7 @@ void addHist1(immutable string[] args, shared Session session)
     } else if (args.length == 2) {
         auto name = args[0];
         auto bins = to!int(args[1]);
-        writeln("create new histrogram ", name, " with ", bins, " bins");
+        writeln("create new hist1 ", name, " with ", bins, " bins");
         session.addItem(name, new shared Hist1Visualizer(name, new shared Hist1Memory(bins)));
         refreshGui();
         return;
@@ -78,9 +78,19 @@ void addHist2(immutable string[] args, shared Session session)
 	    	send(guiTid,1);
 	    }
     	return;
+    } else if (args.length == 3) {
+        auto name   = args[0];
+        auto width  = to!int(args[1]);
+        auto height = to!int(args[2]);
+
+        writeln("create new hist2 ", name, " with ", width*height, " bins");
+        session.addItem(name, new shared Hist2Visualizer(name, new shared Hist2Memory(width, height)));
+        refreshGui();
+        return;
     } else {
     	writeln("wrong number of arguments:");
-    	writeln("   hist2 <filename>");
+        writeln("   hist2 <filename>");
+        writeln("   hist2 <name> <widht> <height>");
     	return;
     }
 }

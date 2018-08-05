@@ -25,6 +25,7 @@ synchronized class Drawable : Item
 		writeln("Draw.refresh called()");
 	}
 
+
 	this(string name)
 	{
 		_name = cast(shared string)name;
@@ -32,6 +33,10 @@ synchronized class Drawable : Item
 
 	override int getDim() {
 		return 0;
+	}
+
+	bool needsColorKey() {
+		return false;
 	}
 
 	double getLeft()	{

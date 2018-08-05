@@ -14,8 +14,50 @@ import std.algorithm, std.stdio;
 // read on request
 synchronized interface Hist2Datasource
 {
-	double[] getData(out ulong w, out ulong h, out double hist_left, out double hist_right, out double hist_bottom, out double hist_top);
+	shared(double[]) getData(out ulong w, out ulong h, out double hist_left, out double hist_right, out double hist_bottom, out double hist_top);
 }
+
+synchronized class Hist2Memory : Hist2Datasource
+{
+	this(int w, int h, double left = double.init, double right = double.init, double bottom = double.init, double top = double.init)
+	{
+		_width      = w;
+		_height     = h;
+		_bin_data   = new double[w*h];
+		_bin_data[] = 0;
+		if (left is double.init || right is double.init) {
+			_left = 0;
+			_right = w;
+		} else {
+			_left = left;
+			_right = right;				
+		}
+		if (bottom is double.init || top is double.init) {
+			_bottom = 0;
+			_top    = h;
+		} else {
+			_bottom = bottom;
+			_top    = top;				
+		}
+	}
+
+	override shared(double[])  getData(out ulong w, out ulong h, out double hist_left, out double hist_right, out double hist_bottom, out double hist_top)
+	{
+		w = _width;
+		h = _height;
+		hist_right = _right;
+		hist_left  = _left;
+		hist_bottom = _bottom;
+		hist_top    = _top;
+		return _bin_data;
+	}
+private:
+
+	ulong _width, _height;
+	shared double _left, _right, _bottom, _top;
+	shared double[] _bin_data;
+}
+
 
 synchronized class Hist2Filesource : Hist2Datasource 
 {
@@ -26,7 +68,7 @@ synchronized class Hist2Filesource : Hist2Datasource
 	}
 
 
-	double[] getData(out ulong w, out ulong h, out double hist_left, out double hist_right, out double hist_bottom, out double hist_top)
+	override shared(double[]) getData(out ulong w, out ulong h, out double hist_left, out double hist_right, out double hist_bottom, out double hist_top)
 	{
 		import std.array, std.algorithm, std.stdio, std.conv;
 		File file;
@@ -45,7 +87,7 @@ synchronized class Hist2Filesource : Hist2Datasource
 				return null;
 			}
 		} 
-		double[] result;
+		shared(double[]) result;
 		try {
 			ulong max_width = 0;
 			import std.algorithm;
@@ -111,6 +153,9 @@ private:
 
 synchronized class Hist2Visualizer : Drawable 
 {
+	override bool needsColorKey() {
+		return true;
+	}
 	override string getType()   {
 		return "Hist2";
 	}
@@ -123,7 +168,7 @@ synchronized class Hist2Visualizer : Drawable
 	}
 
 	// 0 <= c <= 1 is mapped to a color
-	void get_rgb(double c, shared ubyte *rgb) {
+	static void get_rgb(double c, shared ubyte *rgb) {
 		c *= 3;
 		if (c == 0) {          rgb[2] =                     rgb[1] =                         rgb[0] = 255; return ;}
 		if (c < 1)  {          rgb[2] = 0;                  rgb[1] = cast(ubyte)(255*c);     rgb[0] = 255-cast(ubyte)(255*c); return;}
@@ -171,6 +216,7 @@ synchronized class Hist2Visualizer : Drawable
 		_rgb_data = new shared ubyte[_bin_data.length*(stride/_bins_x)];
 		_log_rgb_data = new shared ubyte[_bin_data.length*(stride/_bins_x)];
 		double max_bin = maxElement(_bin_data);
+		if (max_bin == 0) max_bin = 1;
 		//writeln("max_bin = ", max_bin, "\r");
 		foreach(idx, bin; _bin_data) {
 			ulong rgb_idx = 3*idx;
@@ -181,6 +227,7 @@ synchronized class Hist2Visualizer : Drawable
 			auto _rgb_data_idx = (y)*stride + 4*x;
 			//writeln("_rgb_data_idx = " , _rgb_data_idx, "\r");
 			//writeln("bin = " , bin, "\r");//[y*stride + x*w + c]
+			//writeln(log(1+bin) , "/" , log(max_bin+1), "\r");
 			get_rgb(log(1+bin)/log(max_bin+1), &_log_rgb_data[_rgb_data_idx]);
 			get_rgb(bin/max_bin, &_rgb_data[_rgb_data_idx]);
 			//_rgb_data[_rgb_data_idx + 0] = cast(ubyte)(255-min(bin,255));
@@ -226,6 +273,7 @@ synchronized class Hist2Visualizer : Drawable
 			//drawHistogram(cr,box, 0,_bin_data.length, _bin_data, logy, logx);
 		//} 
 
+		double max_bin = maxElement(_bin_data);
 		if (logy || logx) {
 			// log drawing has to be done bin by bin for now... only the bins != 0
 			cr.setSourceRgba(1, 1, 1, 1);
@@ -234,7 +282,8 @@ synchronized class Hist2Visualizer : Drawable
 						 box.transform_box2canvas_x(log_x_value_of(getRight, box, logx)) - box.transform_box2canvas_x(log_x_value_of(getLeft, box, logx)),
 						 box.transform_box2canvas_y(log_y_value_of(getTop, box, logy)) - box.transform_box2canvas_y(log_y_value_of(getBottom, box, logy)));
 			cr.fill();
-			double max_bin = maxElement(_bin_data);
+			//double max_bin = maxElement(_bin_data);
+
 			//writeln("max_bin = ", max_bin, "\r");
 			ulong idx = 0;//y_idx*_bins_x+x_idx;
 			foreach(y_idx; 0.._bins_y) {
@@ -283,6 +332,27 @@ synchronized class Hist2Visualizer : Drawable
 				cr.fill();
 			cr.restore();
 		}
+
+
+		//cr.save();
+		////cr.reset();
+		//	double x0     = box.transform_box2canvas_x(box.getRight-box.getWidth/10);
+		//	double y0     = box.transform_box2canvas_y(box.getBottom);
+		//	double width  = box.transform_box2canvas_x(box.getRight)-box.transform_box2canvas_x(box.getRight-box.getWidth/10);
+		//	double height = box.transform_box2canvas_y(box.getTop)-box.transform_box2canvas_y(box.getBottom);
+		//	ubyte[3] rgb;
+		//	immutable ulong color_steps = 100;
+		//	foreach(i; 0..color_steps) {
+		//		get_rgb(1.0*i/color_steps, cast(shared ubyte*)&rgb[0]);
+		//		cr.setSourceRgba(rgb[2]/255.0, rgb[1]/255.0, rgb[0]/255.0, 1);
+		//		cr.rectangle(x0, y0+height*i/color_steps,
+		//					 width, height/color_steps);
+		//		cr.fill();
+		//	}
+		//cr.restore();
+
+		// draw the color key
+
 	}
 
 
