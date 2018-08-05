@@ -78,20 +78,37 @@ in {
 	assert(min < max);
 } do {
 	double bin_width = (max-min)/bins.length;
+
+	// find the starting index of the visible part of the histogram
 	double xhist = min;
+	ulong idx_start = 0;
+	while (log_x_value_of(xhist, box, logx) < box.getLeft) {
+		xhist += bin_width;
+		++idx_start;
+	}
+	if (idx_start > 0 && log_x_value_of(xhist, box, logx) > box.getLeft) {
+		xhist -= bin_width;
+		--idx_start;
+	}	
 	double x = box.transform_box2canvas_x(log_x_value_of(xhist,box,logx));
-	double y = box.transform_box2canvas_y(log_y_value_of(bins[0],box,logy));
+	double y = box.transform_box2canvas_y(log_y_value_of(bins[idx_start],box,logy));
 	cr.moveTo(x,y);
+
+	// draw horizontal part
 	xhist += bin_width;
 	x = box.transform_box2canvas_x(log_x_value_of(xhist, box, logx));
 	cr.lineTo(x,y);
-	foreach(bin; bins[1..$])
+	foreach(bin; bins[idx_start+1..$])
 	{
+		// draw vertical part
 		y = box.transform_box2canvas_y(log_y_value_of(bin,box,logy));
 		cr.lineTo(x,y);
+
+		// draw horizontal part of next bin
 		xhist += bin_width;
 		x = box.transform_box2canvas_x(log_x_value_of(xhist, box, logx));
 		cr.lineTo(x,y);
+
 		if (log_x_value_of(xhist, box, logx) > box.getRight) {
 			break;
 		}
