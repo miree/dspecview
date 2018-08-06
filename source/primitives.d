@@ -82,7 +82,7 @@ in {
 	// find the starting index of the visible part of the histogram
 	double xhist = min;
 	ulong idx_start = 0;
-	while (log_x_value_of(xhist, box, logx) < box.getLeft) {
+	while (idx_start < bins.length-1 && log_x_value_of(xhist, box, logx) < box.getLeft) {
 		xhist += bin_width;
 		++idx_start;
 	}
@@ -168,7 +168,7 @@ void drawGridVertical(ref Scoped!Context cr, ViewBox box, int canvas_width, int 
 		cr.setLineWidth(1);
 		cr.setSourceRgba(color, color, color, 1.0);
 
-		double left_oom   = (cast(int)(left  /oomx))*oomx;
+		double left_oom   = (cast(long)(left  /oomx))*oomx;
 		while(left_oom < right)
 		{
 			drawVerticalLine(cr, box, left_oom, bottom, top);
@@ -204,7 +204,7 @@ void drawGridHorizontal(ref Scoped!Context cr, ViewBox box, int canvas_width, in
 		double color = (0.9-line_strength);
 		cr.setSourceRgba(color, color, color, 1.0);
 
-		double bottom_oom = (cast(int)(bottom/oomy))*oomy;
+		double bottom_oom = (cast(long)(bottom/oomy))*oomy;
 		while(bottom_oom < top)
 		{
 			drawHorizontalLine(cr, box, bottom_oom, left, right);
@@ -290,17 +290,17 @@ void drawGridNumbersX(ref Scoped!Context cr, ViewBox box, int canvas_width, int 
 		double bottom  = box.getBottom();
 		double top     = box.getTop();
 
-		double left_oom   = (cast(int)(left  /oomx))*oomx;
+		double left_oom   = (cast(long)(left  /oomx))*oomx;
 		//if (i == 1)
 		{
 			import std.stdio;
 			//writeln("oomx ", oomx);
-			left_oom = (cast(int)(left/oomx))*oomx;
+			left_oom = (cast(long)(left/oomx))*oomx;
 			while(left_oom < right)
 			{
 				cr.setSourceRgba(0, 0, 0, 1.0);
 				import std.conv;
-				int number = cast(int)(round(left_oom/oomx));
+				long number = cast(long)(round(left_oom/oomx));
 				auto text = to!string(number*oomx);
 				cairo_text_extents_t cte;
 				// use the minus sign to get the extent
@@ -347,19 +347,19 @@ void drawGridNumbersY(ref Scoped!Context cr, ViewBox box, int canvas_width, int 
 		double color = (0.9-line_strength)^^2;
 		cr.setSourceRgba(color, color, color, 1.0);
 
-		double bottom_oom = (cast(int)(bottom/oomy))*oomy;
+		double bottom_oom = (cast(long)(bottom/oomy))*oomy;
 
 
 		//if (i == 0)
 		{
 			import std.stdio;
 			//writeln("oomy ", oomy);
-			bottom_oom = (cast(int)round(bottom/oomy))*oomy;
+			bottom_oom = (cast(long)round(bottom/oomy))*oomy;
 			while(bottom_oom < top)
 			{
 				cr.setSourceRgba(0, 0, 0, 1.0);
 
-				int number = cast(int)(round(bottom_oom/oomy));
+				long number = cast(long)(round(bottom_oom/oomy));
 				import std.conv;
 				auto text = to!string(number*oomy);
 				cairo_text_extents_t cte;

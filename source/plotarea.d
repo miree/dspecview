@@ -117,10 +117,14 @@ public:
 	void setLogscaleX(bool logscale) {
 		_logscale_x = logscale;
 		setFitX();
+		if (logscale) { _vbox.setWidthMinMax(1e-1,1e2);}
+		else          { _vbox.setWidthMinMax(1e-3,1e10);}
 	}
 	void setLogscaleY(bool logscale) {
 		_logscale_y = logscale;
 		setFitY();
+		if (logscale) { _vbox.setHeightMinMax(1e-1,1e2);}
+		else          { _vbox.setHeightMinMax(1e-3,1e10);}
 	}
 	void setLogscaleZ(bool logscale) {
 		_logscale_z = logscale;
@@ -587,8 +591,14 @@ protected:
 					cr.setSourceRgba(_color_table[color_idx][0], _color_table[color_idx][1], _color_table[color_idx][2], 1.0);
 					cr.setLineWidth( 2);
 					if (drawable !is null) {
-						drawable.draw(cr, _vbox, _logscale_y, _logscale_x, _logscale_z);
-						cr.stroke();
+						//if (drawable.getLeft() < _vbox.getRight() && // check if the drawable is inside 
+						//	drawable.getRight() > _vbox.getLeft() && //   the view box at all
+						//	drawable.getBottom() < _vbox.getTop() &&
+						//	drawable.getTop() > _vbox.getBottom()) 
+						{
+							drawable.draw(cr, _vbox, _logscale_y, _logscale_x, _logscale_z);
+							cr.stroke();
+						}
 					}
 					if (_grid_ontop == true) {
 						draw_grid(cr, size.width, size.height);

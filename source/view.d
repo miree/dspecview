@@ -9,6 +9,19 @@ struct ViewBox
 	double _left = -1, _right = 1, _bottom = -1, _top = 1;
 	double _delta_x = 0, _delta_y = 0; // dynamic while translating the view
 	double _scale_x = 1, _scale_y = 1; // dynamic while scaling the view
+	double _minimum_width  = 1e-3;
+	double _maximum_width  = 1e10;
+	double _minimum_height = 1e-3;
+	double _maximum_height = 1e10;
+
+	void setWidthMinMax(double min, double max) {
+		_minimum_width = min;
+		_maximum_width = max;
+	}
+	void setHeightMinMax(double min, double max) {
+		_minimum_height = min;
+		_maximum_height = max;
+	}
 
 	// the following function to determine the box dimensions are correct
 	// at all instances, even when translation/scaling is in progress
@@ -156,17 +169,17 @@ struct ViewBox
 		// x scaling
 		double scale_x_distance = x_new - scaling.x_start;
 		// limit the x-scaling
-		immutable minimum_width = 1e-3;
 		_scale_x = exp(-scale_x_distance/100.);
-		if (getWidth < minimum_width) _scale_x = minimum_width/(_right-_left);
+		if (getWidth < _minimum_width) _scale_x = _minimum_width/(_right-_left);
+		if (getWidth > _maximum_width) _scale_x = _maximum_width/(_right-_left);
 		double new_left = scaling.x_start_box - _scale_x*(scaling.x_start_box - _left); 
 		_delta_x = _left - new_left; 
 		// y scaling
 		double scale_y_distance = y_new - scaling.y_start;
 		_scale_y = exp(scale_y_distance/100.);
 		// limit the y-scaling
-		immutable minimum_height = 1e-3;
-		if (getHeight < minimum_height) _scale_y = minimum_height/(_top-_bottom);
+		if (getHeight < _minimum_height) _scale_y = _minimum_height/(_top-_bottom);
+		if (getHeight > _maximum_height) _scale_y = _maximum_height/(_top-_bottom);
 		double new_bottom = scaling.y_start_box - _scale_y*(scaling.y_start_box - _bottom); 
 		_delta_y = _bottom - new_bottom; 
 	}
