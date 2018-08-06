@@ -38,6 +38,12 @@ synchronized class Drawable : Item
 	bool needsColorKey() {
 		return false;
 	}
+	double minColorKey() {
+		return 0;
+	}
+	double maxColorKey() {
+		return 1;
+	}
 
 	double getLeft()	{
 		return _left;

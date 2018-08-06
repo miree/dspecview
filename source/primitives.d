@@ -448,12 +448,12 @@ void drawGridNumbersLogY(ref Scoped!Context cr, ViewBox box, int canvas_width, i
 	} while (log_bottom <= box.getTop);
 }
 
-void drawColorKey(ref Scoped!Context cr, ViewBox box, int canvas_height, int canvas_width)
+void drawColorKey(ref Scoped!Context cr, ViewBox box, int canvas_height, int canvas_width, double z_min, double z_max, bool logz)
 {
 	double x0     = box.transform_box2canvas_x(box.getRight-box.getWidth/20);
-	double y0     = box.transform_box2canvas_y(box.getBottom);
-	double width  = box.transform_box2canvas_x(box.getRight)-box.transform_box2canvas_x(box.getRight-box.getWidth/10);
-	double height = box.transform_box2canvas_y(box.getTop)-box.transform_box2canvas_y(box.getBottom);
+	double y0     = box.transform_box2canvas_y(box.getBottom+box.getHeight/20);
+	double width  = box.transform_box2canvas_x(box.getRight)-box.transform_box2canvas_x(box.getRight-box.getWidth/30);
+	double height = box.transform_box2canvas_y(box.getTop)-box.transform_box2canvas_y(box.getBottom+box.getHeight/10);
 	ubyte[3] rgb;
 	immutable ulong color_steps = 100;
 	foreach(i; 0..color_steps) {
@@ -463,5 +463,23 @@ void drawColorKey(ref Scoped!Context cr, ViewBox box, int canvas_height, int can
 		cr.rectangle(x0, y0+height*i/color_steps,
 					 width, height/color_steps*2);
 		cr.fill();
+	}
+	if (logz)
+	{
+
+	}
+	else
+	{
+		int i = 0;
+		double box_height  = 0.9*box.getHeight()*100000/(canvas_height/box.getRows());
+		double oomz = 1; // order of magnitude Y
+		while (oomz < box_height) oomz *= 10;
+		while (oomz > box_height) oomz /= 10;
+		oomz /= 10;
+		for (int n = 0; n < i; ++n) oomz *= 10;
+		import std.stdio;
+		writeln ("min = ", z_min , "   max = ", z_max, "  oomz = " , oomz, "\r");	
+
+		/// continue here !!!!!!!! the color key needs numbers
 	}
 }

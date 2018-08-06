@@ -167,6 +167,13 @@ synchronized class Hist2Visualizer : Drawable
 		return 2;
 	}
 
+	override double minColorKey() {
+		return minElement(_bin_data);
+	}
+	override double maxColorKey() {
+		return maxElement(_bin_data);
+	}
+
 	// 0 <= c <= 1 is mapped to a color
 	static void get_rgb(double c, shared ubyte *rgb) {
 		c *= 3;

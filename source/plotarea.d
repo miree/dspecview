@@ -476,6 +476,7 @@ protected:
 				draw_grid(cr, size.width, size.height);
 			}
 			//writeln("draw content\r");
+			double min_color_key, max_color_key;
 			foreach (idx, drawable_name; _drawables) {
 				ulong color_idx = idx % _color_table.length;
 				cr.setSourceRgba(_color_table[color_idx][0], _color_table[color_idx][1], _color_table[color_idx][2], 1.0);
@@ -484,7 +485,16 @@ protected:
 				if (drawable !is null) {
 					//writeln("draw\r");
 					drawable.draw(cr, _vbox, _logscale_y, _logscale_x, _logscale_z);
-					draw_color_key |= drawable.needsColorKey();
+					if (drawable.needsColorKey()) {
+						if (!draw_color_key) {// first assignment
+							min_color_key = drawable.minColorKey();
+							max_color_key = drawable.maxColorKey();
+						} else {
+							min_color_key = min(min_color_key, drawable.minColorKey());
+							max_color_key = max(max_color_key, drawable.maxColorKey());
+						}
+						draw_color_key |= drawable.needsColorKey();
+					}
 					cr.stroke();
 				}
 			}
@@ -496,7 +506,7 @@ protected:
 			draw_numbers(cr, size.width, size.height);
 			// draw the color key;
 			if (draw_color_key) {
-				drawColorKey(cr, _vbox, size.width, size.height);
+				drawColorKey(cr, _vbox, size.width, size.height, min_color_key, max_color_key, _logscale_z);
 			}
 			//if (_autoscale_x) {
 			//	_vbox.release();
@@ -609,7 +619,7 @@ protected:
 
 
 					if (drawable !is null && drawable.needsColorKey()) {
-						drawColorKey(cr, _vbox, size.width, size.height);
+						drawColorKey(cr, _vbox, size.width, size.height, drawable.minColorKey(), drawable.maxColorKey(), _logscale_z);
 					}
 
 					//if (_autoscale_x) {
