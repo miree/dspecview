@@ -187,7 +187,7 @@ synchronized class Hist1Visualizer : Drawable
 			}
 			import std.algorithm;
 			assert(i >= 0 && i < _bin_data.length);
-			if (_bin_data[i] > 0) {
+			if ((logy && (_bin_data[i] > 0)) || !logy) {
 				if (initialize) {
 					minimum = log_y_value_of(_bin_data[i], logy);
 					maximum = log_y_value_of(_bin_data[i], logy);

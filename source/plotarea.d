@@ -555,7 +555,9 @@ protected:
 						default_bottom_top(bottom, top);
 						if (drawable !is null) {
 							drawable.getBottomTopInLeftRight(bottom, top, _vbox.getLeft, _vbox.getRight, _logscale_y, _logscale_x);
+							writeln(bottom, " -> ", top, "\r");
 							add_bottom_top_margin(bottom, top);
+							writeln(bottom, " margin ", top, "\r");
 							_vbox.setBottomTop(bottom, top);
 						}
 					}

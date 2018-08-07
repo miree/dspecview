@@ -168,10 +168,12 @@ synchronized class Hist2Visualizer : Drawable
 	}
 
 	override double minColorKey() {
-		return minElement(_bin_data);
+		import std.algorithm;
+		return max(minElement(_bin_data),1);
 	}
 	override double maxColorKey() {
-		return maxElement(_bin_data);
+		import std.algorithm;
+		return max(maxElement(_bin_data),1);
 	}
 
 	// 0 <= c <= 1 is mapped to a color

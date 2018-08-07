@@ -455,36 +455,81 @@ void drawColorKey(ref Scoped!Context cr, ViewBox box, int canvas_width,  int can
 	double width  = box.transform_box2canvas_x(box.getRight)-box.transform_box2canvas_x(box.getRight-box.getWidth/30);
 	double height = box.transform_box2canvas_y(box.getTop)-box.transform_box2canvas_y(box.getBottom+box.getHeight/10);
 	ubyte[3] rgb;
-	immutable ulong color_steps = 100;
-	foreach(i; 0..color_steps) {
-		import hist2;
-		Hist2Visualizer.get_rgb(1.0*i/color_steps, cast(shared ubyte*)&rgb[0]);
-		cr.setSourceRgba(rgb[2]/255.0, rgb[1]/255.0, rgb[0]/255.0, 1);
-		// the following (multiplication "color_steps*2") is needed to paint the colored rectangles with a bit of overlap
-		// the condition is needed to avoid this at the last rectangle
-		if (i < color_steps-1) {
-			cr.rectangle(x0, y0+height*i/color_steps,
-						 width, height/color_steps*2);
-		} else {
-			cr.rectangle(x0, y0+height*i/color_steps,
-						 width, height/color_steps);
-		}
-		cr.fill();
-	}
-	cr.setSourceRgba(0,0,0, 1);
-	cr.setLineWidth(1);
-	cr.moveTo(x0      , y0       );
-	cr.lineTo(x0+width, y0       );
-	cr.lineTo(x0+width, y0+height);
-	cr.lineTo(x0      , y0+height);
-	cr.lineTo(x0      , y0       );
-	cr.stroke();
+	immutable ulong color_steps = 200;
+
 	if (logz)
 	{
+		foreach(i; 0..color_steps) {
+			import hist2;
+			Hist2Visualizer.get_rgb(1.0*(i+1)/(color_steps+1), cast(shared ubyte*)&rgb[0]);
+			cr.setSourceRgba(rgb[2]/255.0, rgb[1]/255.0, rgb[0]/255.0, 1);
+			// the following (multiplication "color_steps*2") is needed to paint the colored rectangles with a bit of overlap
+			// the condition is needed to avoid this at the last rectangle
+			if (i < color_steps-1) {
+				cr.rectangle(x0, y0+height*i/color_steps,
+							 width, height/color_steps*2);
+			} else {
+				cr.rectangle(x0, y0+height*i/color_steps,
+							 width, height/color_steps);
+			}
+			cr.fill();
+		}
+
+		import std.conv, std.math, std.stdio;
+		double log_bottom = log(1);
+		double log_top    = log(z_max);
+		//while (log_bottom < (z_min+1)) log_bottom += log(10);
+		//while (log_bottom > (z_min+1)) log_bottom -= log(10);
+		//writeln("bottom = ", log_bottom, " z_min = ", z_min, "\r");
+		do {
+			double color = 0.0;
+			cr.setSourceRgba(color, color, color, 1.0);
+			//drawHorizontalLine(cr, box, log_bottom, left, right);
+			import std.conv;
+			double number = exp(log_bottom);
+			auto text = to!string(number);
+			cairo_text_extents_t cte;
+			cr.textExtents(text,&cte);
+			//cr.moveTo(box.transform_box2canvas_x(left), box.transform_box2canvas_y(log_bottom)+cte.height/2);
+			cr.setLineWidth(1);
+			cr.moveTo(x0,                    y0+height*log_bottom/log_top);
+			cr.lineTo(x0+width/3,            y0+height*log_bottom/log_top);
+			cr.stroke();
+			cr.moveTo(x0-cte.width-width/10, y0+height*log_bottom/log_top+cte.height/2);
+			cr.showText(text);
+			cr.stroke();
+			//color = 0.8;
+			//cr.setSourceRgba(color, color, color, 1.0);
+			//foreach(i ; 2..9) {
+			//	//drawHorizontalLine(cr, box, log_bottom+log(i), left, right);
+			//}
+			//cr.stroke();
+			log_bottom += log(10);
+		} while (log_bottom <= log_top);
+
 
 	}
 	else
 	{
+		foreach(i; 0..color_steps) {
+			import hist2;
+			//double epsilon = 1e-6; // to avoid putting the 0-color into the colorkey
+			Hist2Visualizer.get_rgb(1.0*i/color_steps, cast(shared ubyte*)&rgb[0]);
+			cr.setSourceRgba(rgb[2]/255.0, rgb[1]/255.0, rgb[0]/255.0, 1);
+			// the following (multiplication "color_steps*2") is needed to paint the colored rectangles with a bit of overlap
+			// the condition is needed to avoid this at the last rectangle
+			if (i < color_steps-1) {
+				cr.rectangle(x0, y0+height*i/color_steps,
+							 width, height/color_steps*2);
+			} else {
+				cr.rectangle(x0, y0+height*i/color_steps,
+							 width, height/color_steps);
+			}
+			cr.fill();
+		}
+
+
+
 		int i = 0;
 		double z_height = z_max-z_min;
 		import std.stdio;
@@ -514,6 +559,7 @@ void drawColorKey(ref Scoped!Context cr, ViewBox box, int canvas_width,  int can
 			if (cte.height*2 <= fabs(-height*oomz/z_max) ||
 				(number%5 == 0))
 			{	
+				cr.setLineWidth(1);
 				cr.moveTo(x0,                    y0+height*bottom_oom/z_max);
 				cr.lineTo(x0+width/3,            y0+height*bottom_oom/z_max);
 				cr.stroke();
@@ -525,6 +571,16 @@ void drawColorKey(ref Scoped!Context cr, ViewBox box, int canvas_width,  int can
 		}
 		cr.stroke();
 
-		/// continue here !!!!!!!! the color key needs numbers
 	}
+
+
+	// box around the color key
+	cr.setSourceRgba(0,0,0, 1);
+	cr.setLineWidth(1);
+	cr.moveTo(x0      , y0       );
+	cr.lineTo(x0+width, y0       );
+	cr.lineTo(x0+width, y0+height);
+	cr.lineTo(x0      , y0+height);
+	cr.lineTo(x0      , y0       );
+	cr.stroke();
 }
