@@ -448,7 +448,7 @@ void drawGridNumbersLogY(ref Scoped!Context cr, ViewBox box, int canvas_width, i
 	} while (log_bottom <= box.getTop);
 }
 
-void drawColorKey(ref Scoped!Context cr, ViewBox box, int canvas_height, int canvas_width, double z_min, double z_max, bool logz)
+void drawColorKey(ref Scoped!Context cr, ViewBox box, int canvas_width,  int canvas_height,double z_min, double z_max, bool logz)
 {
 	double x0     = box.transform_box2canvas_x(box.getRight-box.getWidth/20);
 	double y0     = box.transform_box2canvas_y(box.getBottom+box.getHeight/20);
@@ -486,14 +486,44 @@ void drawColorKey(ref Scoped!Context cr, ViewBox box, int canvas_height, int can
 	else
 	{
 		int i = 0;
-		double box_height  = 0.9*box.getHeight()*100000/(canvas_height/box.getRows());
+		double z_height = z_max-z_min;
+		import std.stdio;
+		//writeln("canvas_height=",canvas_height, "   height=",height,"\r");
+		double box_height  = z_height*500/(-height/box.getRows());
 		double oomz = 1; // order of magnitude Y
 		while (oomz < box_height) oomz *= 10;
 		while (oomz > box_height) oomz /= 10;
 		oomz /= 10;
 		for (int n = 0; n < i; ++n) oomz *= 10;
 		import std.stdio;
-		writeln ("min = ", z_min , "   max = ", z_max, "  oomz = " , oomz, "\r");	
+		//writeln ("canvas_height=", canvas_height, "min = ", z_min , "   max = ", z_max, "  oomz = " , oomz, "\r");	
+
+		import std.math, std.stdio;
+		double bottom_oom = (cast(long)round(z_min/oomz))*oomz;
+		while(bottom_oom < z_max)
+		{
+			cr.setSourceRgba(0, 0, 0, 1.0);
+
+			long number = cast(long)(round(bottom_oom/oomz));
+			import std.conv;
+
+			auto text = to!string(number*oomz);
+			cairo_text_extents_t cte;
+			cr.textExtents(text,&cte);
+
+			if (cte.height*2 <= fabs(-height*oomz/z_max) ||
+				(number%5 == 0))
+			{	
+				cr.moveTo(x0,                    y0+height*bottom_oom/z_max);
+				cr.lineTo(x0+width/3,            y0+height*bottom_oom/z_max);
+				cr.stroke();
+				cr.moveTo(x0-cte.width-width/10, y0+height*bottom_oom/z_max+cte.height/2);
+				cr.showText(text);
+				//writeln("show ", text);
+			}
+			bottom_oom += oomz;
+		}
+		cr.stroke();
 
 		/// continue here !!!!!!!! the color key needs numbers
 	}

@@ -353,7 +353,6 @@ protected:
 			right = max(right, r);
 		}
 		import std.stdio;
-		writeln("global_left=",left, "   global_right=",right, "\r");
 		add_left_right_margin(left,right);
 		return !first_assignment; // false if there was now drawable in the plotarea		
 	}
