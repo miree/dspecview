@@ -61,8 +61,9 @@ synchronized class Drawable : Item
 		return false;
 	}
 	void getLeftRight(ref double left, ref double right, bool logy, bool logx) {
-		left  = getLeft();
-		right = getRight();
+		import logscale;
+		left  = log_x_value_of(getLeft(),logx);
+		right = log_x_value_of(getRight(),logx);
 	}
 	final double getWidth() { return getRight() - getLeft(); }
 	final double getHeight() { return getTop() - getBottom(); }

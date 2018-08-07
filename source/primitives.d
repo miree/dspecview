@@ -460,10 +460,25 @@ void drawColorKey(ref Scoped!Context cr, ViewBox box, int canvas_height, int can
 		import hist2;
 		Hist2Visualizer.get_rgb(1.0*i/color_steps, cast(shared ubyte*)&rgb[0]);
 		cr.setSourceRgba(rgb[2]/255.0, rgb[1]/255.0, rgb[0]/255.0, 1);
-		cr.rectangle(x0, y0+height*i/color_steps,
-					 width, height/color_steps*2);
+		// the following (multiplication "color_steps*2") is needed to paint the colored rectangles with a bit of overlap
+		// the condition is needed to avoid this at the last rectangle
+		if (i < color_steps-1) {
+			cr.rectangle(x0, y0+height*i/color_steps,
+						 width, height/color_steps*2);
+		} else {
+			cr.rectangle(x0, y0+height*i/color_steps,
+						 width, height/color_steps);
+		}
 		cr.fill();
 	}
+	cr.setSourceRgba(0,0,0, 1);
+	cr.setLineWidth(1);
+	cr.moveTo(x0      , y0       );
+	cr.lineTo(x0+width, y0       );
+	cr.lineTo(x0+width, y0+height);
+	cr.lineTo(x0      , y0+height);
+	cr.lineTo(x0      , y0       );
+	cr.stroke();
 	if (logz)
 	{
 

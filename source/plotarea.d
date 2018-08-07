@@ -117,12 +117,14 @@ public:
 	void setLogscaleX(bool logscale) {
 		_logscale_x = logscale;
 		setFitX();
+		// adjust the zoom ranges for linear and logarithmic axis scaling
 		if (logscale) { _vbox.setWidthMinMax(1e-1,1e2);}
 		else          { _vbox.setWidthMinMax(1e-3,1e10);}
 	}
 	void setLogscaleY(bool logscale) {
 		_logscale_y = logscale;
 		setFitY();
+		// adjust the zoom ranges for linear and logarithmic axis scaling
 		if (logscale) { _vbox.setHeightMinMax(1e-1,1e2);}
 		else          { _vbox.setHeightMinMax(1e-3,1e10);}
 	}
@@ -144,10 +146,6 @@ public:
 		_drawables = new_drawables;
 	}
 
-	void setFit() {
-		setFitX();
-		setFitY();
-	}
 	void refresh() {
 		synchronized {
 			foreach(idx, drawable; _drawables) {
@@ -157,26 +155,15 @@ public:
 		}		
 	}
 
+	void setFit() {
+		setFitX();
+		setFitY();
+	}
 	void setFitX() {
 		import logscale;
 		update_drawable_list();
 		double global_left, global_right;
-		default_left_right(global_left, global_right);
-		global_left = log_x_value_of(global_left, _logscale_x);
-		global_right = log_x_value_of(global_right, _logscale_x);
-		synchronized {
-			foreach(idx, drawable; _drawables) {
-				auto item = _session.getDrawable(drawable);
-				//item.refresh();
-				import std.algorithm;
-				if (idx == 0) {
-					global_left   = log_x_value_of(item.getLeft(),  _logscale_x);
-					global_right  = log_x_value_of(item.getRight(), _logscale_x);
-				}
-				global_left   = min(global_left  , log_x_value_of(item.getLeft(),  _logscale_x));
-				global_right  = max(global_right , log_x_value_of(item.getRight(), _logscale_x));
-			}
-		}
+		get_global_left_right(global_left, global_right);
 		_vbox._left   = global_left;
 		_vbox._right  = global_right;
 	}
@@ -184,26 +171,9 @@ public:
 		import logscale;
 		update_drawable_list();
 		double global_top, global_bottom;
-		default_bottom_top(global_bottom, global_top);
-		global_top  = log_y_value_of(global_top, _logscale_y);
-		global_bottom = log_y_value_of(global_bottom, _logscale_y);
-		synchronized {
-			foreach(idx, drawable; _drawables) {
-				auto item = _session.getDrawable(drawable);
-				//item.refresh();
-				import std.algorithm;
-				if (idx == 0) {
-					global_bottom = log_y_value_of(item.getBottom(), _logscale_y);
-					global_top 	  = log_y_value_of(item.getTop(),    _logscale_y);
-				}
-				global_bottom = min(global_bottom, log_y_value_of(item.getBottom(), _logscale_y));
-				global_top 	  = max(global_top 	 , log_y_value_of(item.getTop(), _logscale_y));
-			}
-		}
-		add_bottom_top_margin(global_bottom, global_top);
-		//double height = global_top - global_bottom;
-		_vbox._bottom = global_bottom ;//- 0.1*height ;
-		_vbox._top    = global_top    ;//+ 0.1*height;
+		get_global_bottom_top(global_bottom, global_top);
+		_vbox._bottom = global_bottom ;
+		_vbox._top    = global_top    ;
 	}
 
 	void clear() {
@@ -311,31 +281,42 @@ protected:
 	//}
 
 
-	void add_bottom_top_margin(ref double bottom, ref double top) {
+	void add_bottom_top_margin(ref double bottom, ref double top, double margin_factor = 0.06) {
 		if (bottom < top) {
-			double margin_factor = 0.1;
 			double height = top - bottom;
 			top    += margin_factor * height;
 			bottom -= margin_factor * height;
 		} else {
-			top    += 1;
-			bottom -= 1;
+			assert(top == bottom);
+			double t,b;
+			default_bottom_top(b,t);
+			top    += t;
+			bottom += b;
+		}
+	}	
+	void add_left_right_margin(ref double left, ref double right, double margin_factor = 0.06) {
+		if (left < right) {
+			double height = right - left;
+			right    += margin_factor * height;
+			left -= margin_factor * height;
+		} else {
+			assert(right == left);
+			double t,b;
+			default_left_right(b,t);
+			right    += t;
+			left += b;
 		}
 	}
 	void default_bottom_top(out double bottom, out double top) {
 		import logscale;
-		bottom = -10;
-		top    =  10;
-		bottom = log_y_value_of(bottom, _logscale_y);
-		top    = log_y_value_of(top, _logscale_y);
+		bottom = log_y_value_of(-10, _logscale_y);
+		top    = log_y_value_of( 10, _logscale_y);
 
 	}
 	void default_left_right(out double left, out double right) {
 		import logscale;
-		left  = -10;
-		right =  10;
-		left  = log_x_value_of(left,  _logscale_x);
-		right = log_x_value_of(right, _logscale_x);
+		left  = log_x_value_of(-10,  _logscale_x);
+		right = log_x_value_of( 10, _logscale_x);
 	}
 	bool get_global_bottom_top(out double bottom, out double top) {
 		default_bottom_top(bottom, top);
@@ -353,6 +334,7 @@ protected:
 				top    = max(top   , t);
 			}
 		}
+		add_bottom_top_margin(bottom,top);
 		return !first_assignment; // false if there was now drawable in the plotarea		
 	}
 	bool get_global_left_right(out double left, out double right) {
@@ -370,6 +352,9 @@ protected:
 			left  = min(left,  l);
 			right = max(right, r);
 		}
+		import std.stdio;
+		writeln("global_left=",left, "   global_right=",right, "\r");
+		add_left_right_margin(left,right);
 		return !first_assignment; // false if there was now drawable in the plotarea		
 	}
 
@@ -454,18 +439,13 @@ protected:
 			import std.algorithm;
 			if (_autoscale_x) {
 				double global_left, global_right;
-				if (!get_global_left_right(global_left, global_right)) {
-					default_left_right(global_left, global_right);
-				}
+				get_global_left_right(global_left, global_right);
 				import logscale;
-				_vbox.setLeftRight(log_x_value_of(global_left,_logscale_x), 
-					               log_x_value_of(global_right,_logscale_x));
+				_vbox.setLeftRight(global_left,global_right);
 			}
 			if (_autoscale_y) {
 				double global_bottom, global_top;
-				if (!get_global_bottom_top(global_bottom, global_top)) {
-					default_bottom_top(global_bottom, global_top);
-				}
+				get_global_bottom_top(global_bottom, global_top);
 				_vbox.setBottomTop(global_bottom, global_top);
 			}
 			_vbox.update_coefficients(0, 0, size.width, size.height);
@@ -534,6 +514,7 @@ protected:
 			_vbox._columns = columns;
 			foreach (row; 0.._vbox.getRows) {
 				foreach (column; 0.._vbox.getColumns) {
+					//writeln("row=",row, " col=",column, "\r");
 					ulong idx = column * rows + row;
 					if (_row_major) {
 						idx = row * columns + column;
@@ -563,11 +544,10 @@ protected:
 						default_left_right(left, right);
 						if (drawable !is null) {
 							drawable.getLeftRight(left, right, _logscale_y, _logscale_x);
-							//add_left_right_margin(left, right);
+							add_left_right_margin(left, right);
 							import logscale;
 							//_vbox.freeze();
-							_vbox.setLeftRight(log_x_value_of(left,_logscale_x), 
-								               log_x_value_of(right,_logscale_x));
+							_vbox.setLeftRight(left,right);
 						}
 					}
 					if (_autoscale_y) {
@@ -576,7 +556,7 @@ protected:
 						default_bottom_top(bottom, top);
 						if (drawable !is null) {
 							drawable.getBottomTopInLeftRight(bottom, top, _vbox.getLeft, _vbox.getRight, _logscale_y, _logscale_x);
-							//add_bottom_top_margin(bottom, top);
+							add_bottom_top_margin(bottom, top);
 							_vbox.setBottomTop(bottom, top);
 						}
 					}
@@ -626,6 +606,8 @@ protected:
 					//	// first determine the width
 					//	_vbox.release();
 					//}
+
+					//writeln("row=",row, " col=",column, "done \r");
 
 				}
 			}

@@ -755,6 +755,10 @@ class Gui : ApplicationWindow
 								_check_autoscale_y.setSensitive(!active);
 								_check_overlay.setSensitive(!active);
 								_check_grid_ontop.setSensitive(!active);
+								if (!active) {
+									_plot_area.setFitX();
+									_plot_area.setFitY();
+								}
 								_plot_area.queueDraw();
 							});
 

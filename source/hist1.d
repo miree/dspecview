@@ -24,6 +24,9 @@ synchronized class Hist1Memory : Hist1Datasource
 	{
 		_bin_data = new double[bins];
 		_bin_data[] = 0;
+		if (_bin_data.length > 1) { _bin_data[0] = 0.01; }
+		if (_bin_data.length > 2) { _bin_data[1] = 0.1; }
+		if (_bin_data.length > 3) { _bin_data[2] = 1; }
 		if (left is double.init || right is double.init) {
 			_left = 0;
 			_right = bins;
@@ -145,17 +148,7 @@ synchronized class Hist1Visualizer : Drawable
 			_right  =  1;
 		}
 	}
-	void add_bottom_top_margin(ref double bottom, ref double top) {
-		if (bottom < top) {
-			double margin_factor = 0.1;
-			double height = top - bottom;
-			top    += margin_factor * height;
-			bottom -= margin_factor * height;
-		} else {
-			top    += 1;
-			bottom -= 1;
-		}
-	}
+
 	override bool getBottomTopInLeftRight(ref double bottom, ref double top, double left, double right, bool logy, bool logx) {
 		//writeln("getBottomTopInLeftRight ", left, " ", right, "\r");
 		if (_bin_data is null) {
@@ -194,20 +187,22 @@ synchronized class Hist1Visualizer : Drawable
 			}
 			import std.algorithm;
 			assert(i >= 0 && i < _bin_data.length);
-			if (initialize) {
-				minimum = log_y_value_of(_bin_data[i], logy);
-				maximum = log_y_value_of(_bin_data[i], logy);
-				initialize = false;
+			if (_bin_data[i] > 0) {
+				if (initialize) {
+					minimum = log_y_value_of(_bin_data[i], logy);
+					maximum = log_y_value_of(_bin_data[i], logy);
+					initialize = false;
+				}
+				minimum = min(minimum, log_y_value_of(_bin_data[i], logy));
+				maximum = max(maximum, log_y_value_of(_bin_data[i], logy));
 			}
-			minimum = min(minimum, log_y_value_of(_bin_data[i], logy));
-			maximum = max(maximum, log_y_value_of(_bin_data[i], logy));
 		}
-		bottom = minimum;
-		top    = maximum;
-		//writeln("bottom = " , bottom, "   top = " , top ,"\r");
-		add_bottom_top_margin(bottom, top);
-		//writeln("done false\r");
-		return true;
+		if (!initialize) {
+			bottom = minimum;
+			top    = maximum;
+			return true;
+		}
+		return false;
 	}
 
 	override void draw(ref Scoped!Context cr, ViewBox box, bool logy, bool logx, bool logz) {
