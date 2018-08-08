@@ -448,8 +448,10 @@ void drawGridNumbersLogY(ref Scoped!Context cr, ViewBox box, int canvas_width, i
 	} while (log_bottom <= box.getTop);
 }
 
-void drawColorKey(ref Scoped!Context cr, ViewBox box, int canvas_width,  int canvas_height,double z_min, double z_max, bool logz)
+void drawColorKey(ref Scoped!Context cr, ViewBox box, int canvas_width,  int canvas_height, double z_min, double z_max, bool logz)
 {
+
+
 	double x0     = box.transform_box2canvas_x(box.getRight-box.getWidth/20);
 	double y0     = box.transform_box2canvas_y(box.getBottom+box.getHeight/20);
 	double width  = box.transform_box2canvas_x(box.getRight)-box.transform_box2canvas_x(box.getRight-box.getWidth/30);
@@ -476,8 +478,12 @@ void drawColorKey(ref Scoped!Context cr, ViewBox box, int canvas_width,  int can
 		}
 
 		import std.conv, std.math, std.stdio;
-		double log_bottom = log(1);
-		double log_top    = log(z_max);
+		import logscale;
+		double log_bottom = log_color_value_of(z_min, logz);
+		double log_top    = log_color_value_of(z_max, logz);
+		if (log_top <= log_bottom) { // fix empty z_range
+			log_top = log_bottom + 1;
+		}
 		//while (log_bottom < (z_min+1)) log_bottom += log(10);
 		//while (log_bottom > (z_min+1)) log_bottom -= log(10);
 		//writeln("bottom = ", log_bottom, " z_min = ", z_min, "\r");
@@ -509,7 +515,7 @@ void drawColorKey(ref Scoped!Context cr, ViewBox box, int canvas_width,  int can
 
 
 	}
-	else
+	else // lin z
 	{
 		foreach(i; 0..color_steps) {
 			import hist2;
@@ -531,6 +537,9 @@ void drawColorKey(ref Scoped!Context cr, ViewBox box, int canvas_width,  int can
 
 
 		int i = 0;
+		if (z_max <= z_min) { // fix empty z_range
+			z_max = z_min + 1;
+		}
 		double z_height = z_max-z_min;
 		import std.stdio;
 		//writeln("canvas_height=",canvas_height, "   height=",height,"\r");
@@ -545,6 +554,7 @@ void drawColorKey(ref Scoped!Context cr, ViewBox box, int canvas_width,  int can
 
 		import std.math, std.stdio;
 		double bottom_oom = (cast(long)round(z_min/oomz))*oomz;
+		//writeln("z_min=",z_min, "   bottom_oom=",bottom_oom,"\r");
 		while(bottom_oom < z_max)
 		{
 			cr.setSourceRgba(0, 0, 0, 1.0);

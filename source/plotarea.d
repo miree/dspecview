@@ -118,14 +118,14 @@ public:
 		_logscale_x = logscale;
 		setFitX();
 		// adjust the zoom ranges for linear and logarithmic axis scaling
-		if (logscale) { _vbox.setWidthMinMax(1e-1,1e2);}
+		if (logscale) { _vbox.setWidthMinMax(1e-2,1e2);}
 		else          { _vbox.setWidthMinMax(1e-3,1e10);}
 	}
 	void setLogscaleY(bool logscale) {
 		_logscale_y = logscale;
 		setFitY();
 		// adjust the zoom ranges for linear and logarithmic axis scaling
-		if (logscale) { _vbox.setHeightMinMax(1e-1,1e2);}
+		if (logscale) { _vbox.setHeightMinMax(1e-2,1e2);}
 		else          { _vbox.setHeightMinMax(1e-3,1e10);}
 	}
 	void setLogscaleZ(bool logscale) {
@@ -555,9 +555,7 @@ protected:
 						default_bottom_top(bottom, top);
 						if (drawable !is null) {
 							drawable.getBottomTopInLeftRight(bottom, top, _vbox.getLeft, _vbox.getRight, _logscale_y, _logscale_x);
-							writeln(bottom, " -> ", top, "\r");
 							add_bottom_top_margin(bottom, top);
-							writeln(bottom, " margin ", top, "\r");
 							_vbox.setBottomTop(bottom, top);
 						}
 					}

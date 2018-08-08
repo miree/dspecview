@@ -169,11 +169,11 @@ synchronized class Hist2Visualizer : Drawable
 
 	override double minColorKey() {
 		import std.algorithm;
-		return max(minElement(_bin_data),1);
+		return minElement(_bin_data);
 	}
 	override double maxColorKey() {
 		import std.algorithm;
-		return max(maxElement(_bin_data),1);
+		return maxElement(_bin_data);
 	}
 
 	// 0 <= c <= 1 is mapped to a color
@@ -276,8 +276,10 @@ synchronized class Hist2Visualizer : Drawable
 		//writeln("bins = ", _bin_data[0].length, "\r");
 
 		//writeln("pixel width = ", box.get_pixel_width() , "\r");
-		auto pixel_width = box.get_pixel_width();
-		auto bin_width = 1;
+		//writeln("pixel height = ", box.get_pixel_height() , "\r");
+		//auto pixel_width = 10*box.get_pixel_width();
+		//auto pixel_height = 2*box.get_pixel_height();
+		//auto bin_width = 1;
 		//if (bin_width > pixel_width || logx) { // there is no mipmap impelemntation for logx histogram drawing
 			//drawHistogram(cr,box, 0,_bin_data.length, _bin_data, logy, logx);
 		//} 
@@ -301,7 +303,6 @@ synchronized class Hist2Visualizer : Drawable
 					if (value == 0) {
 						continue;
 					}
-					//writeln("value = ", value, "\r");
 					double x      = box.transform_box2canvas_x(log_x_value_of(getLeft+getWidth*(x_idx)/_bins_x,box,logx));
 					double xplus1 = box.transform_box2canvas_x(log_x_value_of(getLeft+getWidth*(x_idx+1)/_bins_x,box,logx));
 					double y      = box.transform_box2canvas_y(log_y_value_of(getBottom+getHeight*(y_idx)/_bins_y,box,logy));
@@ -315,10 +316,8 @@ synchronized class Hist2Visualizer : Drawable
 					} else {
 						get_rgb(value/max_bin, cast(shared ubyte*)&rgb[0]);
 					}
-					//writeln("rgb, ", value , " ",rgb[2], " ",rgb[1], " ", rgb[0], "\r");
 					cr.setSourceRgba(rgb[2]/255.0, rgb[1]/255.0, rgb[0]/255.0, 1);
-					//cr.setSourceRgba(255, 0, 0, 1);
-					cr.rectangle(x,y, width,height);
+					cr.rectangle(x-0.25, y+0.25, width+0.5, height-0.5);
 					cr.fill();
 				}
 			}

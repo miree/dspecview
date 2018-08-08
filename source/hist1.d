@@ -215,7 +215,7 @@ synchronized class Hist1Visualizer : Drawable
 		//writeln("pixel width = ", box.get_pixel_width() , "\r");
 		auto pixel_width = box.get_pixel_width();
 		auto bin_width = getBinWidth;
-		if (bin_width > pixel_width || logx) { // there is no mipmap impelemntation for logx histogram drawing
+		if (bin_width > pixel_width || logx) { // there is no mipmap implementation for logx histogram drawing
 			//writeln("hist1 draw\r");
 			drawHistogram(cr,box, getLeft, getRight, _bin_data, logy, logx);
 		} else {
