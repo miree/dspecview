@@ -448,9 +448,10 @@ void drawGridNumbersLogY(ref Scoped!Context cr, ViewBox box, int canvas_width, i
 	} while (log_bottom <= box.getTop);
 }
 
-void drawColorKey(ref Scoped!Context cr, ViewBox box, int canvas_width,  int canvas_height, double z_min, double z_max, bool logz)
+void drawColorKey(ref Scoped!Context cr, ViewBox box, int canvas_width,  int canvas_height, bool logz)
 {
-
+	double z_min = box.getZmin();
+	double z_max = box.getZmax();
 
 	double x0     = box.transform_box2canvas_x(box.getRight-box.getWidth/20);
 	double y0     = box.transform_box2canvas_y(box.getBottom+box.getHeight/20);

@@ -161,8 +161,8 @@ synchronized class Hist1Visualizer : Drawable
 		}
 
 		// transform into bin numbers
-		left  = (left-getLeft)/getBinWidth;
-		right = (right-getLeft)/getBinWidth;
+		left  = (left-getLeft)/getBinWidth();
+		right = (right-getLeft)/getBinWidth();
 
 		//writeln("getBottomTopInLeftRight ", left, " ", right, "\r");
 

@@ -262,6 +262,90 @@ synchronized class Hist2Visualizer : Drawable
 
 	}
 
+	override bool getZminZmaxInLeftRightBottomTop(ref double zmin, ref double zmax, 
+												double left, double right, double bottom, double top, 
+												bool logz, bool logy, bool logx) {
+
+		writeln("getZminZmaxInLeftRightBottomTop ", left, " ", right, " ", bottom, " ", top, "\r");
+		//writeln("getZminZmaxInLeftRightBottomTop \r");
+		if (_bin_data is null) {
+			refresh();
+		}
+		import std.math;
+		if (logx) { // special treatment for logx case
+			right = exp(right);
+			left = exp(left);
+		}
+		if (logy) { // special treatment for logy case
+			bottom = exp(bottom);
+			top = exp(top);
+		}
+		writeln("getZminZmaxInLeftRightBottomTop ", left, " ", right, " ", bottom, " ", top, "\r");
+
+		writeln("Left=",getLeft(), "  Right=",getRight(),  "  Bottom=",getBottom(),  "  Top=",getTop(),"\r");
+		// transform into bin numbers
+		left    = (left-getLeft())/getBinWidth();
+		right   = (right-getRight())/getBinWidth();
+		bottom  = -(bottom-getBottom())/getBinHeight();
+		top     = -(top-getTop())/getBinHeight();
+
+		writeln("getZminZmaxInLeftRightBottomTop ", left, " ", right, " ", bottom, " ", top, "\r");
+
+		if (left >= _bin_data.length || right <= 0) {
+			//writeln("done false\r");
+			return false;
+		}
+
+		double minimum, maximum;
+		bool initialize = true;
+		int leftbin   = cast(int)(max(left,0));
+		int rightbin  = cast(int)(min(right,_bins_x));
+		int bottombin = cast(int)(max(bottom,0));
+		int topbin    = cast(int)(min(top,_bins_y));
+		writeln("bins:", leftbin, " ", rightbin, " ", bottombin, " ", topbin, "\r");
+		assert (leftbin <= rightbin);
+		assert (bottombin <= topbin);
+		writeln("bins:", leftbin, " ", rightbin, " ", bottombin, " ", topbin, "\r");
+		foreach(j ; bottombin..topbin+1) {
+			if (j < 0) {
+				continue;
+			}
+			if (j >= _bins_y) {
+				break;
+			}
+			foreach(i ; leftbin..rightbin+1){
+				//writeln(i, " ", j );
+				if (i < 0) {
+					continue;
+				}
+				if (i >= _bins_x) {
+					break;
+				}
+				import std.algorithm;
+				assert(i >= 0 && i < _bins_x);
+				assert(j >= 0 && j < _bins_y);
+				ulong idx = _bins_y*j+i;
+				if ((logz && (_bin_data[idx] > 0)) || !logz) {
+					if (initialize) {
+						minimum = log_z_value_of(_bin_data[idx], logz);
+						maximum = log_z_value_of(_bin_data[idx], logz);
+						initialize = false;
+					}
+					minimum = min(minimum, log_z_value_of(_bin_data[idx], logz));
+					maximum = max(maximum, log_z_value_of(_bin_data[idx], logz));
+				}
+			}
+		}
+		writeln("getZminZmaxInLeftRightBottomTop done\r");
+		if (!initialize) {
+			zmin = minimum;
+			zmax = maximum;
+			writeln("zmin=",zmin, "  zmax=",zmax,"\r");
+			writeln("exp(zmin)=",exp(zmin), "  exp(zmax)=",exp(zmax),"\r");
+			return true;
+		}
+		return false;
+	}
 	override bool getBottomTopInLeftRight(ref double bottom, ref double top, double left, double right, bool logy, bool logx) {
 		bottom = log_y_value_of(_bottom, logy);
 		top    = log_y_value_of(_top, logy);
@@ -285,7 +369,8 @@ synchronized class Hist2Visualizer : Drawable
 		//} 
 
 		double max_bin = maxElement(_bin_data);
-		if (logy || logx) {
+		//if (logy || logx) {
+		if (true) {
 			// log drawing has to be done bin by bin for now... only the bins != 0
 			cr.setSourceRgba(1, 1, 1, 1);
 			cr.rectangle(box.transform_box2canvas_x(log_x_value_of(getLeft, box, logx)),
@@ -307,17 +392,21 @@ synchronized class Hist2Visualizer : Drawable
 					double xplus1 = box.transform_box2canvas_x(log_x_value_of(getLeft+getWidth*(x_idx+1)/_bins_x,box,logx));
 					double y      = box.transform_box2canvas_y(log_y_value_of(getBottom+getHeight*(y_idx)/_bins_y,box,logy));
 					double yplus1 = box.transform_box2canvas_y(log_y_value_of(getBottom+getHeight*(y_idx+1)/_bins_y,box,logy));
+					double color  = box.transform_box2canvas_z(log_z_value_of(value,logz));
+					//writeln("value=",value, " -> color=",color,"\r");
 					double width = xplus1-x;
 					double height = yplus1-y;
 					ubyte[3] rgb;
 					if (logz) {
 						import std.math;
-						get_rgb(log(value+1.0)/log(max_bin+1.0), cast(shared ubyte*)&rgb[0]);
+						//get_rgb(log(value+1.0)/log(max_bin+1.0), cast(shared ubyte*)&rgb[0]);
+						get_rgb(color/box.getZrange(), cast(shared ubyte*)&rgb[0]);
 					} else {
-						get_rgb(value/max_bin, cast(shared ubyte*)&rgb[0]);
+						//get_rgb(value/max_bin, cast(shared ubyte*)&rgb[0]);
+						get_rgb(color/box.getZrange(), cast(shared ubyte*)&rgb[0]);
 					}
 					cr.setSourceRgba(rgb[2]/255.0, rgb[1]/255.0, rgb[0]/255.0, 1);
-					cr.rectangle(x-0.25, y+0.25, width+0.5, height-0.5);
+					cr.rectangle(x-0.1, y+0.1, width+0.2, height-0.2);
 					cr.fill();
 				}
 			}

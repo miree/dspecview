@@ -753,6 +753,7 @@ class Gui : ApplicationWindow
 								_check_logz.setSensitive(!active);
 								_check_autoscale_x.setSensitive(!active);
 								_check_autoscale_y.setSensitive(!active);
+								_check_autoscale_z.setSensitive(!active);
 								_check_overlay.setSensitive(!active);
 								_check_grid_ontop.setSensitive(!active);
 								if (!active) {
@@ -763,6 +764,13 @@ class Gui : ApplicationWindow
 							});
 
 		auto autoscale_label = new Label("auto\nscale");
+		_check_autoscale_z = new CheckButton("Z",false);
+		_check_autoscale_z.addOnToggled(
+							delegate void(ToggleButton button) {
+								//writeln("overlay button toggled ", button.getActive(), "\r");
+								_plot_area.setAutoscaleZ(button.getActive());
+								_plot_area.queueDraw();
+							} );
 		_check_autoscale_y = new CheckButton("Y",true);
 		_check_autoscale_y.addOnToggled(
 							delegate void(ToggleButton button) {
@@ -778,6 +786,7 @@ class Gui : ApplicationWindow
 								_plot_area.queueDraw();
 							} );
 		if (mode2d == false) _check_autoscale_y.setActive(true);
+		if (mode2d == true ) _check_autoscale_z.setActive(true);
 
 		auto log_label = new Label("  log");
 		_check_logx = new CheckButton("X");
@@ -849,6 +858,7 @@ class Gui : ApplicationWindow
 		layout_box.add(_check_overview_mode);
 		layout_box.add(new Separator(GtkOrientation.VERTICAL));
 		layout_box.add(autoscale_label);
+		layout_box.add(_check_autoscale_z);
 		layout_box.add(_check_autoscale_y);
 		layout_box.add(_check_autoscale_x);
 
@@ -910,6 +920,7 @@ class Gui : ApplicationWindow
 	RadioButton _radio_overlay, _radio_grid;
 	SpinButton _spin_columns;
 	RadioButton _radio_rowmajor, _radio_colmajor;
+	CheckButton _check_autoscale_z;
 	CheckButton _check_autoscale_y;
 	CheckButton _check_autoscale_x;
 	CheckButton _check_logx, _check_logy, _check_logz;

@@ -60,6 +60,9 @@ synchronized class Drawable : Item
 	bool getBottomTopInLeftRight(ref double bottom, ref double top, double left, double right, bool logy, bool logx) {
 		return false;
 	}
+	bool getZminZmaxInLeftRightBottomTop(ref double zmin, ref double zmax, double left, double right, double bottom, double top, bool logz, bool logy, bool logx) {
+		return false;
+	}
 	void getLeftRight(ref double left, ref double right, bool logy, bool logx) {
 		import logscale;
 		left  = log_x_value_of(getLeft(),logx);

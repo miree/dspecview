@@ -96,6 +96,9 @@ public:
 	void setGridColMajor() {
 		_row_major = false;
 	}
+	void setAutoscaleZ(bool autoscale) {
+		_autoscale_z = autoscale;
+	}
 	void setAutoscaleY(bool autoscale) {
 		_autoscale_y = autoscale;
 	}
@@ -130,6 +133,10 @@ public:
 	}
 	void setLogscaleZ(bool logscale) {
 		_logscale_z = logscale;
+		setFitZ();
+		// adjust the zoom ranges for linear and logarithmic axis scaling
+		//if (logscale) { _vbox.setHeightMinMax(1e-2,1e2);}
+		//else          { _vbox.setHeightMinMax(1e-3,1e10);}
 	}
 	void update_drawable_list() {
 		//writeln("update_drawable_list()\n\rdrawables before : " , _drawables, "\r");
@@ -174,6 +181,14 @@ public:
 		get_global_bottom_top(global_bottom, global_top);
 		_vbox._bottom = global_bottom ;
 		_vbox._top    = global_top    ;
+	}
+	void setFitZ() {
+		import logscale;
+		update_drawable_list();
+		double global_zmin, global_zmax;
+		get_global_zmin_zmax(global_zmin, global_zmax);
+		_vbox._zmin = global_zmin ;
+		_vbox._zmax = global_zmax ;
 	}
 
 	void clear() {
@@ -281,6 +296,19 @@ protected:
 	//}
 
 
+	void add_zmin_zmax_margin(ref double zmin, ref double zmax, double margin_factor = 0.06) {
+		if (zmin < zmax) {
+			double height = zmax - zmin;
+			zmax += margin_factor * height;
+			zmin -= margin_factor * height;
+		} else {
+			assert(zmax == zmin);
+			double t,b;
+			default_zmin_zmax(b,t);
+			zmax += t;
+			zmin += b;
+		}
+	}	
 	void add_bottom_top_margin(ref double bottom, ref double top, double margin_factor = 0.06) {
 		if (bottom < top) {
 			double height = top - bottom;
@@ -307,6 +335,12 @@ protected:
 			left += b;
 		}
 	}
+	void default_zmin_zmax(out double zmin, out double zmax) {
+		import logscale;
+		zmin = log_z_value_of(-10, _logscale_z);
+		zmax = log_z_value_of( 10, _logscale_z);
+
+	}
 	void default_bottom_top(out double bottom, out double top) {
 		import logscale;
 		bottom = log_y_value_of(-10, _logscale_y);
@@ -317,6 +351,25 @@ protected:
 		import logscale;
 		left  = log_x_value_of(-10,  _logscale_x);
 		right = log_x_value_of( 10, _logscale_x);
+	}
+	bool get_global_zmin_zmax(out double zmin, out double zmax) {
+		default_zmin_zmax(zmin, zmax);
+		bool first_assignment = true;
+		foreach(drawable; _drawables) {
+			double mi, ma;
+			if (_session.getDrawable(drawable).getZminZmaxInLeftRightBottomTop(mi, ma, _vbox.getBottom(), _vbox.getTop(), _vbox.getLeft(), _vbox.getRight(), _logscale_z, _logscale_y, _logscale_x)) {
+				import std.algorithm;
+				if (first_assignment) {
+					zmin = mi;
+					zmax = ma;
+					first_assignment = false;
+				}
+				zmin = min(zmin, mi);
+				zmax = max(zmax, ma);
+			}
+		}
+		add_zmin_zmax_margin(zmin, zmax);
+		return !first_assignment; // false if there was now drawable in the plotarea		
 	}
 	bool get_global_bottom_top(out double bottom, out double top) {
 		default_bottom_top(bottom, top);
@@ -401,7 +454,7 @@ protected:
 	//Override default signal handler:
 	bool drawCallback(Scoped!Context cr, Widget widget)
 	{
-		//writeln("drawCallback\r");
+		writeln("drawCallback\r");
 		update_drawable_list();
 		// This is where we draw on the window
 		GtkAllocation size;
@@ -447,7 +500,16 @@ protected:
 				get_global_bottom_top(global_bottom, global_top);
 				_vbox.setBottomTop(global_bottom, global_top);
 			}
+			if (_autoscale_z) {
+				double global_zmin, global_zmax;
+				writeln("get_global_zmin_zmax\r");
+				get_global_zmin_zmax(global_zmin, global_zmax);
+				writeln("zmin=", global_zmin, "  zmax=",global_zmax,"\r");
+				_vbox.setZminZmax(global_zmin, global_zmax);
+				writeln("box.zrange=",_vbox.getZrange,"\r");
+			}
 			_vbox.update_coefficients(0, 0, size.width, size.height);
+			writeln("zrange=",_vbox.getZrange(),"\r");
 			//writeln("setContextClip\r");
 			setContextClip(cr, _vbox);
 			if (_grid_ontop == false) {
@@ -485,7 +547,7 @@ protected:
 			draw_numbers(cr, size.width, size.height);
 			// draw the color key;
 			if (draw_color_key) {
-				drawColorKey(cr, _vbox, size.width, size.height, min_color_key, max_color_key, _logscale_z);
+				drawColorKey(cr, _vbox, size.width, size.height, _logscale_z);
 			}
 			//if (_autoscale_x) {
 			//	_vbox.release();
@@ -498,6 +560,7 @@ protected:
 			bool _logscale_z_save = _logscale_z;
 			bool _autoscale_x_save = _autoscale_x;
 			bool _autoscale_y_save = _autoscale_y;
+			bool _autoscale_z_save = _autoscale_y;
 			bool _grid_ontop_save = _grid_ontop;
 
 			int rows    = _row_major?1:_columns_or_rows;
@@ -598,7 +661,7 @@ protected:
 
 
 					if (drawable !is null && drawable.needsColorKey()) {
-						drawColorKey(cr, _vbox, size.width, size.height, drawable.minColorKey(), drawable.maxColorKey(), _logscale_z);
+						drawColorKey(cr, _vbox, size.width, size.height, _logscale_z);
 					}
 
 					//if (_autoscale_x) {
@@ -615,6 +678,7 @@ protected:
 			_logscale_z = _logscale_z_save;
 			_autoscale_x = _autoscale_x_save;
 			_autoscale_y = _autoscale_y_save;
+			_autoscale_z = _autoscale_z_save;
 			_grid_ontop  = _grid_ontop_save;
 		}
 
@@ -626,6 +690,7 @@ protected:
 			import gtkc.cairo;
 			cairo_destroy(cr.payload.getContextStruct());
 		}
+		writeln("Draw callback done\r");
 		return true;
 	}
 
@@ -635,6 +700,7 @@ protected:
 
 	bool _row_major = true;
 
+	bool _autoscale_z = false;
 	bool _autoscale_y = false;
 	bool _autoscale_x = false;
 

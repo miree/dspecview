@@ -6,13 +6,15 @@ struct ViewBox
 	@property getColumns() {return _columns;}
 
 	// the defining numbers for a view box
-	double _left = -1, _right = 1, _bottom = -1, _top = 1;
-	double _delta_x = 0, _delta_y = 0; // dynamic while translating the view
-	double _scale_x = 1, _scale_y = 1; // dynamic while scaling the view
+	double _left = -1, _right = 1, _bottom = -1, _top = 1, _zmin = -1, _zmax = 1;
+	double _delta_x = 0, _delta_y = 0, _delta_z = 0; // dynamic while translating the view
+	double _scale_x = 1, _scale_y = 1, _scale_z = 1; // dynamic while scaling the view
 	double _minimum_width  = 1e-3;
 	double _maximum_width  = 1e10;
 	double _minimum_height = 1e-3;
 	double _maximum_height = 1e10;
+	double _minimum_zrange = 1e-3;
+	double _maximum_zrange = 1e10;
 
 	void setWidthMinMax(double min, double max) {
 		_minimum_width = min;
@@ -22,6 +24,10 @@ struct ViewBox
 		_minimum_height = min;
 		_maximum_height = max;
 	}
+	void setZrangeMinMax(double min, double max) {
+		_minimum_zrange = min;
+		_maximum_zrange = max;
+	}
 
 	// the following function to determine the box dimensions are correct
 	// at all instances, even when translation/scaling is in progress
@@ -29,10 +35,20 @@ struct ViewBox
 	double getRight() {return getLeft()+getWidth();}
 	double getBottom(){return _bottom - _delta_y;}
 	double getTop()   {return getBottom()+getHeight();}
+	double getZmin()  {return _zmin - _delta_z;}
+	double getZmax()  {return getZmin()+getZrange();}
 
 	double getWidth() {return (_right - _left)*_scale_x;}
 	double getHeight(){return (_top   - _bottom)*_scale_y;}
+	double getZrange(){return (_zmax  - _zmin)*_scale_z;}
 
+	void setZminZmax(double zmin, double zmax) {
+		_zmin = zmin;
+		_zmax = zmax;
+		// this freezes all movements and scaling actions in z direction
+		_scale_z = 1;
+		_delta_z = 0;
+	}
 	void setBottomTop(double bottom, double top) {
 		_bottom = bottom;
 		_top    = top;
@@ -49,7 +65,7 @@ struct ViewBox
 	}
 
 	// coefficients for linear transformation
-	double _a_x, _b_x, _a_y, _b_y;
+	double _a_x, _b_x, _a_y, _b_y, _a_z, _b_z;
 	// calculate coefficients for the tile (row,column) in order to draw on a canvas 
 	//  with width and height, and if there is a tiling of rows and columns
 	// this must be called before using the ViewBox after any of row,column,width,height change
@@ -67,6 +83,9 @@ struct ViewBox
 
 		_b_x = canvas_width / getWidth();
 		_a_x = x_offset - _b_x*getLeft();
+
+		_b_z = 1.0 / getZrange();
+		_a_z = - _b_x*getZmin();
 	}
 	double get_pixel_width()
 	{
@@ -85,6 +104,14 @@ struct ViewBox
 	{
 		return _a_y + _b_y * y;
 	}
+	double transform_box2canvas_z(in double z)
+	{
+		import std.stdio;
+		//write("zin=",z,  " -> ");
+		double result = _a_z + _b_z * z;
+		//writeln("zout=",result,  " ");
+		return result;
+	}
 
 	double transform_canvas2box_x(in double x)
 	{
@@ -93,6 +120,10 @@ struct ViewBox
 	double transform_canvas2box_y(in double y)
 	{
 		return (y - _a_y) / _b_y;
+	}
+	double transform_canvas2box_z(in double z)
+	{
+		return (z - _a_z) / _b_z;
 	}
 
 	// takes into account the tiling to reduce the x position to the value inside the first tile
