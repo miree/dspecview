@@ -261,6 +261,9 @@ class Gui : ApplicationWindow
 									_plot_area.setFitY();
 									_plot_area.queueDraw();
 								break;
+								case 'z':
+									_check_autoscale_z.setActive(!_check_autoscale_z.getActive());
+								break;
 								case 'y':
 									_check_autoscale_y.setActive(!_check_autoscale_y.getActive());
 								break;
@@ -628,6 +631,7 @@ class Gui : ApplicationWindow
 					}
 					import std.math;
 					_preview_plot_area.setGrid(cast(int)sqrt(1.0*i));
+					_preview_plot_area.setAutoscaleZ(true);
 					_preview_plot_area.setLogscaleZ(true);
 					_preview_plot_area.setLogscaleX(false);
 					_preview_plot_area.setLogscaleY(false);
@@ -764,10 +768,10 @@ class Gui : ApplicationWindow
 							});
 
 		auto autoscale_label = new Label("auto\nscale");
-		_check_autoscale_z = new CheckButton("Z",false);
+		_check_autoscale_z = new CheckButton("Z",true);
 		_check_autoscale_z.addOnToggled(
 							delegate void(ToggleButton button) {
-								//writeln("overlay button toggled ", button.getActive(), "\r");
+								writeln("autoscale_z set to ", button.getActive(), "\r");
 								_plot_area.setAutoscaleZ(button.getActive());
 								_plot_area.queueDraw();
 							} );
@@ -786,7 +790,7 @@ class Gui : ApplicationWindow
 								_plot_area.queueDraw();
 							} );
 		if (mode2d == false) _check_autoscale_y.setActive(true);
-		if (mode2d == true ) _check_autoscale_z.setActive(true);
+		_check_autoscale_z.setActive(true);
 
 		auto log_label = new Label("  log");
 		_check_logx = new CheckButton("X");

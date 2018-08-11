@@ -7,12 +7,12 @@ double log_color_value_of(double color, bool logcolor) {
 	}
 	return color;
 }
-double log_z_value_of(double color, bool logcolor) {
+double log_z_value_of(double z, bool logz) {
 	import std.math;
-	if (logcolor) {
-		return (color>0)?log(color):0; // in color space, 0 is mapped to the "not filled" color
+	if (logz) {
+		return (z>0)?log(z):0; // in z space, 0 is mapped to the "not filled" color
 	}
-	return color;
+	return z;
 }
 
 double log_y_value_of(double y, ViewBox box, bool logy) {

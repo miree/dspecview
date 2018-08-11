@@ -40,8 +40,10 @@ public:
 
 		//super.addOnKeyPress(&onKeyPressEvent); // doesn't work .... have to enable some mask on the window that holds this widget
 
+		setFitZ();
 		setFitY();
-		setFitX();		
+		setFitX();	
+
 
 		super.dragDestSet(DestDefaults.ALL, null, DragAction.LINK);
 
@@ -165,6 +167,7 @@ public:
 	void setFit() {
 		setFitX();
 		setFitY();
+		setFitZ();
 	}
 	void setFitX() {
 		import logscale;
@@ -357,7 +360,7 @@ protected:
 		bool first_assignment = true;
 		foreach(drawable; _drawables) {
 			double mi, ma;
-			if (_session.getDrawable(drawable).getZminZmaxInLeftRightBottomTop(mi, ma, _vbox.getBottom(), _vbox.getTop(), _vbox.getLeft(), _vbox.getRight(), _logscale_z, _logscale_y, _logscale_x)) {
+			if (_session.getDrawable(drawable).getZminZmaxInLeftRightBottomTop(mi, ma, _vbox.getLeft(), _vbox.getRight(), _vbox.getBottom(), _vbox.getTop(), _logscale_z, _logscale_y, _logscale_x)) {
 				import std.algorithm;
 				if (first_assignment) {
 					zmin = mi;
@@ -368,7 +371,7 @@ protected:
 				zmax = max(zmax, ma);
 			}
 		}
-		add_zmin_zmax_margin(zmin, zmax);
+		add_zmin_zmax_margin(zmin, zmax, 0.0); // the margin-factor of 0.0 is important to not mess up the color key numbers
 		return !first_assignment; // false if there was now drawable in the plotarea		
 	}
 	bool get_global_bottom_top(out double bottom, out double top) {
@@ -454,7 +457,7 @@ protected:
 	//Override default signal handler:
 	bool drawCallback(Scoped!Context cr, Widget widget)
 	{
-		writeln("drawCallback\r");
+		//writeln("drawCallback\r");
 		update_drawable_list();
 		// This is where we draw on the window
 		GtkAllocation size;
@@ -502,14 +505,10 @@ protected:
 			}
 			if (_autoscale_z) {
 				double global_zmin, global_zmax;
-				writeln("get_global_zmin_zmax\r");
 				get_global_zmin_zmax(global_zmin, global_zmax);
-				writeln("zmin=", global_zmin, "  zmax=",global_zmax,"\r");
 				_vbox.setZminZmax(global_zmin, global_zmax);
-				writeln("box.zrange=",_vbox.getZrange,"\r");
 			}
 			_vbox.update_coefficients(0, 0, size.width, size.height);
-			writeln("zrange=",_vbox.getZrange(),"\r");
 			//writeln("setContextClip\r");
 			setContextClip(cr, _vbox);
 			if (_grid_ontop == false) {
@@ -560,7 +559,7 @@ protected:
 			bool _logscale_z_save = _logscale_z;
 			bool _autoscale_x_save = _autoscale_x;
 			bool _autoscale_y_save = _autoscale_y;
-			bool _autoscale_z_save = _autoscale_y;
+			bool _autoscale_z_save = _autoscale_z;
 			bool _grid_ontop_save = _grid_ontop;
 
 			int rows    = _row_major?1:_columns_or_rows;
@@ -620,6 +619,16 @@ protected:
 							drawable.getBottomTopInLeftRight(bottom, top, _vbox.getLeft, _vbox.getRight, _logscale_y, _logscale_x);
 							add_bottom_top_margin(bottom, top);
 							_vbox.setBottomTop(bottom, top);
+						}
+					}
+					if (_autoscale_z) {
+						double zmin, zmax;
+						default_zmin_zmax(zmin, zmax);
+						//get_global_zmin_zmax(global_zmin, global_zmax);
+						if (drawable !is null) {
+							drawable.getZminZmaxInLeftRightBottomTop(zmin, zmax,  _vbox.getLeft(), _vbox.getRight(), _vbox.getBottom(), _vbox.getTop(), _logscale_z, _logscale_y, _logscale_x);
+							add_zmin_zmax_margin(zmin, zmax, 0.0); // margin factor of 0.0 is needed to not mess up the color-key numbers
+							_vbox.setZminZmax(zmin, zmax);
 						}
 					}
 					_vbox.update_coefficients(row, column, size.width, size.height);
@@ -690,7 +699,7 @@ protected:
 			import gtkc.cairo;
 			cairo_destroy(cr.payload.getContextStruct());
 		}
-		writeln("Draw callback done\r");
+		//writeln("Draw callback done\r");
 		return true;
 	}
 

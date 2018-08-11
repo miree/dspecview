@@ -480,8 +480,11 @@ void drawColorKey(ref Scoped!Context cr, ViewBox box, int canvas_width,  int can
 
 		import std.conv, std.math, std.stdio;
 		import logscale;
-		double log_bottom = log_color_value_of(z_min, logz);
-		double log_top    = log_color_value_of(z_max, logz);
+		double log_bottom = z_min;//log_color_value_of(z_min, logz);
+		double log_top    = z_max;//log_color_value_of(z_max, logz);
+
+		//writeln("colorkey: zmin=",z_min,"  zmax=",z_max,"\r");
+
 		if (log_top <= log_bottom) { // fix empty z_range
 			log_top = log_bottom + 1;
 		}
@@ -556,7 +559,7 @@ void drawColorKey(ref Scoped!Context cr, ViewBox box, int canvas_width,  int can
 		import std.math, std.stdio;
 		double bottom_oom = (cast(long)round(z_min/oomz))*oomz;
 		//writeln("z_min=",z_min, "   bottom_oom=",bottom_oom,"\r");
-		while(bottom_oom < z_max)
+		while(bottom_oom <= z_max+0.01)
 		{
 			cr.setSourceRgba(0, 0, 0, 1.0);
 

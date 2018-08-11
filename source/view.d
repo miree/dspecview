@@ -85,7 +85,7 @@ struct ViewBox
 		_a_x = x_offset - _b_x*getLeft();
 
 		_b_z = 1.0 / getZrange();
-		_a_z = - _b_x*getZmin();
+		_a_z = - _b_z*getZmin();
 	}
 	double get_pixel_width()
 	{

@@ -178,8 +178,9 @@ synchronized class Hist2Visualizer : Drawable
 
 	// 0 <= c <= 1 is mapped to a color
 	static void get_rgb(double c, shared ubyte *rgb) {
+		if (c < 0) c = 0;
 		c *= 3;
-		if (c == 0) {          rgb[2] =                     rgb[1] =                         rgb[0] = 255; return ;}
+		//if (c == 0) {          rgb[2] =                     rgb[1] =                         rgb[0] = 255; return ;}
 		if (c < 1)  {          rgb[2] = 0;                  rgb[1] = cast(ubyte)(255*c);     rgb[0] = 255-cast(ubyte)(255*c); return;}
 		if (c < 2)  {c -= 1.0; rgb[2] = cast(ubyte)(255*c); rgb[1] = 255;                    rgb[0] = 0; return;}
 		if (c < 3)  {c -= 2.0; rgb[2] = 255;                rgb[1] = 255-cast(ubyte)(255*c); rgb[0] = 0; return;}
@@ -266,7 +267,7 @@ synchronized class Hist2Visualizer : Drawable
 												double left, double right, double bottom, double top, 
 												bool logz, bool logy, bool logx) {
 
-		writeln("getZminZmaxInLeftRightBottomTop ", left, " ", right, " ", bottom, " ", top, "\r");
+		//writeln("getZminZmaxInLeftRightBottomTop ", left, " ", right, " ", bottom, " ", top, "\r");
 		//writeln("getZminZmaxInLeftRightBottomTop \r");
 		if (_bin_data is null) {
 			refresh();
@@ -280,16 +281,16 @@ synchronized class Hist2Visualizer : Drawable
 			bottom = exp(bottom);
 			top = exp(top);
 		}
-		writeln("getZminZmaxInLeftRightBottomTop ", left, " ", right, " ", bottom, " ", top, "\r");
+		//writeln("getZminZmaxInLeftRightBottomTop ", left, " ", right, " ", bottom, " ", top, "\r");
 
-		writeln("Left=",getLeft(), "  Right=",getRight(),  "  Bottom=",getBottom(),  "  Top=",getTop(),"\r");
+		//writeln("Left=",getLeft(), "  Right=",getRight(),  "  Bottom=",getBottom(),  "  Top=",getTop(),"\r");
 		// transform into bin numbers
 		left    = (left-getLeft())/getBinWidth();
-		right   = (right-getRight())/getBinWidth();
-		bottom  = -(bottom-getBottom())/getBinHeight();
-		top     = -(top-getTop())/getBinHeight();
+		right   = (right-getLeft())/getBinWidth();
+		bottom  = (bottom-getBottom())/getBinHeight();
+		top     = (top-getBottom())/getBinHeight();
 
-		writeln("getZminZmaxInLeftRightBottomTop ", left, " ", right, " ", bottom, " ", top, "\r");
+		//writeln("getZminZmaxInLeftRightBottomTop ", left, " ", right, " ", bottom, " ", top, "\r");
 
 		if (left >= _bin_data.length || right <= 0) {
 			//writeln("done false\r");
@@ -302,10 +303,12 @@ synchronized class Hist2Visualizer : Drawable
 		int rightbin  = cast(int)(min(right,_bins_x));
 		int bottombin = cast(int)(max(bottom,0));
 		int topbin    = cast(int)(min(top,_bins_y));
-		writeln("bins:", leftbin, " ", rightbin, " ", bottombin, " ", topbin, "\r");
-		assert (leftbin <= rightbin);
-		assert (bottombin <= topbin);
-		writeln("bins:", leftbin, " ", rightbin, " ", bottombin, " ", topbin, "\r");
+		//writeln("bins:", leftbin, " ", rightbin, " ", bottombin, " ", topbin, "\r");
+		if (leftbin >= rightbin) return false;
+		if (bottombin >= topbin) return false;
+		assert (leftbin < rightbin);
+		assert (bottombin < topbin);
+		//writeln("bins:", leftbin, " ", rightbin, " ", bottombin, " ", topbin, "\r");
 		foreach(j ; bottombin..topbin+1) {
 			if (j < 0) {
 				continue;
@@ -336,12 +339,12 @@ synchronized class Hist2Visualizer : Drawable
 				}
 			}
 		}
-		writeln("getZminZmaxInLeftRightBottomTop done\r");
+		//writeln("getZminZmaxInLeftRightBottomTop done\r");
 		if (!initialize) {
 			zmin = minimum;
 			zmax = maximum;
-			writeln("zmin=",zmin, "  zmax=",zmax,"\r");
-			writeln("exp(zmin)=",exp(zmin), "  exp(zmax)=",exp(zmax),"\r");
+			//writeln("zmin=",zmin, "  zmax=",zmax,"\r");
+			//writeln("exp(zmin)=",exp(zmin), "  exp(zmax)=",exp(zmax),"\r");
 			return true;
 		}
 		return false;
@@ -359,6 +362,7 @@ synchronized class Hist2Visualizer : Drawable
 		}
 		//writeln("bins = ", _bin_data[0].length, "\r");
 
+		//writeln("draw(): zmin=",box.getZmin(), "  zmax=",box.getZmax(),"\r");
 		//writeln("pixel width = ", box.get_pixel_width() , "\r");
 		//writeln("pixel height = ", box.get_pixel_height() , "\r");
 		//auto pixel_width = 10*box.get_pixel_width();
@@ -393,20 +397,20 @@ synchronized class Hist2Visualizer : Drawable
 					double y      = box.transform_box2canvas_y(log_y_value_of(getBottom+getHeight*(y_idx)/_bins_y,box,logy));
 					double yplus1 = box.transform_box2canvas_y(log_y_value_of(getBottom+getHeight*(y_idx+1)/_bins_y,box,logy));
 					double color  = box.transform_box2canvas_z(log_z_value_of(value,logz));
-					//writeln("value=",value, " -> color=",color,"\r");
+					//writeln("value=",value, " -> color=",color,"   zrange=",box.getZrange(),"\r");
 					double width = xplus1-x;
 					double height = yplus1-y;
 					ubyte[3] rgb;
 					if (logz) {
 						import std.math;
 						//get_rgb(log(value+1.0)/log(max_bin+1.0), cast(shared ubyte*)&rgb[0]);
-						get_rgb(color/box.getZrange(), cast(shared ubyte*)&rgb[0]);
+						get_rgb(color, cast(shared ubyte*)&rgb[0]);
 					} else {
 						//get_rgb(value/max_bin, cast(shared ubyte*)&rgb[0]);
-						get_rgb(color/box.getZrange(), cast(shared ubyte*)&rgb[0]);
+						get_rgb(color, cast(shared ubyte*)&rgb[0]);
 					}
 					cr.setSourceRgba(rgb[2]/255.0, rgb[1]/255.0, rgb[0]/255.0, 1);
-					cr.rectangle(x-0.1, y+0.1, width+0.2, height-0.2);
+					cr.rectangle(x-0.25, y+0.25, width+0.5, height-0.5);
 					cr.fill();
 				}
 			}
