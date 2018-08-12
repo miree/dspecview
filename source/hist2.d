@@ -61,6 +61,9 @@ private:
 
 synchronized class Hist2Filesource : Hist2Datasource 
 {
+	import std.datetime : abs, DateTime, hnsecs, SysTime;
+	import std.datetime : Clock, seconds;
+
 	this(string filename) 
 	{
 		writeln("Hist2Filesource created on filename: ", filename);
@@ -71,10 +74,17 @@ synchronized class Hist2Filesource : Hist2Datasource
 	override shared(double[]) getData(out ulong w, out ulong h, out double hist_left, out double hist_right, out double hist_bottom, out double hist_top)
 	{
 		import std.array, std.algorithm, std.stdio, std.conv;
+		import std.file;
+		import std.datetime : abs, DateTime, hnsecs, SysTime;
+		import std.datetime : Clock, seconds;		
+
 		File file;
+		SysTime time_last_file_modification;
 		try {
 			//writeln("opening file ", _filename);
 			file = File(_filename);
+			auto filename = _filename.dup;
+			time_last_file_modification = timeLastModified(cast(string)filename);
 		} catch (Exception e) {
 			try {
 				if (!_filename.startsWith('/')) {
@@ -86,8 +96,22 @@ synchronized class Hist2Filesource : Hist2Datasource
 				writeln("unable to open file ", _filename);
 				return null;
 			}
-		} 
-		shared(double[]) result;
+		}
+		bool need_update = false;
+		SysTime time_of_last_update = _time_of_last_update;
+		if (time_of_last_update == SysTime.init ) need_update = true;
+		if (_bin_data is null) need_update = true;
+		if (time_of_last_update < time_last_file_modification) need_update = true;
+		if (!need_update) {
+			hist_left   = _left  ;
+			hist_right  = _right ;
+			hist_bottom = _bottom;
+			hist_top    = _top   ;
+			w           = _w     ;
+			h           = _h     ;
+			return _bin_data;
+		}
+		_bin_data.length = 0;
 		try {
 			ulong max_width = 0;
 			import std.algorithm;
@@ -121,19 +145,19 @@ synchronized class Hist2Filesource : Hist2Datasource
 					ulong width = 0;
 					foreach(number; line_split) {
 						if (number.length > 0) {
-							result ~= to!double(number);
+							_bin_data ~= to!double(number);
 							++width;
 						}
 					}
 					max_width = max(max_width, width);
 				}
 			}
-			if (result.length % max_width == 0) {
+			if (_bin_data.length % max_width == 0) {
 				w = max_width;
-				h = result.length / w;
+				h = _bin_data.length / w;
 				writeln("can determine the width and height: ", w, " ", h, "\r");
 			} else {
-				writeln("cannot determine width and height. max_width = ", max_width, "   result.length = ", result.length, "\r");
+				writeln("cannot determine width and height. max_width = ", max_width, "   _bin_data.length = ", _bin_data.length, "\r");
 				w = max_width;
 				h = 1;
 			}
@@ -145,10 +169,23 @@ synchronized class Hist2Filesource : Hist2Datasource
 		if (hist_bottom is double.init) hist_bottom = 0;
 		if (hist_top is double.init) hist_top = h;
 		//writeln(file.byLine().map!(a => to!double(a)).array);
-		return result;
+		SysTime *time_of_last_update_ptr = cast(SysTime*)(&_time_of_last_update);
+		*time_of_last_update_ptr = time_last_file_modification;
+		_left   = hist_left;
+		_right  = hist_right;
+		_bottom = hist_bottom;
+		_top    = hist_top;
+		_w      = w;
+		_h      = h;
+		return _bin_data;
 	}
 private:
 	string _filename;
+	shared double _left, _right, _bottom, _top;
+	shared ulong  _w, _h;
+	shared(double[]) _bin_data;
+	shared(SysTime) _time_of_last_update;
+
 }
 
 synchronized class Hist2Visualizer : Drawable 
@@ -191,12 +228,10 @@ synchronized class Hist2Visualizer : Drawable
 	override void refresh() 
 	{
 		//writeln("Hist1Visualizer.refresh called()");
-		ulong width, height;
+		ulong width, height; // number of bins in x/y direction
 		double left, right, bottom, top;
 		_bin_data = cast(shared(double[]))_source.getData(width, height, left, right, bottom, top );
 
-		_bins_x = cast(uint)width;
-		_bins_y = cast(uint)height;
 
 		//writeln("width = " , width, "   height = ", height, "\r");
 		//writeln("left = ", left, " right = ", right, "\r");
@@ -221,28 +256,45 @@ synchronized class Hist2Visualizer : Drawable
 		// fill the _image_surface
 			//int stride = Cairo::ImageSurface::format_stride_for_width(format, width);		
 		//writeln("_bins_x = ", _bins_x);
+		if (cast(uint)width != _bins_x || cast(uint)height != _bins_y)
+		{
+			_bins_x = cast(uint)width;
+			_bins_y = cast(uint)height;
+			auto stride = ImageSurface.formatStrideForWidth(CairoFormat.RGB24, _bins_x);
+			//writeln("stride = ", stride, "\r");
+			_rgb_data = new shared ubyte[_bin_data.length*(stride/_bins_x)];
+			_log_rgb_data = new shared ubyte[_bin_data.length*(stride/_bins_x)];
+		}
 		auto stride = ImageSurface.formatStrideForWidth(CairoFormat.RGB24, _bins_x);
-		//writeln("stride = ", stride, "\r");
-		_rgb_data = new shared ubyte[_bin_data.length*(stride/_bins_x)];
-		_log_rgb_data = new shared ubyte[_bin_data.length*(stride/_bins_x)];
+		_rgb_data[] = 255;
+		_log_rgb_data[] = 255;
 		double max_bin = maxElement(_bin_data);
 		if (max_bin == 0) max_bin = 1;
 		//writeln("max_bin = ", max_bin, "\r");
-		foreach(idx, bin; _bin_data) {
-			ulong rgb_idx = 3*idx;
-			auto x = idx%_bins_x;
-			auto y = idx/_bins_x;
-//			     y = _bins_y - 1 - y;
-			import std.math;
-			auto _rgb_data_idx = (y)*stride + 4*x;
-			//writeln("_rgb_data_idx = " , _rgb_data_idx, "\r");
-			//writeln("bin = " , bin, "\r");//[y*stride + x*w + c]
-			//writeln(log(1+bin) , "/" , log(max_bin+1), "\r");
-			get_rgb(log(1+bin)/log(max_bin+1), &_log_rgb_data[_rgb_data_idx]);
-			get_rgb(bin/max_bin, &_rgb_data[_rgb_data_idx]);
-			//_rgb_data[_rgb_data_idx + 0] = cast(ubyte)(255-min(bin,255));
-			//_rgb_data[_rgb_data_idx + 1] = cast(ubyte)(255-min(bin,255));
-			//_rgb_data[_rgb_data_idx + 2] = cast(ubyte)(255-min(bin,255));
+//		foreach(idx, bin; _bin_data) {
+		foreach(ulong y; 0.._bins_y) {
+			foreach(ulong x; 0.._bins_x) {
+				ulong idx = y*_bins_x+x;
+				ulong rgb_idx = 3*idx;
+				//auto x = idx%_bins_x;
+				//auto y = idx/_bins_x;
+				auto bin = _bin_data[idx];
+				if (bin == 0) {
+					continue;
+				}
+
+	//			     y = _bins_y - 1 - y;
+				import std.math;
+				auto _rgb_data_idx = (y)*stride + 4*x;
+				//writeln("_rgb_data_idx = " , _rgb_data_idx, "\r");
+				//writeln("bin = " , bin, "\r");//[y*stride + x*w + c]
+				//writeln(log(1+bin) , "/" , log(max_bin+1), "\r");
+				get_rgb(log(1+bin)/log(max_bin+1), &_log_rgb_data[_rgb_data_idx]);
+				get_rgb(bin/max_bin, &_rgb_data[_rgb_data_idx]);
+				//_rgb_data[_rgb_data_idx + 0] = cast(ubyte)(255-min(bin,255));
+				//_rgb_data[_rgb_data_idx + 1] = cast(ubyte)(255-min(bin,255));
+				//_rgb_data[_rgb_data_idx + 2] = cast(ubyte)(255-min(bin,255));
+			}
 		}
 
 
@@ -270,7 +322,9 @@ synchronized class Hist2Visualizer : Drawable
 		//writeln("getZminZmaxInLeftRightBottomTop ", left, " ", right, " ", bottom, " ", top, "\r");
 		//writeln("getZminZmaxInLeftRightBottomTop \r");
 		if (_bin_data is null) {
-			refresh();
+			ulong width, height;
+			double l, r, b, t;
+			_bin_data = cast(shared(double[]))_source.getData(width, height, l,r, b,t );
 		}
 		import std.math;
 		if (logx) { // special treatment for logx case
@@ -373,8 +427,8 @@ synchronized class Hist2Visualizer : Drawable
 		//} 
 
 		double max_bin = maxElement(_bin_data);
-		//if (logy || logx) {
-		if (true) {
+		if (logy || logx) {
+		//if (true) {
 			// log drawing has to be done bin by bin for now... only the bins != 0
 			cr.setSourceRgba(1, 1, 1, 1);
 			cr.rectangle(box.transform_box2canvas_x(log_x_value_of(getLeft, box, logx)),
@@ -417,6 +471,7 @@ synchronized class Hist2Visualizer : Drawable
 
 		} else {
 			// linear drawing can be done very fast using the image surface pattern
+			refresh();
 			cr.save();
 				//cr.scale(0.5, 1);
 				cr.scale(box._b_x*getBinWidth(), box._b_y*getBinHeight());

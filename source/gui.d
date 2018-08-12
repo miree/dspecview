@@ -59,6 +59,18 @@ extern(C) nothrow static int threadIdleProcess(void* data) {
 					}
 				}
 			);
+		static int second_cnt = 0;
+		++second_cnt;
+		if (second_cnt == 5000) {
+			//writeln("tick\r");
+			second_cnt = 0;
+			// now do the "per second" business
+			//Gui gui = cast(Gui)data;
+			foreach(gui; gui_windows){
+				gui._plot_area.refresh();
+				gui._plot_area.queueDraw();
+			}
+		}
 		//writeln("idle called");
 	} catch (Throwable t) {
 		return 0;
@@ -848,6 +860,11 @@ class Gui : ApplicationWindow
 		if (mode2d == true) _check_grid_ontop.setActive(true);
 
 
+		_refresh_plot_area = new Button("refresh");
+		_refresh_plot_area.addOnClicked(delegate void(Button b) {
+				_plot_area.refresh();
+				_plot_area.queueDraw();
+			});
 		_clear_plot_area = new Button("clear");
 		_clear_plot_area.addOnClicked(delegate void(Button b) {
 				_plot_area.clear();
@@ -857,7 +874,7 @@ class Gui : ApplicationWindow
 
 		auto layout_box = new Box(GtkOrientation.HORIZONTAL,0);
 
-		layout_box.add(_clear_plot_area);		
+		layout_box.add(_refresh_plot_area);		
 		layout_box.add(new Separator(GtkOrientation.VERTICAL));
 		layout_box.add(_check_overview_mode);
 		layout_box.add(new Separator(GtkOrientation.VERTICAL));
@@ -886,6 +903,9 @@ class Gui : ApplicationWindow
 		layout_box.add(_radio_colmajor);
 		layout_box.add(_spin_columns);
 		layout_box.add(columns_label);
+
+		layout_box.add(new Separator(GtkOrientation.VERTICAL));
+		layout_box.add(_clear_plot_area);		
 
 
 		//_radio_overlay.show();
@@ -929,7 +949,7 @@ class Gui : ApplicationWindow
 	CheckButton _check_autoscale_x;
 	CheckButton _check_logx, _check_logy, _check_logz;
 	CheckButton _check_gridx, _check_gridy, _check_grid_ontop;
-	Button _clear_plot_area;
+	Button _clear_plot_area, _refresh_plot_area;
 
 
 	PlotArea  _preview_plot_area;

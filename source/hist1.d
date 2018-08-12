@@ -50,6 +50,9 @@ private:
 
 synchronized class Hist1Filesource : Hist1Datasource 
 {
+	import std.datetime : abs, DateTime, hnsecs, SysTime;
+	import std.datetime : Clock, seconds;
+
 	this(string filename) 
 	{
 		writeln("Hist1Filesource created on filename: ", filename);
@@ -60,10 +63,19 @@ synchronized class Hist1Filesource : Hist1Datasource
 	override shared(double[]) getData(out double hist_left, out double hist_right)
 	{
 		import std.array, std.algorithm, std.stdio, std.conv;
+		import std.file;
+		import std.datetime : abs, DateTime, hnsecs, SysTime;
+		import std.datetime : Clock, seconds;		
+
+		//writeln("Hist1Filesource.getData() called\r");
+
 		File file;
+		SysTime time_last_file_modification;
 		try {
 			//writeln("opening file ", _filename);
 			file = File(_filename);
+			auto filename = _filename.dup;
+			time_last_file_modification = timeLastModified(cast(string)filename);
 		} catch (Exception e) {
 			try {
 				if (!_filename.startsWith('/')) {
@@ -76,7 +88,18 @@ synchronized class Hist1Filesource : Hist1Datasource
 				return null;
 			}
 		} 
-		shared(double[]) result;
+		bool need_update = false;
+		SysTime time_of_last_update = _time_of_last_update;
+		if (time_of_last_update == SysTime.init ) need_update = true;
+		if (_bin_data is null) need_update = true;
+		if (time_of_last_update < time_last_file_modification) need_update = true;
+		if (!need_update) {
+			hist_left   = _left  ;
+			hist_right  = _right ;
+			return _bin_data;
+		}
+		writeln("update hist\r");
+		_bin_data.length = 0;
 		try {
 			foreach(line; file.byLine)	{
 				if (line.startsWith("#")) {
@@ -98,7 +121,7 @@ synchronized class Hist1Filesource : Hist1Datasource
 				if (!line.startsWith("#") && line.length > 0) {
 					foreach(number; split(line.dup(), " ")) {
 						if (number.length > 0)
-							result ~= to!double(number);
+							_bin_data ~= to!double(number);
 					}
 				}
 			}
@@ -107,12 +130,19 @@ synchronized class Hist1Filesource : Hist1Datasource
 		}
 
 		if (hist_left is double.init) hist_left = 0;
-		if (hist_right is double.init) hist_right = result.length;
+		if (hist_right is double.init) hist_right = _bin_data.length;
 		//writeln(file.byLine().map!(a => to!double(a)).array);
-		return result;
+		SysTime *time_of_last_update_ptr = cast(SysTime*)(&_time_of_last_update);
+		*time_of_last_update_ptr = time_last_file_modification;
+		_left   = hist_left;
+		_right  = hist_right;
+		return _bin_data;	
 	}
 private:
 	string _filename;
+	shared double _left, _right;
+	shared(double[]) _bin_data;
+	shared(SysTime) _time_of_last_update;
 }
 
 synchronized class Hist1Visualizer : Drawable 
@@ -271,6 +301,7 @@ private:
 			return;
 		}
 		import std.algorithm;
+		_mipmap_data.length = 0;
 		for (int idx = 0;; ++idx) {
 			if (idx == 0) {
 				_mipmap_data ~= new minmax[_bin_data.length-1];
