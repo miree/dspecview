@@ -79,24 +79,7 @@ synchronized class Hist2Filesource : Hist2Datasource
 		import std.datetime : Clock, seconds;		
 
 		File file;
-		SysTime time_last_file_modification;
-		try {
-			//writeln("opening file ", _filename);
-			file = File(_filename);
-			auto filename = _filename.dup;
-			time_last_file_modification = timeLastModified(cast(string)filename);
-		} catch (Exception e) {
-			try {
-				if (!_filename.startsWith('/')) {
-					_filename = "/" ~ _filename;
-				}
-				//writeln("opening file ", _filename);
-				file = File(_filename);
-			} catch (Exception e) {
-				writeln("unable to open file ", _filename);
-				return null;
-			}
-		}
+		SysTime time_last_file_modification = timeLastModified(cast(string)_filename);
 		bool need_update = false;
 		SysTime time_of_last_update = _time_of_last_update;
 		if (time_of_last_update == SysTime.init ) need_update = true;
@@ -110,6 +93,21 @@ synchronized class Hist2Filesource : Hist2Datasource
 			w           = _w     ;
 			h           = _h     ;
 			return _bin_data;
+		}
+		try {
+			//writeln("opening file ", _filename);
+			file = File(_filename);
+		} catch (Exception e) {
+			try {
+				if (!_filename.startsWith('/')) {
+					_filename = "/" ~ _filename;
+				}
+				//writeln("opening file ", _filename);
+				file = File(_filename);
+			} catch (Exception e) {
+				writeln("unable to open file ", _filename);
+				return null;
+			}
 		}
 		_bin_data.length = 0;
 		try {

@@ -65,14 +65,16 @@ public:
 	}
 
 
-	void add_drawable(string drawable) {
+	void add_drawable(string drawable_name) {
 		import std.algorithm;
-		if (!_drawables.canFind(drawable)) {
-			_drawables ~= drawable;
+		if (!_drawables.canFind(drawable_name)) {
+			_drawables ~= drawable_name;
 		}
 		update_drawable_list();
-		auto item = _session.getDrawable(drawable);
-		item.refresh();
+		auto drawable = _session.getDrawable(drawable_name);
+		synchronized (drawable) {
+			drawable.refresh();
+		}
 	}
 
 	override void getPreferredHeightForWidth(int width, out int minimumHeight, out int naturalHeight)
@@ -144,10 +146,11 @@ public:
 		//writeln("update_drawable_list()\n\rdrawables before : " , _drawables, "\r");
 		string[] new_drawables;
 		synchronized {
-			foreach(drawable; _drawables) {
-				if (_session.getDrawable(drawable) !is null) {
+			foreach(drawable_name; _drawables) {
+				auto drawable = _session.getDrawable(drawable_name);
+				if (drawable !is null) {
 					//writeln(drawable, "\r");
-					new_drawables ~= drawable;
+					new_drawables ~= drawable_name;
 				}
 			}
 		}
@@ -157,9 +160,11 @@ public:
 
 	void refresh() {
 		synchronized {
-			foreach(idx, drawable; _drawables) {
-				auto item = _session.getDrawable(drawable);
-				item.refresh();
+			foreach(idx, drawable_name; _drawables) {
+				auto drawable = _session.getDrawable(drawable_name);
+				synchronized (drawable) {
+					drawable.refresh();
+				}
 			}
 		}		
 	}
@@ -358,17 +363,20 @@ protected:
 	bool get_global_zmin_zmax(out double zmin, out double zmax) {
 		default_zmin_zmax(zmin, zmax);
 		bool first_assignment = true;
-		foreach(drawable; _drawables) {
+		foreach(drawable_name; _drawables) {
 			double mi, ma;
-			if (_session.getDrawable(drawable).getZminZmaxInLeftRightBottomTop(mi, ma, _vbox.getLeft(), _vbox.getRight(), _vbox.getBottom(), _vbox.getTop(), _logscale_z, _logscale_y, _logscale_x)) {
-				import std.algorithm;
-				if (first_assignment) {
-					zmin = mi;
-					zmax = ma;
-					first_assignment = false;
+			auto drawable = _session.getDrawable(drawable_name);
+			synchronized(drawable) {
+				if (drawable.getZminZmaxInLeftRightBottomTop(mi, ma, _vbox.getLeft(), _vbox.getRight(), _vbox.getBottom(), _vbox.getTop(), _logscale_z, _logscale_y, _logscale_x)) {
+					import std.algorithm;
+					if (first_assignment) {
+						zmin = mi;
+						zmax = ma;
+						first_assignment = false;
+					}
+					zmin = min(zmin, mi);
+					zmax = max(zmax, ma);
 				}
-				zmin = min(zmin, mi);
-				zmax = max(zmax, ma);
 			}
 		}
 		add_zmin_zmax_margin(zmin, zmax, 0.0); // the margin-factor of 0.0 is important to not mess up the color key numbers
@@ -377,17 +385,20 @@ protected:
 	bool get_global_bottom_top(out double bottom, out double top) {
 		default_bottom_top(bottom, top);
 		bool first_assignment = true;
-		foreach(drawable; _drawables) {
+		foreach(drawable_name; _drawables) {
 			double b, t;
-			if (_session.getDrawable(drawable).getBottomTopInLeftRight(b, t, _vbox.getLeft, _vbox.getRight, _logscale_y, _logscale_x)) {
-				import std.algorithm;
-				if (first_assignment) {
-					bottom = b;
-					top    = t;
-					first_assignment = false;
+			auto drawable = _session.getDrawable(drawable_name);
+			synchronized(drawable) {
+				if (drawable.getBottomTopInLeftRight(b, t, _vbox.getLeft, _vbox.getRight, _logscale_y, _logscale_x)) {
+					import std.algorithm;
+					if (first_assignment) {
+						bottom = b;
+						top    = t;
+						first_assignment = false;
+					}
+					bottom = min(bottom, b);
+					top    = max(top   , t);
 				}
-				bottom = min(bottom, b);
-				top    = max(top   , t);
 			}
 		}
 		add_bottom_top_margin(bottom,top);
@@ -396,9 +407,12 @@ protected:
 	bool get_global_left_right(out double left, out double right) {
 		default_left_right(left, right);
 		bool first_assignment = true;
-		foreach(drawable; _drawables) {
+		foreach(drawable_name; _drawables) {
 			double l, r;
-			_session.getDrawable(drawable).getLeftRight(l, r, _logscale_y, _logscale_x);
+			auto drawable = _session.getDrawable(drawable_name);
+			synchronized (drawable) {
+				drawable.getLeftRight(l, r, _logscale_y, _logscale_x);
+			}
 			import std.algorithm;
 			if (first_assignment) {
 				left  = l;
@@ -457,7 +471,7 @@ protected:
 	//Override default signal handler:
 	bool drawCallback(Scoped!Context cr, Widget widget)
 	{
-		//writeln("drawCallback\r");
+		writeln("drawCallback\r");
 		update_drawable_list();
 		// This is where we draw on the window
 		GtkAllocation size;
@@ -487,7 +501,7 @@ protected:
 			//  return true;
 
 		if (_overlay && !_preview_mode) {
-			//writeln("overlay true\r");
+			writeln("overlay true\r");
 			bool draw_color_key = false;
 			_vbox._rows = 1;
 			_vbox._columns = 1;
@@ -509,13 +523,13 @@ protected:
 				_vbox.setZminZmax(global_zmin, global_zmax);
 			}
 			_vbox.update_coefficients(0, 0, size.width, size.height);
-			//writeln("setContextClip\r");
+			writeln("setContextClip\r");
 			setContextClip(cr, _vbox);
 			if (_grid_ontop == false) {
 				//writeln("draw_grid\r");
 				draw_grid(cr, size.width, size.height);
 			}
-			//writeln("draw content\r");
+			writeln("draw content\r");
 			double min_color_key, max_color_key;
 			foreach (idx, drawable_name; _drawables) {
 				ulong color_idx = idx % _color_table.length;
@@ -524,22 +538,24 @@ protected:
 				auto drawable = _session.getDrawable(drawable_name);
 				if (drawable !is null) {
 					//writeln("draw\r");
-					drawable.draw(cr, _vbox, _logscale_y, _logscale_x, _logscale_z);
-					if (drawable.needsColorKey()) {
-						if (!draw_color_key) {// first assignment
-							min_color_key = drawable.minColorKey();
-							max_color_key = drawable.maxColorKey();
-						} else {
-							min_color_key = min(min_color_key, drawable.minColorKey());
-							max_color_key = max(max_color_key, drawable.maxColorKey());
+					synchronized(drawable) {
+						drawable.draw(cr, _vbox, _logscale_y, _logscale_x, _logscale_z);
+						if (drawable.needsColorKey()) {
+							if (!draw_color_key) {// first assignment
+								min_color_key = drawable.minColorKey();
+								max_color_key = drawable.maxColorKey();
+							} else {
+								min_color_key = min(min_color_key, drawable.minColorKey());
+								max_color_key = max(max_color_key, drawable.maxColorKey());
+							}
+							draw_color_key |= drawable.needsColorKey();
 						}
-						draw_color_key |= drawable.needsColorKey();
+						cr.stroke();
 					}
-					cr.stroke();
 				}
 			}
 			if (_grid_ontop == true) {
-				//writeln("draw_grid\r");
+				writeln("draw_grid\r");
 				draw_grid(cr, size.width, size.height);
 			}
 			draw_box(cr);
@@ -551,7 +567,7 @@ protected:
 			//if (_autoscale_x) {
 			//	_vbox.release();
 			//}
-			//writeln("donw\r");
+			writeln("done\r");
 		} else { // grid mode
 			//writeln("overlay false\r");
 			bool _logscale_x_save = _logscale_x;
@@ -575,7 +591,7 @@ protected:
 			_vbox._columns = columns;
 			foreach (row; 0.._vbox.getRows) {
 				foreach (column; 0.._vbox.getColumns) {
-					//writeln("row=",row, " col=",column, "\r");
+					writeln("row=",row, " col=",column, "\r");
 					ulong idx = column * rows + row;
 					if (_row_major) {
 						idx = row * columns + column;
@@ -585,17 +601,19 @@ protected:
 					shared Drawable drawable = null;
 					if (_drawables !is null && idx < _drawables.length) {
 						drawable = _session.getDrawable(_drawables[idx]);
-						if (_preview_mode){ // in preview mode: 1d hists are log xy, 2d hists are log z
-							_autoscale_x = _autoscale_y = true;
-							if (drawable.getDim() == 1) {
-								_logscale_x = _logscale_y = true;
-								_logscale_z = false;
-								_grid_ontop = false;
-							}
-							if (drawable.getDim() == 2) {
-								_logscale_x = _logscale_y = false;
-								_logscale_z = true;
-								_grid_ontop = true;
+						synchronized(drawable) {
+							if (_preview_mode){ // in preview mode: 1d hists are log xy, 2d hists are log z
+								_autoscale_x = _autoscale_y = true;
+								if (drawable.getDim() == 1) {
+									_logscale_x = _logscale_y = true;
+									_logscale_z = false;
+									_grid_ontop = false;
+								}
+								if (drawable.getDim() == 2) {
+									_logscale_x = _logscale_y = false;
+									_logscale_z = true;
+									_grid_ontop = true;
+								}
 							}
 						}
 					}
@@ -604,7 +622,9 @@ protected:
 						double left, right;
 						default_left_right(left, right);
 						if (drawable !is null) {
-							drawable.getLeftRight(left, right, _logscale_y, _logscale_x);
+							synchronized(drawable) {
+								drawable.getLeftRight(left, right, _logscale_y, _logscale_x);
+							}
 							add_left_right_margin(left, right);
 							import logscale;
 							//_vbox.freeze();
@@ -616,7 +636,9 @@ protected:
 						double bottom, top;
 						default_bottom_top(bottom, top);
 						if (drawable !is null) {
-							drawable.getBottomTopInLeftRight(bottom, top, _vbox.getLeft, _vbox.getRight, _logscale_y, _logscale_x);
+							synchronized (drawable) {
+								drawable.getBottomTopInLeftRight(bottom, top, _vbox.getLeft, _vbox.getRight, _logscale_y, _logscale_x);
+							}
 							add_bottom_top_margin(bottom, top);
 							_vbox.setBottomTop(bottom, top);
 						}
@@ -626,7 +648,9 @@ protected:
 						default_zmin_zmax(zmin, zmax);
 						//get_global_zmin_zmax(global_zmin, global_zmax);
 						if (drawable !is null) {
-							drawable.getZminZmaxInLeftRightBottomTop(zmin, zmax,  _vbox.getLeft(), _vbox.getRight(), _vbox.getBottom(), _vbox.getTop(), _logscale_z, _logscale_y, _logscale_x);
+							synchronized (drawable) {
+								drawable.getZminZmaxInLeftRightBottomTop(zmin, zmax,  _vbox.getLeft(), _vbox.getRight(), _vbox.getBottom(), _vbox.getTop(), _logscale_z, _logscale_y, _logscale_x);
+							}
 							add_zmin_zmax_margin(zmin, zmax, 0.0); // margin factor of 0.0 is needed to not mess up the color-key numbers
 							_vbox.setZminZmax(zmin, zmax);
 						}
@@ -656,7 +680,7 @@ protected:
 						//	drawable.getRight() > _vbox.getLeft() && //   the view box at all
 						//	drawable.getBottom() < _vbox.getTop() &&
 						//	drawable.getTop() > _vbox.getBottom()) 
-						{
+						synchronized(drawable) {
 							drawable.draw(cr, _vbox, _logscale_y, _logscale_x, _logscale_z);
 							cr.stroke();
 						}
@@ -699,7 +723,7 @@ protected:
 			import gtkc.cairo;
 			cairo_destroy(cr.payload.getContextStruct());
 		}
-		//writeln("Draw callback done\r");
+		writeln("Draw callback done\r");
 		return true;
 	}
 

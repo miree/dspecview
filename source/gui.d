@@ -52,7 +52,7 @@ extern(C) nothrow static int threadIdleProcess(void* data) {
 		import std.variant : Variant;
 		import std.datetime;
 		// get messages from parent thread
-		receiveTimeout(dur!"usecs"(10),(int i) { 
+		receiveTimeout(dur!"usecs"(10000),(int i) { 
 					//Gui gui = cast(Gui)data;
 					foreach(gui; gui_windows) {
 						gui.updateSession();
@@ -61,8 +61,8 @@ extern(C) nothrow static int threadIdleProcess(void* data) {
 			);
 		static int second_cnt = 0;
 		++second_cnt;
-		if (second_cnt == 5000) {
-			//writeln("tick\r");
+		if (second_cnt == 10) {
+			writeln("tick\r");
 			second_cnt = 0;
 			// now do the "per second" business
 			//Gui gui = cast(Gui)data;

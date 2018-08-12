@@ -115,10 +115,24 @@ in {
 	}
 }
 void drawMipMapHistogram(MinMax)(ref Scoped!Context cr, ViewBox box, double min, double max, MinMax[] data, bool logy = true)
-in {
-	assert (data.length > 0);
-	assert (min < max);
-} do {
+//in {
+//	assert (data.length > 0);
+//	assert (min < max);
+//} do {
+{
+	import std.stdio;
+	writeln("drawMipMapHistogram() called\r");
+	if (data is null)
+	{
+		writeln("drawMipMapHistogram() called with illegal parameters -> returning\r");
+		return;
+	}
+	if (data.length == 0 ||
+		min >= max) {
+		writeln("drawMipMapHistogram() called with illegal parameters -> returning\r");
+		return;
+	}
+	writeln("drawing\r");
 	double bin_width = (max-min)/data.length;
 	double xhist = min + bin_width/2;
 	foreach(idx, vline; data) {
@@ -139,6 +153,7 @@ in {
 		}
 		xhist += bin_width;
 	}
+	writeln("done drawing mipmap\r");
 }
 
 

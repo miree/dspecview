@@ -67,27 +67,10 @@ synchronized class Hist1Filesource : Hist1Datasource
 		import std.datetime : abs, DateTime, hnsecs, SysTime;
 		import std.datetime : Clock, seconds;		
 
-		//writeln("Hist1Filesource.getData() called\r");
+		writeln("Hist1Filesource.getData() called\r");
 
 		File file;
-		SysTime time_last_file_modification;
-		try {
-			//writeln("opening file ", _filename);
-			file = File(_filename);
-			auto filename = _filename.dup;
-			time_last_file_modification = timeLastModified(cast(string)filename);
-		} catch (Exception e) {
-			try {
-				if (!_filename.startsWith('/')) {
-					_filename = "/" ~ _filename;
-				}
-				//writeln("opening file ", _filename);
-				file = File(_filename);
-			} catch (Exception e) {
-				writeln("unable to open file ", _filename);
-				return null;
-			}
-		} 
+		SysTime time_last_file_modification = timeLastModified(cast(string)_filename);
 		bool need_update = false;
 		SysTime time_of_last_update = _time_of_last_update;
 		if (time_of_last_update == SysTime.init ) need_update = true;
@@ -98,7 +81,31 @@ synchronized class Hist1Filesource : Hist1Datasource
 			hist_right  = _right ;
 			return _bin_data;
 		}
+		try {
+			//writeln("opening file ", _filename);
+			file = File(_filename,"r");
+		} catch (Exception e) {
+			try {
+				if (!_filename.startsWith('/')) {
+					_filename = "/" ~ _filename;
+				}
+				writeln("opening file ", _filename);
+				file = File(_filename,"r");
+			} catch (Exception e) {
+				writeln("unable to open file ", _filename);
+				return null;
+			}
+		} 
 		writeln("update hist\r");
+
+		while(!file.tryLock(LockType.read)) {
+			writeln("lock not successfull\r");
+		    int waitTime = 100;
+		   	writeln("waiting");
+		   	import core.thread;
+	    	Thread.sleep(waitTime.msecs);
+		}
+		writeln("lock successfull\r");
 		_bin_data.length = 0;
 		try {
 			foreach(line; file.byLine)	{
@@ -112,7 +119,7 @@ synchronized class Hist1Filesource : Hist1Datasource
 						line.formattedRead("# %s %s %s %s %s", dim, nbins, name, left, binwidth);
 						hist_left = left;
 						hist_right = left+binwidth*nbins;
-						//writeln("left = ", hist_left, " right = ", hist_right, "\r");
+						writeln("left = ", hist_left, " right = ", hist_right, "\r");
 					} catch (Exception e) {
 						writeln("Exception caught\r");
 					}
@@ -125,17 +132,25 @@ synchronized class Hist1Filesource : Hist1Datasource
 					}
 				}
 			}
+			writeln("no Exception\r");
 		} catch (Exception e) {
 			writeln("there was an Exeption ");
+			writeln("returning null\r");
+			return null;
 		}
+		file.close();
+		writeln("file closed\r");
+
 
 		if (hist_left is double.init) hist_left = 0;
 		if (hist_right is double.init) hist_right = _bin_data.length;
 		//writeln(file.byLine().map!(a => to!double(a)).array);
+		writeln("saving update time\r");
 		SysTime *time_of_last_update_ptr = cast(SysTime*)(&_time_of_last_update);
 		*time_of_last_update_ptr = time_last_file_modification;
 		_left   = hist_left;
 		_right  = hist_right;
+		writeln("returning\r");
 		return _bin_data;	
 	}
 private:
@@ -162,11 +177,14 @@ synchronized class Hist1Visualizer : Drawable
 	// get fresh data from the underlying source
 	override void refresh() 
 	{
-		//writeln("Hist1Visualizer.refresh called()");
+		writeln("Hist1Visualizer.refresh called()");
 		double left, right;
+		auto _old_data = _bin_data;
 		_bin_data = cast(shared(double[]))_source.getData(left, right);
-		mipmap_data();
 		if (_bin_data !is null) {
+			if (_old_data != _bin_data) {
+				mipmap_data();
+			}
 			_top    = maxElement(_bin_data);
 			_bottom = minElement(_bin_data);
 			_left   = left;
@@ -180,9 +198,12 @@ synchronized class Hist1Visualizer : Drawable
 	}
 
 	override bool getBottomTopInLeftRight(ref double bottom, ref double top, double left, double right, bool logy, bool logx) {
-		//writeln("getBottomTopInLeftRight ", left, " ", right, "\r");
+		writeln("getBottomTopInLeftRight ", left, " ", right, "\r");
 		if (_bin_data is null) {
 			refresh();
+			if (_bin_data is null) {
+				return false;
+			}
 		}
 		import std.math;
 		if (logx) { // special treatment for logx case
@@ -190,11 +211,20 @@ synchronized class Hist1Visualizer : Drawable
 			left = exp(left);
 		}
 
+		if (_bin_data.length == 0) {
+			return false;
+		}
 		// transform into bin numbers
-		left  = (left-getLeft)/getBinWidth();
-		right = (right-getLeft)/getBinWidth();
+		writeln("critical: getLeft=", getLeft(), "   getRight=",getRight(), 
+			    "   getBinWidth=",getBinWidth(),"\r");
+		left  = (left-getLeft())/getBinWidth();
+		right = (right-getLeft())/getBinWidth();
+		writeln("critical: getLeft=", getLeft(), "   getRight=",getRight(), 
+			    "   getBinWidth=",getBinWidth(),"\r");
 
-		//writeln("getBottomTopInLeftRight ", left, " ", right, "\r");
+		if (left )
+
+		writeln("getBottomTopInLeftRight ", left, " ", right, "\r");
 
 		if (left >= _bin_data.length || right <= 0) {
 			//writeln("done false\r");
@@ -236,27 +266,36 @@ synchronized class Hist1Visualizer : Drawable
 	}
 
 	override void draw(ref Scoped!Context cr, ViewBox box, bool logy, bool logx, bool logz) {
-		//writeln("Hist1Visualizer.draw() called\r");
+		writeln("Hist1Visualizer.draw() called\r");
 		if (_bin_data is null) {
 			refresh();
+			if (_bin_data is null) {
+				return;
+			}
 		}
-		//writeln("bins = ", _bin_data[0].length, "\r");
+		if (_bin_data !is null) {
+			writeln("bins = ", _bin_data.length, "\r");
+		} else {
+			writeln("_bin_data is null\r");
+		}
 
-		//writeln("pixel width = ", box.get_pixel_width() , "\r");
+		writeln("pixel width = ", box.get_pixel_width() , "\r");
 		auto pixel_width = box.get_pixel_width();
 		auto bin_width = getBinWidth;
 		if (bin_width > pixel_width || logx) { // there is no mipmap implementation for logx histogram drawing
-			//writeln("hist1 draw\r");
+			writeln("hist1 draw\r");
 			drawHistogram(cr,box, getLeft, getRight, _bin_data, logy, logx);
 		} else {
-			//writeln("hist1 draw mipmap\r");
+			writeln("hist1 draw mipmap\r");
 			int mipmap_idx = 0;
 			for (;;) {
 				bin_width *= 2;
 				++mipmap_idx;
-				if (mipmap_idx == _mipmap_data.length-1 || bin_width > pixel_width) {
-					drawMipMapHistogram(cr,box, getLeft, getRight, _mipmap_data[mipmap_idx-1], logy);
-					break;
+				if (_mipmap_data !is null) {
+					if (mipmap_idx == _mipmap_data.length-1 || bin_width > pixel_width) {
+						drawMipMapHistogram(cr,box, getLeft, getRight, _mipmap_data[mipmap_idx-1], logy);
+						break;
+					}
 				}
 			}
 		}
@@ -300,7 +339,8 @@ private:
 		if (_bin_data is null) {
 			return;
 		}
-		import std.algorithm;
+		import std.algorithm, std.stdio;
+		writeln("generate mipmap data\r");
 		_mipmap_data.length = 0;
 		for (int idx = 0;; ++idx) {
 			if (idx == 0) {
@@ -325,6 +365,7 @@ private:
 				}
 			}
 		}
+		writeln("done generating mipmap data\r");
 
 	}
 
