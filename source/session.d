@@ -25,22 +25,24 @@ public:
 	//}
 	string[] getItemList() {
 		import std.array, std.algorithm;
-		auto item_list = (cast(shared(Item)[string])_items).byKey().array().sort().array;
+		//auto item_list = (cast(shared(Item)[string])_items).byKey.array.sort.array;
+		string[] item_list;
+		foreach(key, value; _items) { item_list ~= key; }
 		return item_list;
 	}
 	shared(Item) getItem(string name)
 	{
-		auto item = (name in _items);
+		shared(Item*) item = (name in _items);
 		if (item != null) {
-			return cast(shared(Item))*item;
+			return *item;
 		}
 		return null;
 	}
 	shared(Drawable) getDrawable(string name)
 	{
-		shared Item item = getItem(name);
+		shared(Item) item = getItem(name);
 		if (item !is null) {
-			auto drawable = cast(shared Drawable)item;
+			shared(Drawable) drawable = cast(shared(Drawable))(item);
 			return drawable;
 		}
 		return null;
@@ -57,6 +59,6 @@ public:
 
 
 private:
-	shared(Item)[string] _items;
+	Item[string] _items;
 }
 

@@ -18,7 +18,7 @@ import gui;
 import session;
 import item;
 import hist1;
-import hist2;
+//import hist2;
 
 shared Session _session;
 
@@ -33,7 +33,7 @@ void addItem(immutable string[] args, shared Session session)
     session.addItem(args[0], new shared Hist1Visualizer(args[0], new double[](10), 0, 10));
     if (guiTid != Tid.init)
     {
-    	send(guiTid,1);
+    	send(guiTid,100);
     }
 }
 
@@ -69,31 +69,31 @@ void addHist1(immutable string[] args, shared Session session)
     }
 }
 
-void addHist2(immutable string[] args, shared Session session)
-{
-    writeln("hist2 called with args: ", args);
-    if (args.length == 1) {
-	    session.addItem(args[0], new shared Hist2Visualizer(args[0], new shared Hist2Filesource(args[0])));
-	    if (guiTid != Tid.init) {
-	    	send(guiTid,1);
-	    }
-    	return;
-    } else if (args.length == 3) {
-        auto name   = args[0];
-        auto width  = to!int(args[1]);
-        auto height = to!int(args[2]);
+//void addHist2(immutable string[] args, shared Session session)
+//{
+//    writeln("hist2 called with args: ", args);
+//    if (args.length == 1) {
+//	    session.addItem(args[0], new shared Hist2Visualizer(args[0], new shared Hist2Filesource(args[0])));
+//	    if (guiTid != Tid.init) {
+//	    	send(guiTid,1);
+//	    }
+//    	return;
+//    } else if (args.length == 3) {
+//        auto name   = args[0];
+//        auto width  = to!int(args[1]);
+//        auto height = to!int(args[2]);
 
-        writeln("create new hist2 ", name, " with ", width*height, " bins");
-        session.addItem(name, new shared Hist2Visualizer(name, new shared Hist2Memory(width, height)));
-        refreshGui();
-        return;
-    } else {
-    	writeln("wrong number of arguments:");
-        writeln("   hist2 <filename>");
-        writeln("   hist2 <name> <widht> <height>");
-    	return;
-    }
-}
+//        writeln("create new hist2 ", name, " with ", width*height, " bins");
+//        session.addItem(name, new shared Hist2Visualizer(name, new shared Hist2Memory(width, height)));
+//        refreshGui();
+//        return;
+//    } else {
+//    	writeln("wrong number of arguments:");
+//        writeln("   hist2 <filename>");
+//        writeln("   hist2 <name> <widht> <height>");
+//    	return;
+//    }
+//}
 
 void listItems(immutable string[] args, shared Session session)
 {
@@ -175,7 +175,7 @@ int run(immutable string[] args, shared Session session)
     list_of_commands["gui"]         = &startguithread;
     list_of_commands["calc"]        = &calculator;
     list_of_commands["hist1"]       = &addHist1;
-    list_of_commands["hist2"]       = &addHist2;
+    //list_of_commands["hist2"]       = &addHist2;
 
 
     char *line;

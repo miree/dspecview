@@ -28,7 +28,7 @@ synchronized class Drawable : Item
 
 	this(string name)
 	{
-		_name = cast(shared string)name;
+		_name = name.dup;
 	}
 
 	override int getDim() {
@@ -77,8 +77,8 @@ synchronized class Drawable : Item
 
 protected:
 
-	shared string _name;
+	string _name;
 
-	shared double _left, _right;
-	shared double _bottom, _top;
+	double _left, _right;
+	double _bottom, _top;
 }

@@ -14,7 +14,7 @@ import std.algorithm, std.stdio;
 // read on request
 synchronized interface Hist2Datasource
 {
-	shared(double[]) getData(out ulong w, out ulong h, out double hist_left, out double hist_right, out double hist_bottom, out double hist_top);
+	shared(shared(double)[]) getData(out ulong w, out ulong h, out double hist_left, out double hist_right, out double hist_bottom, out double hist_top);
 }
 
 synchronized class Hist2Memory : Hist2Datasource
@@ -41,7 +41,7 @@ synchronized class Hist2Memory : Hist2Datasource
 		}
 	}
 
-	override shared(double[])  getData(out ulong w, out ulong h, out double hist_left, out double hist_right, out double hist_bottom, out double hist_top)
+	override shared(shared(double[]))  getData(out ulong w, out ulong h, out double hist_left, out double hist_right, out double hist_bottom, out double hist_top)
 	{
 		w = _width;
 		h = _height;
@@ -54,8 +54,8 @@ synchronized class Hist2Memory : Hist2Datasource
 private:
 
 	ulong _width, _height;
-	shared double _left, _right, _bottom, _top;
-	shared double[] _bin_data;
+	double _left, _right, _bottom, _top;
+	double[] _bin_data;
 }
 
 
@@ -71,7 +71,7 @@ synchronized class Hist2Filesource : Hist2Datasource
 	}
 
 
-	override shared(double[]) getData(out ulong w, out ulong h, out double hist_left, out double hist_right, out double hist_bottom, out double hist_top)
+	override shared(shared(double[])) getData(out ulong w, out ulong h, out double hist_left, out double hist_right, out double hist_bottom, out double hist_top)
 	{
 		import std.array, std.algorithm, std.stdio, std.conv;
 		import std.file;
@@ -179,10 +179,10 @@ synchronized class Hist2Filesource : Hist2Datasource
 	}
 private:
 	string _filename;
-	shared double _left, _right, _bottom, _top;
-	shared ulong  _w, _h;
-	shared(double[]) _bin_data;
-	shared(SysTime) _time_of_last_update;
+	double _left, _right, _bottom, _top;
+	ulong  _w, _h;
+	double[] _bin_data;
+	SysTime _time_of_last_update;
 
 }
 
@@ -228,7 +228,7 @@ synchronized class Hist2Visualizer : Drawable
 		//writeln("Hist1Visualizer.refresh called()");
 		ulong width, height; // number of bins in x/y direction
 		double left, right, bottom, top;
-		_bin_data = cast(shared(double[]))_source.getData(width, height, left, right, bottom, top );
+		_bin_data = cast(shared(shared(double[])))_source.getData(width, height, left, right, bottom, top );
 
 
 		//writeln("width = " , width, "   height = ", height, "\r");
@@ -322,7 +322,7 @@ synchronized class Hist2Visualizer : Drawable
 		if (_bin_data is null) {
 			ulong width, height;
 			double l, r, b, t;
-			_bin_data = cast(shared(double[]))_source.getData(width, height, l,r, b,t );
+			_bin_data = cast(shared(shared(double[])))_source.getData(width, height, l,r, b,t );
 		}
 		import std.math;
 		if (logx) { // special treatment for logx case
@@ -551,7 +551,7 @@ private:
 	                                //   used as a pattern while drawing to a cairo context
 	Pattern _log_image_surface_pattern; // same only with log color code	                           
 
-	shared string _name;
+	string _name;
 
 	alias struct minmax {double min; double max;} ;
 }

@@ -34,6 +34,24 @@ import plotarea;
 import item;
 import drawable;
 
+class ImmuBuffer
+{
+	this(immutable(Drawable) d) {
+	}
+	void put(immutable(Drawable) d) {
+		buffer.length = 0;
+		buffer ~= d;
+	}
+	immutable(Drawable) get() {
+		if (buffer.length == 1) {
+			return buffer[0];
+		}
+		throw new Exception("no object stored in this ImmuBuffer");
+	}
+private:
+	immutable(Drawable)[] buffer;	
+}
+
 
 bool on_button_press_event(GdkEventButton* e, Widget w)
 {
@@ -52,21 +70,26 @@ extern(C) nothrow static int threadIdleProcess(void* data) {
 		import std.variant : Variant;
 		import std.datetime;
 		// get messages from parent thread
-		receiveTimeout(dur!"usecs"(10000),(int i) { 
+		//writeln("*************blub");
+		receiveTimeout(dur!"usecs"(50_000),(int i) { 
 					//Gui gui = cast(Gui)data;
-					foreach(gui; gui_windows) {
-						gui.updateSession();
-					}
+					//foreach(gui; gui_windows) {
+					//	gui.updateSession();
+					//}
 				}
 			);
+		//import core.thread;
+		//Thread.sleep( dur!("msecs")( 50 ) );
 		static int second_cnt = 0;
+		static int cnt = 0;
 		++second_cnt;
-		if (second_cnt == 10) {
-			writeln("tick\r");
+		if (second_cnt == 20) {
+			writeln("thisTid: ",thisTid," tick",++cnt,"\r");
 			second_cnt = 0;
 			// now do the "per second" business
 			//Gui gui = cast(Gui)data;
 			foreach(gui; gui_windows){
+				gui.updateSession();
 				gui._plot_area.refresh();
 				gui._plot_area.queueDraw();
 			}
@@ -354,34 +377,34 @@ class Gui : ApplicationWindow
 					}
 				}
 			});
-		     //b1.addOnClicked(button => say_hello(button));
-		auto b11 = new Button("open hist2"); 
-		b11.addOnClicked(delegate void(Button b) {
-				import gtk.FileChooserNative;
-				import gtk.FileChooserDialog;
-				import std.file;
-				import std.string;
-				auto file_chooser = new FileChooserNative(
-											"open file",
-											this,
-											GtkFileChooserAction.OPEN,
-											"open", "cancel");
-				//writeln("result of file_chooser.run() = ", 
-				if (ResponseType.ACCEPT == file_chooser.run()) {
-					//writeln(getcwd(), ": file_chooser filename: ", , "\r");
-					auto filename = file_chooser.getFilename().chompPrefix(getcwd()~"/"); 
-					filename = filename.chompPrefix("/");
-					writeln("filename = " , filename, "\r");
-					synchronized {
-						import hist2;
-						auto treeview_name = filename;
-						_session.addItem(treeview_name, new shared Hist2Visualizer(treeview_name, new shared Hist2Filesource(filename)));
-						foreach(gui; gui_windows) {
-							gui.updateSession();
-						}
-					}
-				}
-			});
+		//     //b1.addOnClicked(button => say_hello(button));
+		//auto b11 = new Button("open hist2"); 
+		//b11.addOnClicked(delegate void(Button b) {
+		//		import gtk.FileChooserNative;
+		//		import gtk.FileChooserDialog;
+		//		import std.file;
+		//		import std.string;
+		//		auto file_chooser = new FileChooserNative(
+		//									"open file",
+		//									this,
+		//									GtkFileChooserAction.OPEN,
+		//									"open", "cancel");
+		//		//writeln("result of file_chooser.run() = ", 
+		//		if (ResponseType.ACCEPT == file_chooser.run()) {
+		//			//writeln(getcwd(), ": file_chooser filename: ", , "\r");
+		//			auto filename = file_chooser.getFilename().chompPrefix(getcwd()~"/"); 
+		//			filename = filename.chompPrefix("/");
+		//			writeln("filename = " , filename, "\r");
+		//			synchronized {
+		//				import hist2;
+		//				auto treeview_name = filename;
+		//				_session.addItem(treeview_name, new shared Hist2Visualizer(treeview_name, new shared Hist2Filesource(filename)));
+		//				foreach(gui; gui_windows) {
+		//					gui.updateSession();
+		//				}
+		//			}
+		//		}
+		//	});
 
 		auto b2 = new Button("clear");  
 			 b2.addOnClicked(button => _treestore.clear());
@@ -662,7 +685,7 @@ class Gui : ApplicationWindow
 		_box.add(b0p);
 		_box.add(b0c);
 		_box.add(b1);
-		_box.add(b11);
+		//_box.add(b11); // hist2 button
 		_box.add(b2);
 		_box.add(b3);
 

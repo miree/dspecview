@@ -15,7 +15,7 @@ import std.algorithm, std.stdio;
 synchronized interface Hist1Datasource
 {
 	//bool dirty(); // returns true if the data was changed since last call of getData
-	shared(double[]) getData(out double hist_left, out double hist_right);
+	shared(shared(double)[]) getData(out double hist_left, out double hist_right);
 }
 
 synchronized class Hist1Memory : Hist1Datasource
@@ -36,7 +36,7 @@ synchronized class Hist1Memory : Hist1Datasource
 		}
 	}
 
-	override shared(double[]) getData(out double hist_left, out double hist_right)
+	override shared(shared(double)[]) getData(out double hist_left, out double hist_right)
 	{
 		hist_right = _right;
 		hist_left  = _left;
@@ -44,8 +44,8 @@ synchronized class Hist1Memory : Hist1Datasource
 	}
 private:
 
-	shared double _left, _right;
-	shared double[] _bin_data;
+	double _left, _right;
+	double[] _bin_data;
 }
 
 synchronized class Hist1Filesource : Hist1Datasource 
@@ -60,7 +60,7 @@ synchronized class Hist1Filesource : Hist1Datasource
 	}
 
 
-	override shared(double[]) getData(out double hist_left, out double hist_right)
+	override shared(shared(double)[]) getData(out double hist_left, out double hist_right)
 	{
 		import std.array, std.algorithm, std.stdio, std.conv;
 		import std.file;
@@ -155,9 +155,9 @@ synchronized class Hist1Filesource : Hist1Datasource
 	}
 private:
 	string _filename;
-	shared double _left, _right;
-	shared(double[]) _bin_data;
-	shared(SysTime) _time_of_last_update;
+	double _left, _right;
+	double[] _bin_data;
+	SysTime _time_of_last_update;
 }
 
 synchronized class Hist1Visualizer : Drawable 
@@ -180,7 +180,7 @@ synchronized class Hist1Visualizer : Drawable
 		writeln("Hist1Visualizer.refresh called()");
 		double left, right;
 		auto _old_data = _bin_data;
-		_bin_data = cast(shared(double[]))_source.getData(left, right);
+		_bin_data = cast(shared(shared(double)[]))_source.getData(left, right);
 		if (_bin_data !is null) {
 			if (_old_data != _bin_data) {
 				mipmap_data();
@@ -297,6 +297,7 @@ synchronized class Hist1Visualizer : Drawable
 						break;
 					}
 				}
+				else writeln("_mipmap_data is null\r");
 			}
 		}
 	}
@@ -313,7 +314,7 @@ synchronized class Hist1Visualizer : Drawable
 		super(name);
 		_left = left;
 		_right = right;
-		this._bin_data = cast(shared double[])bin_data.dup;
+		this._bin_data = cast(shared(shared double[]))bin_data.dup;
 		mipmap_data();
 		if (_bin_data.length > 0) {
 			_top    = maxElement(_bin_data);
@@ -369,10 +370,10 @@ private:
 
 	}
 
-	shared Hist1Datasource _source;
-	shared double[] _bin_data;
-	shared string _name;
+	Hist1Datasource _source;
+	double[] _bin_data;
+	string _name;
 
-	alias struct minmax {double min; double max;} ;
-	shared minmax[][] _mipmap_data;
+	struct minmax {double min; double max;} ;
+	minmax[][] _mipmap_data;
 }

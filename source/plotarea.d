@@ -674,7 +674,7 @@ protected:
 						draw_grid(cr, size.width, size.height);
 					}
 					cr.setSourceRgba(_color_table[color_idx][0], _color_table[color_idx][1], _color_table[color_idx][2], 1.0);
-					cr.setLineWidth( 2);
+					cr.setLineWidth(2);
 					if (drawable !is null) {
 						//if (drawable.getLeft() < _vbox.getRight() && // check if the drawable is inside 
 						//	drawable.getRight() > _vbox.getLeft() && //   the view box at all
