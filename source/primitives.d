@@ -1,4 +1,3 @@
-
 import cairo.Context;
 import cairo.Surface;
 
@@ -463,6 +462,7 @@ void drawGridNumbersLogY(ref Scoped!Context cr, ViewBox box, int canvas_width, i
 	} while (log_bottom <= box.getTop);
 }
 
+static if (false) // remove the following function
 void drawColorKey(ref Scoped!Context cr, ViewBox box, int canvas_width,  int canvas_height, bool logz)
 {
 	double z_min = box.getZmin();

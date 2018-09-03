@@ -1,3 +1,5 @@
+@safe:
+
 import view;
 
 double log_color_value_of(double color, bool logcolor) {

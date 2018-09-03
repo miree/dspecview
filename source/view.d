@@ -1,4 +1,4 @@
-
+@safe:
 struct ViewBox
 {
 	int _rows = 1, _columns = 1;
