@@ -109,7 +109,7 @@ void rmItem(immutable string[] args)
 		return;
 	}
 	// ask session to remove this item
-	sessionTid.send(MsgRemoveItems(args[0]), thisTid);
+	sessionTid.send(MsgRemoveItem(args[0]), thisTid);
 }
 
 void addFileHist1(immutable string[] args)

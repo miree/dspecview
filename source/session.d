@@ -68,7 +68,7 @@ struct MsgAddFileHist1{
 	string filename;
 }
 
-struct MsgRemoveItems{
+struct MsgRemoveItem{
 	string itemname;
 }
 
@@ -133,7 +133,7 @@ public:
 				(MsgRun run, Tid requestingThread) {
 					requestingThread.send("session is already running");
 				},
-				(MsgRemoveItems msg, Tid requestingThread) {
+				(MsgRemoveItem msg, Tid requestingThread) {
 					auto result = _items.remove(msg.itemname);
 					if (result) {
 						import std.stdio;

@@ -678,6 +678,24 @@ protected:
 						draw_box(cr);
 						draw_numbers(cr, size.width, size.height);
 					} else { // if (cell_has_content)
+						if (_autoscale_x) {
+							double left, right;
+							default_left_right(left, right);
+							add_left_right_margin(left,right);
+							_vbox.setLeftRight(left, right);
+						}
+						if (_autoscale_y) {
+							double bottom, top;
+							default_bottom_top(bottom, top);
+							add_bottom_top_margin(bottom, top);
+							_vbox.setBottomTop(bottom, top);
+						}
+						if (_autoscale_z) {
+							double zmin, zmax;
+							default_zmin_zmax(zmin, zmax);
+							add_zmin_zmax_margin(zmin, zmax);
+							_vbox.setZminZmax(zmin, zmax);
+						}						
 						_vbox.update_coefficients(row, column, size.width, size.height);
 						setContextClip(cr, _vbox);
 						draw_grid(cr, size.width, size.height);

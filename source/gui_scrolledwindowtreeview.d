@@ -52,7 +52,7 @@ public:
 		// define the popup menu for the list items
 		import gtk.Menu, gtk.MenuItem;
 		auto popup_menu = new Menu;
-		popup_menu.append( 
+		popup_menu.append( // show selected recursive (if a folder is selected show all contents recursively)
 			new MenuItem(
 				delegate(MenuItem m) { // the action to perform if that menu entry is selected
 					// look at all selected entries in the treeview ...
@@ -75,6 +75,27 @@ public:
 				},
 				"show selected recusive", // menu entry label
 				"show seleted items and all items in selected folders"// description
+			)
+		);		
+		popup_menu.append( // remove item
+			new MenuItem(
+				delegate(MenuItem m) { // the action to perform if that menu entry is selected
+					// look at all selected entries in the treeview ...
+					auto iters = _treeview.getSelectedIters();
+					import std.concurrency, std.array, std.algorithm, std.stdio;
+					import session;
+					foreach(iter; iters) {
+						foreach(itemname; _itemnames.sort) {
+							auto selected_name = get_full_name(iter);
+							if (itemname.startsWith(selected_name)) {
+								// request a Visualizer for that item
+								_sessionTid.send(MsgRemoveItem(itemname), thisTid);
+							}
+						}					
+					}
+				},
+				"remove selected recusive", // menu entry label
+				"remove seleted items and all items in selected folders"// description
 			)
 		);
 		import gtk.Widget;
