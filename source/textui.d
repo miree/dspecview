@@ -10,11 +10,12 @@ void populate_list_of_commands()
 	list_of_commands["hi"]          = &sayHiToSession;
 	list_of_commands["stop"]        = &stopSession;
 	list_of_commands["run"]         = &runSession;
-	list_of_commands["addint"]      = &addIntValue;
+	//list_of_commands["addint"]      = &addIntValue;
 	list_of_commands["ls"]          = &listItems;
 	list_of_commands["filehist1"]   = &addFileHist1;
-	list_of_commands["visualizer"]  = &getItemVisualizer;
+	//list_of_commands["visualizer"]  = &getItemVisualizer;
 	list_of_commands["gui"]         = &runGui;
+	list_of_commands["rm"]          = &rmItem;
 }
 
 /////////////////////////////////////////////////////////////
@@ -67,25 +68,23 @@ void runSession(immutable string[] args)
 	writeln(receiveOnly!string);
 }
 
-void addIntValue(immutable string[] args) 
-{
-	import std.stdio, std.concurrency;
-	import session;
-	if (args.length != 2)
-	{
-		writeln("need 2 arguments: <name> <value>, got", args.length, " : ", args);
-		return;
-	}
-	import std.concurrency, std.conv;
-	import session;
-	auto name = args[0];
-	auto value = args[1].to!int;
-	send(sessionTid, MsgAddIntValue(name,value));
-}
+//void addIntValue(immutable string[] args) 
+//{
+//	import std.stdio, std.concurrency;
+//	import session;
+//	if (args.length != 2)
+//	{
+//		writeln("need 2 arguments: <name> <value>, got", args.length, " : ", args);
+//		return;
+//	}
+//	import std.concurrency, std.conv;
+//	import session;
+//	auto name = args[0];
+//	auto value = args[1].to!int;
+//	send(sessionTid, MsgAddIntValue(name,value));
+//}
 
-struct MsgItemList {
-	string list; 
-};
+
 void listItems(immutable string[] args) 
 {
 	import std.concurrency, std.array, std.algorithm;
@@ -101,6 +100,18 @@ void listItems(immutable string[] args)
 	}
 }
 
+void rmItem(immutable string[] args)
+{
+	import std.concurrency, std.array, std.algorithm, std.stdio;
+	import session;
+	if (args.length < 1) {
+		writeln("expecting one argument: <itemname> <itemname> ...  , got ", args.length , "arguments: ", args);
+		return;
+	}
+	// ask session to remove this item
+	sessionTid.send(MsgRemoveItems(args[0]), thisTid);
+}
+
 void addFileHist1(immutable string[] args)
 {
 	import std.stdio, std.concurrency, std.array, std.algorithm;
@@ -110,36 +121,43 @@ void addFileHist1(immutable string[] args)
 		writeln("expecting one argument: <filename> , got ", args.length , "arguments: ", args);
 		return;
 	}
+
 	sessionTid.send(MsgAddFileHist1(args[0]), thisTid);
-	writeln(receiveOnly!string); // block until we got a string response
 }
 
-void getItemVisualizer(immutable string[] args)
-{
-	import std.stdio, std.concurrency;
-	import session;
-	if (args.length != 1) {
-		writeln("expecting one argument: <itemame> , got ", args.length , "arguments: ", args);
-		return;
-	}
-	sessionTid.send(MsgRequestItemVisualizer(args[0]), thisTid);
-	//writeln(receiveOnly!string); // block until we got a string response
-	receive( 
-		(string msg) { 
-			writeln(msg); 
-		},
-		(immutable(Visualizer) visualizer) {
-			writeln("got visualizer object");
-			visualizer.print(42);
-		}
-	);
-}
+// the following will be done by the GUI
+//void getItemVisualizer(immutable string[] args)
+//{
+//	import std.stdio, std.concurrency;
+//	import session;
+//	if (args.length != 1) {
+//		writeln("expecting one argument: <itemame> , got ", args.length , "arguments: ", args);
+//		return;
+//	}
+//	sessionTid.send(MsgRequestItemVisualizer(args[0]), thisTid);
+//	//writeln(receiveOnly!string); // block until we got a string response
+//	receive( 
+//		(string msg) { 
+//			writeln(msg); 
+//		},
+//		(string itemname, immutable(Visualizer) visualizer) {
+//			writeln("got visualizer object");
+//			visualizer.print(42);
+//		}
+//	);
+//}
 
+Tid guiTid;
+bool guiRunning = false;
 void runGui(immutable string[] args)
 {
-	import gui;
+	import gui, session;
 	//gui.run(args, sessionTid);
-	gui.startguithread(args, sessionTid);
+	guiTid = gui.startguithread(args, sessionTid);
+	guiRunning = true;
+
+	// tell the session, that a gui thread was started;
+	sessionTid.send(MsgGuiStarted(), guiTid);
 }
 
 

@@ -13,7 +13,7 @@ public:
 
 ////////////////////////////////////////
 // All objects that are created by items
-// in order to draw it have to impelement
+// in order to draw have to implement
 // this interface. Visualizer objects 
 // are shared between theads and have 
 // therefore to be immutable
@@ -22,8 +22,16 @@ immutable interface Visualizer
 public:
 	import cairo.Context, cairo.Surface;
 	import view;
+	string getItemName() immutable;
+	ulong getDim() immutable;
 	void print(int context) immutable;
 	void draw(ref Scoped!Context cr, ViewBox box, bool logy, bool logx, bool logz) immutable;
+	void getLeftRight(out double left, out double right, bool logy, bool logx) immutable;
+	bool getBottomTopInLeftRight(out double bottom, out double top, double left, double right, bool logy, bool logx) immutable;
+	bool getZminZmaxInLeftRightBottomTop(out double mi, out double ma, 
+	                                     double left, double right, double bottom, double top, 
+	                                     bool logz, bool logy, bool logx) immutable;
+
 }
 
 ////////////////////////////////////////
@@ -46,13 +54,13 @@ struct MsgStop {
 struct MsgRun {	
 }
 
-////////////////////////////////////////
-// Add a test item to the
-// list of items under the given name
-struct MsgAddIntValue{
-	string name;
-	int value;
-}
+//////////////////////////////////////////
+//// Add a test item to the
+//// list of items under the given name
+//struct MsgAddIntValue{
+//	string name;
+//	int value;
+//}
 
 ////////////////////////////////////////
 // Add a 1d file histogram
@@ -60,16 +68,41 @@ struct MsgAddFileHist1{
 	string filename;
 }
 
+struct MsgRemoveItems{
+	string itemname;
+}
+
 
 ////////////////////////////////////////
 // Write a list of items to terminal
 struct MsgRequestItemList{
 }
+// response to the above request
+struct MsgItemList { 
+	string list; 
+};
 
 ////////////////////////////////////////
 // call the refresh function on an item
 struct MsgRequestItemVisualizer {
 	string itemname;
+}
+
+////////////////////////////////////////
+// Request to get an echo on this 
+// message. This is usefult if a 
+// number of request was sent to
+// the session, but responses are
+// evaluated at a different part of 
+// the asking thread. The echo message
+// can be used to indicate the last 
+// request was handled.
+struct MsgEchoRedrawContent {
+}
+struct MsgEchoFitContent {
+}
+
+struct MsgGuiStarted {
 }
 
 class Session
@@ -100,17 +133,35 @@ public:
 				(MsgRun run, Tid requestingThread) {
 					requestingThread.send("session is already running");
 				},
-				(MsgAddIntValue addItem) {
-					import intValue;
-					_items[addItem.name] = new IntValue(addItem.value);
+				(MsgRemoveItems msg, Tid requestingThread) {
+					auto result = _items.remove(msg.itemname);
+					if (result) {
+						import std.stdio;
+						//writeln("item ",msg.itemname," removed\r");
+						if (_guiRunning) {
+							import gui;
+							_guiTid.send(MsgRefreshItemList());
+							_guiTid.send(MsgRemoveVisualizedItem(msg.itemname));
+						}
+					} else {
+						import std.stdio;
+						//writeln("item ",msg.itemname," not found\r");
+					}
+
+
+
 				},
 				(MsgAddFileHist1 filehist1, Tid requestingThread) {
 					try {
 						import hist1;
 						_items[filehist1.filename] = new FileHist1(filehist1.filename);
-						requestingThread.send("added filehist1: " ~ filehist1.filename);
+						//requestingThread.send("added filehist1: " ~ filehist1.filename);
+						if (_guiRunning) {
+							import gui;
+							_guiTid.send(MsgRefreshItemList());
+						}
 					} catch (Exception e) {
-						requestingThread.send(e.msg);
+						//requestingThread.send(e.msg);
 					}
 				},
 				(MsgRequestItemList msg, Tid requestingThread) {
@@ -133,8 +184,25 @@ public:
 					if (item is null) {
 						requestingThread.send("unknown item: " ~ msg.itemname);
 					} else {
-						requestingThread.send(item.createVisualizer());
+						import gui;
+						requestingThread.send(MsgVisualizeItem(msg.itemname), item.createVisualizer());
 					}
+				},
+				(MsgEchoRedrawContent msg, Tid requestingThread) {
+					// this one is sent from the Gui to indicate 
+					// that all requests were sent
+					import gui;
+					requestingThread.send(MsgRedrawContent());
+				},
+				(MsgEchoFitContent msg, Tid requestingThread) {
+					// this one is sent from the Gui to indicate 
+					// that all requests were sent
+					import gui;
+					requestingThread.send(MsgFitContent());
+				},
+				(MsgGuiStarted msg, Tid guiTid) {
+					_guiRunning = true;
+					_guiTid = guiTid;
 				}
 			); // receive
 		}
@@ -144,6 +212,10 @@ private:
 	bool _running;
 
 	Item[string] _items;
+
+	import std.concurrency;
+	bool _guiRunning = false;
+	Tid _guiTid;
 }
 
 void runSession()

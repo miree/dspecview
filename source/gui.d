@@ -17,11 +17,6 @@ void threadfunction(immutable string[] args, Tid sessionTid)
 }
 
 
-
-
-
-
-
 import gio.Application : GioApplication = Application;
 import gtk.Application;
 import gtk.ApplicationWindow;
@@ -34,32 +29,30 @@ int run(immutable string[] args, Tid sessionTid, bool in_other_thread = false)
 			auto gui = new Gui(application, sessionTid, in_other_thread); 
 			gdk.Threads.threadsAddIdle(&threadIdleProcess, cast(void*)gui);
 		});
-	return application.run(cast(string[])args);
+	auto result = application.run(cast(string[])args);
+
+	return result;
 }
+
+
 
 extern(C) nothrow static int threadIdleProcess(void* data) {
 	//Don't let D exceptions get thrown from this function
 	try {
-		import std.concurrency;
-		import std.variant : Variant;
-		import std.datetime;
-		// get messages from parent thread
-		receiveTimeout(dur!"usecs"(50_000),(int i) { 
-					//Gui gui = cast(Gui)data;
-					//foreach(gui; gui_windows) {
-					//	gui.updateSession();
-					//}
-				}
-			);
+
+		Gui gui = cast(Gui)data;
+		gui.message_handler();
+
 		//import core.thread;
 		//Thread.sleep( dur!("msecs")( 50 ) );
 		static int second_cnt = 0;
 		static int cnt = 0;
 		++second_cnt;
-		if (second_cnt == 20) {
+		if (second_cnt == 100) {
 			import std.stdio;
-			writeln("thisTid: ",thisTid," tick",++cnt,"\r");
+			//writeln("thisTid: ",thisTid," tick",++cnt,"\r");
 			second_cnt = 0;
+			gui.second_handler();
 			// now do the "per second" business
 			//Gui gui = cast(Gui)data;
 			//foreach(gui; gui_windows){
@@ -73,9 +66,6 @@ extern(C) nothrow static int threadIdleProcess(void* data) {
 	}
 	return 1;
 }
-
-
-
 
 
 
@@ -94,63 +84,136 @@ public:
 		super(application);
 		_application = application;
 
+		_sessionTid  = sessionTid;
+
+		// main layout is:
+		// control bar on the left hand side, plot area on the right hand side
+		// both sides are organized inside of the main_box
 		import gtk.Box;
 		auto main_box = new Box(GtkOrientation.HORIZONTAL,0);
-		auto controlpanel_box = build_controlpanel();
-		main_box.add(controlpanel_box);
-		auto plotarea_box = build_plotarea(_sessionTid, in_other_thread, mode2d);
-		main_box.add(plotarea_box);
-		main_box.setChildPacking(plotarea_box,true,true,0,GtkPackType.START);
+
+		// add the control panel
+		_control_panel = new ControlPanel(sessionTid, this);
+		main_box.add(_control_panel);
+
+		// add the plot area
+
+		_visualization = new Visualization(sessionTid, in_other_thread, mode2d);
+		main_box.add(_visualization);
+		main_box.setChildPacking(_visualization,true,true,0,GtkPackType.START);
+
+
+
+		// define some hotkeys
+		import gtk.Widget;
+		addOnKeyPress(delegate bool(GdkEventKey* e, Widget w) { // the action to perform if that menu entry is selected
+							//writeln("key press: ", e.keyval, "\r");
+							switch(e.keyval) {
+								case 'f': _visualization.setFit();             break;
+								case 'z': _visualization.toggle_autoscale_z(); break;
+								case 'y': _visualization.toggle_autoscale_y(); break;
+								case 'x': _visualization.toggle_autoscale_x(); break;
+								case 'l': _visualization.toggle_logscale();    break;
+								case 'o': _visualization.toggle_overlay();     break;
+								default:
+							}
+							return true;
+						});
+
+		setTitle("gtkD Spectrum Viewer");
+		setDefaultSize( 300, 300 );
+
+
+
+		//auto plotarea_box = build_plotarea(_sessionTid, in_other_thread, mode2d);
+		//main_box.add(plotarea_box);
 
 		add(main_box);
 		showAll();
 	}	
 
-	
+
+	void add_visualize(string intemname) 
+	{
+
+	}
+
+	void redraw_content()
+	{
+		_visualization.redraw_content();
+	}
+
+	void second_handler()
+	{
+		if (_visualization.autoRefresh()) {
+			_visualization.refresh();
+		}
+	}
+	void message_handler()
+	{
+		import std.concurrency;
+		import std.variant : Variant;
+		import std.datetime;
+
+		import session;
+
+		// get messages from other threads
+		receiveTimeout(dur!"usecs"(1_000),
+			(MsgRefreshItemList refresh_list) {
+				_control_panel.refresh();
+			},
+			(MsgItemList itemlist) {
+				_control_panel.updateTreeStoreFromSession(itemlist);
+			},
+			(MsgVisualizeItem msg, immutable(Visualizer) visualizer) {
+				import std.stdio;
+				_visualization.add(msg.itemname, visualizer);
+			},
+			(MsgRemoveVisualizedItem msg) {
+				_visualization.remove(msg.itemname);
+				_visualization.redraw_content();
+			},
+			//(string message) {
+			//	import std.stdio;
+			//	writeln(message,"\r");
+			//},
+			(MsgRedrawContent redraw) {
+				_visualization.redraw_content();
+			},
+			(MsgFitContent fit) {
+				_visualization.setFit();
+			}
+		);
+	}
 
 private:
-	Tid _sessionTid;	
+	Tid _sessionTid;
 	Application _application;
 
+	import gui_controlpanel, gui_visualization;
+	ControlPanel _control_panel;
+	Visualization _visualization;
 }
 
-auto build_controlpanel()
-{
-	import gtk.Box;
-	import gtk.Button;
 
-	auto box = new Box(GtkOrientation.VERTICAL,0);	
-
-	auto button_hello = new Button("hello");
-	void say_hello(Button button) {
-		import std.stdio;
-		writeln("hello button_clicked ", button.getLabel(), "\r");
-	}
-	button_hello.addOnClicked(button => say_hello(button)); 
-	box.add(button_hello);
-
-	auto button_bye = new Button("bye");
-	void say_bye(Button button) {
-		import std.stdio;
-		writeln("bye button_clicked ", button.getLabel(), "\r");
-	}
-	button_bye.addOnClicked(button => say_bye(button)); 
-	box.add(button_bye);
-
-	return box;
+// messages for the gui
+struct MsgVisualizeItem {
+	string itemname;
+}
+struct MsgRemoveVisualizedItem {
+	string itemname;
+}
+struct MsgRefreshItemList {
+}
+struct MsgRedrawContent {
+}
+struct MsgFitContent {
 }
 
-auto build_plotarea(Tid sessionTid, bool in_other_thread, bool mode2d)
-{
-	import plotarea;
-	import gtk.Box;
 
-	auto box = new Box(GtkOrientation.HORIZONTAL,0);
 
-	auto plot_area = new PlotArea(sessionTid, in_other_thread, mode2d);
-	box.add(plot_area);
-	box.setChildPacking(plot_area,true,true,0,GtkPackType.START);
 
-	return box;
-}
+
+
+
 

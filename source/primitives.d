@@ -72,10 +72,26 @@ do
 }
 import logscale;
 void drawHistogram(T)(ref Scoped!Context cr, ViewBox box, double min, double max, T[] bins, bool logy = true, bool logx = false)
-in {
-	assert(bins.length > 0);
-	assert(min < max);
-} do {
+//in {
+//	//assert(bins.length > 0);
+//	//assert(min < max);
+//} do 
+{
+	if (bins is null) {
+		import std.stdio;
+		writeln("********************   drawHistogram bins is null\r");
+		return ;
+	}
+	if (bins.length == 0) {
+		import std.stdio;
+		writeln("********************   drawHistogram bins.length == 0\r");
+		return ;
+	}
+	if (min >= max) {
+		import std.stdio;
+		writeln("********************   drawHistogram min >= max\r");
+		return ;
+	}
 	double bin_width = (max-min)/bins.length;
 
 	// find the starting index of the visible part of the histogram
@@ -120,7 +136,7 @@ void drawMipMapHistogram(MinMax)(ref Scoped!Context cr, ViewBox box, double min,
 //} do {
 {
 	import std.stdio;
-	writeln("drawMipMapHistogram() called\r");
+	//writeln("drawMipMapHistogram() called\r");
 	if (data is null)
 	{
 		writeln("drawMipMapHistogram() called with illegal parameters -> returning\r");
@@ -131,7 +147,7 @@ void drawMipMapHistogram(MinMax)(ref Scoped!Context cr, ViewBox box, double min,
 		writeln("drawMipMapHistogram() called with illegal parameters -> returning\r");
 		return;
 	}
-	writeln("drawing\r");
+	//writeln("drawing\r");
 	double bin_width = (max-min)/data.length;
 	double xhist = min + bin_width/2;
 	foreach(idx, vline; data) {
@@ -152,7 +168,7 @@ void drawMipMapHistogram(MinMax)(ref Scoped!Context cr, ViewBox box, double min,
 		}
 		xhist += bin_width;
 	}
-	writeln("done drawing mipmap\r");
+	//writeln("done drawing mipmap\r");
 }
 
 
