@@ -182,7 +182,7 @@ public:
 
 		import std.string, std.array, std.algorithm;
 		_itemnames.length = 0;
-		foreach(itemname; itemlist.list.split(' ').array.sort) {
+		foreach(itemname; itemlist.list.split('|').array.sort) {
 			_itemnames ~= itemname;
 		}
 

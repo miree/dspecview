@@ -171,7 +171,7 @@ public:
 					} else {
 						string itemlist; // will contains items separated by spaces (' ')
 						foreach(key, value; _items) {
-							itemlist ~= key ~ ' ';
+							itemlist ~= key ~ '|';
 						}
 						itemlist = itemlist[0..$-1]; // remove last ' '
 

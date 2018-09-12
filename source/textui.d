@@ -16,6 +16,7 @@ void populate_list_of_commands()
 	//list_of_commands["visualizer"]  = &getItemVisualizer;
 	list_of_commands["gui"]         = &runGui;
 	list_of_commands["rm"]          = &rmItem;
+	list_of_commands["!ls"]         = &listDir;
 }
 
 /////////////////////////////////////////////////////////////
@@ -36,6 +37,29 @@ void calculator(immutable string[] args)
 		}
 		default: writeln("unknown operation");    
 	}
+}
+
+void listDir(immutable string[] args) 
+{
+	import std.stdio;
+	if (args.length != 1) {
+		writeln("need 1 argument, got ", args.length, " : ", args);
+		return;
+	}
+	string pathname = args[0];
+    import std.algorithm;
+    import std.array;
+    import std.file;
+    import std.path;
+
+    auto files = std.file.dirEntries(pathname, SpanMode.shallow)
+        .filter!(a => a.isFile)
+        .map!(a => baseName(a.name))
+        .array;
+
+    foreach(file; files) {
+    	writeln(file);
+    }
 }
 
 void sayHiToSession(immutable string[] args)
@@ -68,23 +92,6 @@ void runSession(immutable string[] args)
 	writeln(receiveOnly!string);
 }
 
-//void addIntValue(immutable string[] args) 
-//{
-//	import std.stdio, std.concurrency;
-//	import session;
-//	if (args.length != 2)
-//	{
-//		writeln("need 2 arguments: <name> <value>, got", args.length, " : ", args);
-//		return;
-//	}
-//	import std.concurrency, std.conv;
-//	import session;
-//	auto name = args[0];
-//	auto value = args[1].to!int;
-//	send(sessionTid, MsgAddIntValue(name,value));
-//}
-
-
 void listItems(immutable string[] args) 
 {
 	import std.concurrency, std.array, std.algorithm;
@@ -95,7 +102,7 @@ void listItems(immutable string[] args)
 	// block until we got the response
 	auto itemlist = receiveOnly!MsgItemList;
 	import std.stdio;
-	foreach(itemname; itemlist.list.split(' ').array.sort) {
+	foreach(itemname; itemlist.list.split('|').array.sort) {
 		writeln(itemname);
 	}
 }
@@ -125,28 +132,6 @@ void addFileHist1(immutable string[] args)
 	sessionTid.send(MsgAddFileHist1(args[0]), thisTid);
 }
 
-// the following will be done by the GUI
-//void getItemVisualizer(immutable string[] args)
-//{
-//	import std.stdio, std.concurrency;
-//	import session;
-//	if (args.length != 1) {
-//		writeln("expecting one argument: <itemame> , got ", args.length , "arguments: ", args);
-//		return;
-//	}
-//	sessionTid.send(MsgRequestItemVisualizer(args[0]), thisTid);
-//	//writeln(receiveOnly!string); // block until we got a string response
-//	receive( 
-//		(string msg) { 
-//			writeln(msg); 
-//		},
-//		(string itemname, immutable(Visualizer) visualizer) {
-//			writeln("got visualizer object");
-//			visualizer.print(42);
-//		}
-//	);
-//}
-
 Tid guiTid;
 bool guiRunning = false;
 void runGui(immutable string[] args)
@@ -159,8 +144,6 @@ void runGui(immutable string[] args)
 	// tell the session, that a gui thread was started;
 	sessionTid.send(MsgGuiStarted(), guiTid);
 }
-
-
 
 //////////////////////////////////////////////////
 // Using the linenoise library for user friendly 
@@ -177,14 +160,64 @@ extern(C) void completion(const char *buf, linenoiseCompletions *lc) {
 		if (command.startsWith(request))
 			linenoiseAddCompletion(lc,(command ~ '\0').ptr);
 	}
-	// see if we find this in the list of items
-	string[] items;
-	foreach(item; items) {
-		auto an_item = '/' ~ item ~ '\0';
-		if (an_item.startsWith(request)) {
-			linenoiseAddCompletion(lc, an_item.ptr);
+	// see if we find request in the list of items
+	//  but only if already a command was entered as first token
+	import std.array, std.algorithm;
+	auto request_tokens = request.split(' ');
+	if (request_tokens.length > 1) { 
+		// ... first get the itemlist
+		import session;
+		sessionTid.send(MsgRequestItemList(), thisTid);
+		// block until we got the response
+		auto items = receiveOnly!MsgItemList;
+		foreach(item; items.list.split('|')) {
+			auto an_item = item ~ '\0';
+			if (an_item.startsWith(request_tokens[$-1])) {
+				string suggestion;
+				foreach(token; request_tokens[0..$-1]) {
+					suggestion ~= token ~ ' ';
+				}
+				suggestion ~= an_item;
+				linenoiseAddCompletion(lc, suggestion.ptr);
+			}
 		}
 	}
+
+/+	// see if we find request in the current directory in the file system
+	//  but only if already a command was entered as first token
+	import std.stdio, std.array, std.algorithm;
+	if (request_tokens.length > 1) { 
+		// first get the filelist
+		string pathname = "./";// ~ request_tokens[$-1];
+		writeln("pathname is ", pathname);
+	    import std.algorithm;
+	    import std.array;
+	    import std.file;
+	    import std.path;
+
+	    auto files = std.file.dirEntries(pathname, SpanMode.shallow)
+//	        .filter!(a => a.isFile)
+	        .map!(a => baseName(a.name))
+	        .array;
+
+		// ... first get the itemlist
+		import session;
+		sessionTid.send(MsgRequestItemList(), thisTid);
+		// block until we got the response
+		auto items = receiveOnly!MsgItemList;
+		foreach(item; files) {
+			auto an_item = item ~ '\0';
+			if (an_item.startsWith(request_tokens[$-1])) {
+				string suggestion;
+				foreach(token; request_tokens[0..$-1]) {
+					suggestion ~= token ~ ' ';
+				}
+				suggestion ~= an_item;
+				linenoiseAddCompletion(lc, suggestion.ptr);
+			}
+		}
+	}
++/
 }
 
 auto cstring2string(const char *buf) {

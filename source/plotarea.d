@@ -289,13 +289,6 @@ protected:
 		return true;
 	}
 
-	//bool onKeyPressEvent(GdkEventKey *event_key, Widget w)
-	//{
-	//	writeln("key pressed " , event_key.keyval, "\r");
-	//	return true;
-	//}
-
-
 	void add_zmin_zmax_margin(ref double zmin, ref double zmax, double margin_factor = 0.06) {
 		if (zmin < zmax) {
 			double height = zmax - zmin;
