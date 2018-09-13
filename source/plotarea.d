@@ -295,7 +295,7 @@ protected:
 			zmax += margin_factor * height;
 			zmin -= margin_factor * height;
 		} else {
-			writeln("zmin=",zmin, "  zmax=",zmax,"\r");
+			//writeln("zmin=",zmin, "  zmax=",zmax,"\r");
 			//assert(zmax == zmin);
 			double t,b;
 			default_zmin_zmax(b,t);

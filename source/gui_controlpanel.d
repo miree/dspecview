@@ -18,42 +18,21 @@ public:
 		button_hello.addOnClicked(button => say_hello(button)); 
 		_main_box.add(button_hello);
 
-
-		//auto b1 = new Button("open hist1"); 
-		//b1.addOnClicked(delegate void(Button b) {
-		//	import gtk.FileChooserNative;
-		//	import gtk.FileChooserDialog;
-		//	import std.file;
-		//	import std.string;
-		//	auto file_chooser = new FileChooserNative(
-		//								"open file",
-		//								this,
-		//								GtkFileChooserAction.OPEN,
-		//								"open", "cancel");
-		//	//writeln("result of file_chooser.run() = ", 
-		//	if (ResponseType.ACCEPT == file_chooser.run()) {
-		//		//writeln(getcwd(), ": file_chooser filename: ", , "\r");
-		//		auto filename = file_chooser.getFilename().chompPrefix(getcwd()~"/"); 
-		//		filename = filename.chompPrefix("/");
-		//		//writeln("filename = " , filename, "\r");
-		//		synchronized {
-		//			import hist1;
-		//			auto treeview_name = filename;
-		//			_session.addItem(treeview_name, new shared Hist1Visualizer(treeview_name, new shared Hist1Filesource(filename)));
-		//			foreach(gui; gui_windows) {
-		//				gui.updateSession();
-		//			}
-		//		}
-		//	}
-		//});
-
-
 		auto button_refresh = new Button("refresh");
 		void f_button_refresh(Button button) {
 			refresh();
 		}
 		button_refresh.addOnClicked(button => f_button_refresh(button)); 
 		_main_box.add(button_refresh);
+
+		auto button_open = new Button("open");
+		void f_button_open(Button button) {
+			import multi_file_chooser;
+			string[] result;
+			auto child_window = new MultiFileChooser(parentGui.getApplication(), _sessionTid);
+		}
+		button_open.addOnClicked(button => f_button_open(button)); 
+		_main_box.add(button_open);
 
 		_treeview = new ScrolledWindowTreeView(_sessionTid, _parentGui);
 		_main_box.add(_treeview);
