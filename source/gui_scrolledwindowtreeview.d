@@ -69,12 +69,38 @@ public:
 						}					
 					}
 					// ask the session to send us a "FitContent message"
-					_sessionTid.send(MsgEchoFitContent(parentGui.getGuiIdx()), thisTid); 
+					_sessionTid.send(MsgEchoFitContent(_parentGui.getGuiIdx()), thisTid); 
 					// ask the session to send us a "RedrawContent message"
-					_sessionTid.send(MsgEchoRedrawContent(parentGui.getGuiIdx()), thisTid);
+					_sessionTid.send(MsgEchoRedrawContent(_parentGui.getGuiIdx()), thisTid);
 				},
 				"show selected recusive", // menu entry label
 				"show seleted items and all items in selected folders"// description
+			)
+		);		
+		popup_menu.append( // show selected recursive (if a folder is selected show all contents recursively)
+			new MenuItem(
+				delegate(MenuItem m) { // the action to perform if that menu entry is selected
+					// look at all selected entries in the treeview ...
+					auto gui = new Gui(_parentGui.getApplication(), _sessionTid, _parentGui.getInOtherThread()); 
+					auto iters = _treeview.getSelectedIters();
+					import std.concurrency, std.array, std.algorithm, std.stdio;
+					import session;
+					foreach(iter; iters) {
+						foreach(itemname; _itemnames.sort) {
+							auto selected_name = get_full_name(iter);
+							if (itemname.startsWith(selected_name)) {
+								// request a Visualizer for that item
+								_sessionTid.send(MsgRequestItemVisualizer(itemname, gui.getGuiIdx()), thisTid);
+							}
+						}					
+					}
+					// ask the session to send us a "FitContent message"
+					_sessionTid.send(MsgEchoFitContent(gui.getGuiIdx()), thisTid); 
+					// ask the session to send us a "RedrawContent message"
+					_sessionTid.send(MsgEchoRedrawContent(gui.getGuiIdx()), thisTid);
+				},
+				"show in new window", // menu entry label
+				"show seleted items and all items in selected folders in a new window"// description
 			)
 		);		
 		popup_menu.append( // remove item
