@@ -102,8 +102,10 @@ void listItems(immutable string[] args)
 	// block until we got the response
 	auto itemlist = receiveOnly!MsgItemList;
 	import std.stdio;
-	foreach(itemname; itemlist.list.split('|').array.sort) {
-		writeln(itemname);
+	foreach(nametype; itemlist.nametype.split('|').array.sort) {
+		auto itemname = nametype.split('$')[0];
+		auto itemtype = nametype.split('$')[1];
+		writeln(itemname, " : ", itemtype);
 	}
 }
 
@@ -170,8 +172,9 @@ extern(C) void completion(const char *buf, linenoiseCompletions *lc) {
 		sessionTid.send(MsgRequestItemList(), thisTid);
 		// block until we got the response
 		auto items = receiveOnly!MsgItemList;
-		foreach(item; items.list.split('|')) {
-			auto an_item = item ~ '\0';
+		foreach(nametype; items.nametype.split('|')) {
+			auto itemname = nametype.split('$')[0];
+			auto an_item = itemname ~ '\0';
 			if (an_item.startsWith(request_tokens[$-1])) {
 				string suggestion;
 				foreach(token; request_tokens[0..$-1]) {

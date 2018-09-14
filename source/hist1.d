@@ -18,6 +18,13 @@ public:
 		}
 	}
 
+	string getTypeString() {
+		if (_filename is null || _filename.length == 0) {
+			return "unknown";
+		}
+		return "File Hist1D";
+	}
+
 	override immutable(Hist1Visualizer) createVisualizer() 
 	{
 		if (need_to_reload()) { // need to reload from file
@@ -38,6 +45,7 @@ public:
 			} catch (Exception e) {
 				import std.stdio;
 				writeln("unable to open file\r");
+				_filename = null;
 				// return a default visualizer
 			}
 		}

@@ -9,6 +9,12 @@ public:
 	// visualizer that can draw onto a 
 	// cairo context
 	immutable(Visualizer) createVisualizer();
+
+	////////////////////////////////////////
+	// Each Item knows what type it is 
+	// the returned value will be shown in 
+	// the tree view column "type"
+	string getTypeString();
 }
 
 ////////////////////////////////////////
@@ -79,7 +85,7 @@ struct MsgRequestItemList{
 }
 // response to the above request
 struct MsgItemList { 
-	string list; 
+	string nametype; 
 };
 
 ////////////////////////////////////////
@@ -175,8 +181,8 @@ public:
 						requestingThread.send(MsgItemList());
 					} else {
 						string itemlist; // will contains items separated by spaces (' ')
-						foreach(key, value; _items) {
-							itemlist ~= key ~ '|';
+						foreach(itemname, item; _items) {
+							itemlist ~= itemname ~ '$' ~ item.getTypeString() ~ '|';
 						}
 						itemlist = itemlist[0..$-1]; // remove last ' '
 

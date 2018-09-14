@@ -175,13 +175,13 @@ public:
 		_treestore.set(*iter, [0,1], [head[0..$-1], ""]);
 		return iter;
 	}
-	TreeIter add_item(string name, ref TreeIter[string] folders) {
+	TreeIter add_item(string name, string typename, ref TreeIter[string] folders) {
 		import std.algorithm, std.string;
 		//writeln("add_item(", name, ")\r");
 		if (!name.canFind('/')) { // special case of a name without a folder
 			auto root_child = _treestore.append(null);
 			folders[name~"/"] = root_child;
-			_treestore.set(root_child, [0,1], [name, "item"]);
+			_treestore.set(root_child, [0,1], [name, typename]);
 			return root_child;
 		}
 		auto idx = name.lastIndexOf('/');
@@ -197,7 +197,7 @@ public:
 		}
 		auto child = _treestore.append(*iter);
 		folders[name~"/"] = child;
-		_treestore.set(child, [0,1], [relname, "item"]);
+		_treestore.set(child, [0,1], [relname, typename]);
 		return child;
 	}
 	import session;
@@ -208,13 +208,15 @@ public:
 
 		import std.string, std.array, std.algorithm;
 		_itemnames.length = 0;
-		foreach(itemname; itemlist.list.split('|').array.sort) {
-			_itemnames ~= itemname;
+		_typenames.length = 0;
+		foreach(nametype; itemlist.nametype.split('|').array.sort) {
+			_itemnames ~= nametype.split('$').array[0];
+			_typenames ~= nametype.split('$').array[1];
 		}
 
 		TreeIter[string] folders;
-		foreach(itemname; _itemnames) {
-			add_item(itemname, folders);
+		foreach(idx, itemname; _itemnames) {
+			add_item(itemname, _typenames[idx], folders);
 		}
 
 		if (_itemnames is null) {
@@ -263,6 +265,7 @@ private:
 	TreeView       _treeview;
 
 	string[] 		_itemnames;
+	string[]        _typenames;
 
 	// remember which treeview rows are expanded
 	bool[string] _expanded; 

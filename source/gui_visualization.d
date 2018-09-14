@@ -45,7 +45,8 @@ public:
 								_plot_area.queueDraw();
 							} );
 		_plot_area.setGrid(cast(int)_spin_columns.getValue());
-		if (mode2d == false) _check_overlay.setActive(true);
+		//if (mode2d == false) _check_overlay.setActive(true);
+		_check_overlay.setActive(false);
 
 
 
