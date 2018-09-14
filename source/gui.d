@@ -247,9 +247,14 @@ void message_handler()
 			//writeln("gui: got visualizer for item: ", msg.itemname, "\r");
 			if (visualizer !is null) {
 				//writeln("gui[",msg.gui_idx,"]: add visualizer \r");
-				auto gui = guis[msg.gui_idx];
-				if (gui !is null) {
-					guis[msg.gui_idx]._visualization.addVisualizer(msg.itemname, visualizer);
+				if (msg.gui_idx < guis.length) { // it can happen that the index in 
+					                             // the message is smaller then the gui array
+					                             // if a window was closed while the message 
+					                             // was in flight
+					auto gui = guis[msg.gui_idx];
+					if (gui !is null) {
+						guis[msg.gui_idx]._visualization.addVisualizer(msg.itemname, visualizer);
+					}
 				}
 			}
 		},
@@ -264,10 +269,14 @@ void message_handler()
 		//	writeln(message,"\r");
 		//},
 		(MsgRedrawContent redraw) {
-			guis[redraw.gui_idx]._visualization.redraw_content();
+			if (redraw.gui_idx < guis.length) { 
+				guis[redraw.gui_idx]._visualization.redraw_content();
+			}
 		},
 		(MsgFitContent fit) {
-			guis[fit.gui_idx]._visualization.setFit();
+			if (fit.gui_idx < guis.length) { 
+				guis[fit.gui_idx]._visualization.setFit();
+			}
 		}
 	);
 }
