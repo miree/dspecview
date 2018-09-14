@@ -21,8 +21,10 @@ class PlotArea : DrawingArea
 public:
 
 	import std.concurrency;
-	this(Tid sessionTid, bool in_other_thread, bool mode2d)
+	import gui;
+	this(Tid sessionTid, bool in_other_thread, bool mode2d, Gui parentGui)
 	{
+		_parentGui = parentGui;
 		_mode2d = mode2d;
 		//_session = session;
 		_sessionTid = sessionTid;
@@ -152,10 +154,13 @@ public:
 	}
 
 	void refresh() {
+		import std.stdio;
+		//writeln(" plotarea.refresh()\r");
 		foreach(itemname, visualizer; _visualizers) {
-			_sessionTid.send(MsgRequestItemVisualizer(itemname), thisTid);
+			//writeln("   guis[", _parentGui.getGuiIdx(),"] requests visualizer for item: ", itemname, "\r");
+			_sessionTid.send(MsgRequestItemVisualizer(itemname, _parentGui.getGuiIdx()), thisTid);
 		}
-		_sessionTid.send(MsgEchoRedrawContent(), thisTid);
+		_sessionTid.send(MsgEchoRedrawContent(_parentGui.getGuiIdx()), thisTid);
 	}
 
 	void setFit() {
@@ -392,19 +397,21 @@ protected:
 	}
 	bool get_global_left_right(out double left, out double right) {
 		default_left_right(left, right);
+		import std.stdio;
 		bool first_assignment = true;
 		foreach(key, visualizer; _visualizers) {
 			if (visualizer.length == 1) {
 				double l,r;
-				visualizer[0].getLeftRight(l,r, _logscale_y, _logscale_x);
-				import std.algorithm;
-				if (first_assignment) {
-					left  = l;
-					right = r;
-					first_assignment = false;
+				if (visualizer[0].getLeftRight(l,r, _logscale_y, _logscale_x)) {
+					import std.algorithm;
+					if (first_assignment) {
+						left  = l;
+						right = r;
+						first_assignment = false;
+					}
+					left  = min(left,  l);
+					right = max(right, r);
 				}
-				left  = min(left,  l);
-				right = max(right, r);
 			}
 		}		
 		add_left_right_margin(left,right);
@@ -619,7 +626,9 @@ protected:
 						if (_autoscale_x) {
 							double left, right;
 							default_left_right(left, right);
-							visualizer[0].getLeftRight(left,right, _logscale_y, _logscale_x);
+							if (!visualizer[0].getLeftRight(left,right, _logscale_y, _logscale_x)) {
+								default_left_right(left, right);
+							}
 							add_left_right_margin(left, right);
 							_vbox.setLeftRight(left,right);
 						}
@@ -769,6 +778,8 @@ protected:
 	double m_lineWidth = 0.065;
 
 	bool _mode2d; // optimized startup and drawing for 1d or 2d plotting
+
+	Gui _parentGui; // from this we can get the index into the array of Gui objects (each object represents one window)
 
 	//string[] _visualizers;
 	immutable(Visualizer)[][string] _visualizers;

@@ -10,13 +10,14 @@ public:
 
 		_main_box = new Box(GtkOrientation.VERTICAL,0);	
 
-		auto button_hello = new Button("hello");
-		void say_hello(Button button) {
-			import std.stdio;
-			writeln("hello button_clicked ", button.getLabel(), "\r");
+		auto button_newwindow = new Button("new window");
+		void create_new_window(Button button) {
+			//import std.stdio;
+			//writeln("hello button_clicked ", button.getLabel(), "\r");
+			auto gui = new Gui(_parentGui.getApplication(), _sessionTid, _parentGui.getInOtherThread()); 
 		}
-		button_hello.addOnClicked(button => say_hello(button)); 
-		_main_box.add(button_hello);
+		button_newwindow.addOnClicked(button => create_new_window(button)); 
+		_main_box.add(button_newwindow);
 
 		auto button_refresh = new Button("refresh");
 		void f_button_refresh(Button button) {

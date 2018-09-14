@@ -64,14 +64,14 @@ public:
 							auto selected_name = get_full_name(iter);
 							if (itemname.startsWith(selected_name)) {
 								// request a Visualizer for that item
-								_sessionTid.send(MsgRequestItemVisualizer(itemname), thisTid);
+								_sessionTid.send(MsgRequestItemVisualizer(itemname, _parentGui.getGuiIdx()), thisTid);
 							}
 						}					
 					}
 					// ask the session to send us a "FitContent message"
-					_sessionTid.send(MsgEchoFitContent(), thisTid); 
+					_sessionTid.send(MsgEchoFitContent(parentGui.getGuiIdx()), thisTid); 
 					// ask the session to send us a "RedrawContent message"
-					_sessionTid.send(MsgEchoRedrawContent(), thisTid);
+					_sessionTid.send(MsgEchoRedrawContent(parentGui.getGuiIdx()), thisTid);
 				},
 				"show selected recusive", // menu entry label
 				"show seleted items and all items in selected folders"// description

@@ -142,7 +142,7 @@ void runGui(immutable string[] args)
 	guiRunning = true;
 
 	// tell the session, that a gui thread was started;
-	sessionTid.send(MsgGuiStarted(), guiTid);
+	//sessionTid.send(MsgGuiStarted(), guiTid);
 }
 
 //////////////////////////////////////////////////

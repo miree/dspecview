@@ -4,16 +4,18 @@ class Visualization
 {
 public:
 	alias _main_box this;
+	import gui;
 
-	this(Tid sessionTid, bool in_other_thread, bool mode2d)
+	this(Tid sessionTid, bool in_other_thread, bool mode2d, Gui parantGui)
 	{
 		_sessionTid = sessionTid;
 		_main_box = new Box(GtkOrientation.VERTICAL,0);	
 
-		_plot_area = new PlotArea(sessionTid, in_other_thread, mode2d);
+		_plot_area = new PlotArea(sessionTid, in_other_thread, mode2d, parantGui);
 		_main_box.add(_plot_area);
 		_main_box.setChildPacking(_plot_area,true,true,0,GtkPackType.START);
 
+		_parentGui = parantGui;
 
 		//addEvents(EventMask.KEY_PRESS_MASK);
 
@@ -263,7 +265,7 @@ public:
 		_plot_area.queueDraw();
 	}
 	import session;
-	void add(string itemname, immutable(Visualizer) visualizer) {
+	void addVisualizer(string itemname, immutable(Visualizer) visualizer) {
 		_plot_area.add(itemname, visualizer);
 	}
 	void remove(string itemname) {
@@ -284,6 +286,7 @@ private:
 	import plotarea;
 	PlotArea _plot_area;
 
+	Gui _parentGui;
 
 	import gtk.CheckButton, gtk.RadioButton, gtk.SpinButton, gtk.Button;
 	import gtk.Label, gtk.Separator, gtk.ToggleButton, gtk.ScrolledWindow;

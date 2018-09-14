@@ -39,10 +39,13 @@ public:
 				import std.stdio;
 				writeln("unable to open file\r");
 				// return a default visualizer
-				return new immutable(Hist1Visualizer)();
 			}
 		}
-		assert(_visualizer.length == 1); // at this point we should always have exactly one object in the array
+		import std.stdio;
+		//writeln("_visualizer.length = ", _visualizer.length, "\r");
+		if (_visualizer.length < 1) { // no visualizer created yet
+			_visualizer ~= new immutable(Hist1Visualizer)();
+		}
 		return _visualizer[0];
 	}
 
@@ -110,9 +113,9 @@ private: // some private functions
 					line.formattedRead("# %s %s %s %s %s", dim, nbins, name, left, binwidth);
 					hist_left = left;
 					hist_right = left+binwidth*nbins;
-					writeln("left = ", hist_left, " right = ", hist_right, "\r");
+					//writeln("left = ", hist_left, " right = ", hist_right, "\r");
 				} catch (Exception e) {
-					writeln("Exception caught\r");
+					//writeln("Exception caught\r");
 				}
 			}
 			if (!line.startsWith("#") && line.length > 0) {
@@ -222,15 +225,20 @@ public:
 
 	double getBinWidth()
 	{
-		assert(_bin_data !is null);
+		//assert(_bin_data !is null);
 		return (_right - _left) / _bin_data.length;
 	}
 
-	void getLeftRight(out double left, out double right, bool logy, bool logx) immutable
+	bool getLeftRight(out double left, out double right, bool logy, bool logx) immutable
 	{
+		import std.stdio;
 		import logscale;
 		left  = log_x_value_of(_left,  logx);
 		right = log_x_value_of(_right, logx);
+		if (left is left.init || right is right.init) {
+			return false;
+		}
+		return true;
 	}
 	bool getZminZmaxInLeftRightBottomTop(out double mi, out double ma, 
 	                                     double left, double right, double bottom, double top, 
@@ -249,6 +257,11 @@ public:
 			//writeln("return false\r");
 			return false;
 		}
+		if (_left is _left.init || _right is _right.init) {
+			return false;
+		}
+
+
 		import std.math, std.algorithm;
 		if (logx) { // special treatment for logx case
 			right = exp(right);
@@ -258,6 +271,7 @@ public:
 		// transform into bin numbers
 		left  = (left-_left)/getBinWidth();
 		right = (right-_left)/getBinWidth();
+
 
 		if (left >= _bin_data.length || right <= 0) {
 			//writeln("done false\r");
@@ -269,7 +283,12 @@ public:
 		bool initialize = true;
 		int leftbin = cast(int)(max(left,0));
 		int rightbin = cast(int)(min(right,_bin_data.length));
-		assert (leftbin <= rightbin);
+		//assert (leftbin <= rightbin);
+		if (leftbin > rightbin) {
+			import std.stdio;
+			writeln("unexpected leftbin,rightbin: ", leftbin, "," , rightbin, "\r");
+			return false;
+		}
 		foreach(i ; leftbin..rightbin+1){
 			if (i < 0) {
 				continue;
@@ -278,7 +297,11 @@ public:
 				break;
 			}
 			import logscale;
-			assert(i >= 0 && i < _bin_data.length);
+			//assert(i >= 0 && i < _bin_data.length);
+			if (i < 0 || i >= _bin_data.length) {
+				writeln("unexpected bin: ", i, "\r");
+				return false;
+			}
 			if ((logy && (_bin_data[i] > 0)) || !logy) {
 				if (initialize) {
 					minimum = log_y_value_of(_bin_data[i], logy);

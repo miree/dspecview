@@ -153,9 +153,10 @@ void drawMipMapHistogram(MinMax)(ref Scoped!Context cr, ViewBox box, double min,
 	foreach(idx, vline; data) {
 		double vmin = log_y_value_of(vline.min, box, logy);
 		double vmax = log_y_value_of(vline.max, box, logy);
-		if (vmin == vmax) {
+		//if (vmin == vmax) {
 			drawHorizontalLine(cr,box, vmin, xhist+bin_width, xhist);
-		} else {
+			drawHorizontalLine(cr,box, vmax, xhist+bin_width, xhist);
+		//} else {
 			double vheight = vmax - vmin;
 			auto pixel_height = box.get_pixel_height();
 			//import std.stdio;
@@ -165,7 +166,7 @@ void drawMipMapHistogram(MinMax)(ref Scoped!Context cr, ViewBox box, double min,
 				vmax +=  pixel_height;
 			}
 			drawVerticalLine(cr,box, xhist, vmin, vmax);
-		}
+		//}
 		xhist += bin_width;
 	}
 	//writeln("done drawing mipmap\r");

@@ -26,7 +26,7 @@ public:
 	ulong getDim() immutable;
 	void print(int context) immutable;
 	void draw(ref Scoped!Context cr, ViewBox box, bool logy, bool logx, bool logz) immutable;
-	void getLeftRight(out double left, out double right, bool logy, bool logx) immutable;
+	bool getLeftRight(out double left, out double right, bool logy, bool logx) immutable;
 	bool getBottomTopInLeftRight(out double bottom, out double top, double left, double right, bool logy, bool logx) immutable;
 	bool getZminZmaxInLeftRightBottomTop(out double mi, out double ma, 
 	                                     double left, double right, double bottom, double top, 
@@ -86,6 +86,7 @@ struct MsgItemList {
 // call the refresh function on an item
 struct MsgRequestItemVisualizer {
 	string itemname;
+	ulong gui_idx;
 }
 
 ////////////////////////////////////////
@@ -98,8 +99,10 @@ struct MsgRequestItemVisualizer {
 // can be used to indicate the last 
 // request was handled.
 struct MsgEchoRedrawContent {
+	ulong gui_idx;
 }
 struct MsgEchoFitContent {
+	ulong gui_idx;
 }
 
 struct MsgGuiStarted {
@@ -121,7 +124,9 @@ public:
 		import std.datetime;
 
 		while (_running) {
-			//receiveTimeout(dur!"usecs"(50_000), // 50 ms
+			import std.stdio;
+			//writeln("session: tick\r");
+			//receiveTimeout(dur!"usecs"(500_000), // 500 ms
 			receive(
 				(MsgSayHi msg, Tid requestingThread) { 
 					requestingThread.send("message to session was: " ~ msg.text);
@@ -180,25 +185,29 @@ public:
 					}
 				},
 				(MsgRequestItemVisualizer msg, Tid requestingThread) {
+					import std.stdio;
 					auto item = msg.itemname in _items;
 					if (item is null) {
+						//writeln("session: unknown item: ", msg.itemname, "\r");
 						requestingThread.send("unknown item: " ~ msg.itemname);
 					} else {
 						import gui;
-						requestingThread.send(MsgVisualizeItem(msg.itemname), item.createVisualizer());
+						//writeln("session: sending visualizer for: ", msg.itemname, "\r");
+						requestingThread.send(MsgVisualizeItem(msg.itemname, msg.gui_idx), item.createVisualizer());
+						//writeln("session: sending visualizer done \r");
 					}
 				},
 				(MsgEchoRedrawContent msg, Tid requestingThread) {
 					// this one is sent from the Gui to indicate 
 					// that all requests were sent
 					import gui;
-					requestingThread.send(MsgRedrawContent());
+					requestingThread.send(MsgRedrawContent(msg.gui_idx));
 				},
 				(MsgEchoFitContent msg, Tid requestingThread) {
 					// this one is sent from the Gui to indicate 
 					// that all requests were sent
 					import gui;
-					requestingThread.send(MsgFitContent());
+					requestingThread.send(MsgFitContent(msg.gui_idx));
 				},
 				(MsgGuiStarted msg, Tid guiTid) {
 					_guiRunning = true;
