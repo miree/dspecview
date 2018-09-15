@@ -14,7 +14,7 @@ public:
 		void create_new_window(Button button) {
 			//import std.stdio;
 			//writeln("hello button_clicked ", button.getLabel(), "\r");
-			auto gui = new Gui(_parentGui.getApplication(), _sessionTid, _parentGui.getInOtherThread()); 
+			auto gui = new Gui(_parentGui.getApplication(), _sessionTid, _parentGui.getInOtherThread(), true , true); 
 		}
 		button_newwindow.addOnClicked(button => create_new_window(button)); 
 		_main_box.add(button_newwindow);
@@ -34,6 +34,15 @@ public:
 		}
 		button_open.addOnClicked(button => f_button_open(button)); 
 		_main_box.add(button_open);
+
+
+		auto button_destroy = new Button("toggle\nvisualizer");
+		void f_button_destroy(Button button) {
+			_parentGui.destroyVisualizer();
+		}
+		button_destroy.addOnClicked(button => f_button_destroy(button)); 
+		_main_box.add(button_destroy);
+
 
 		_treeview = new ScrolledWindowTreeView(_sessionTid, _parentGui);
 		_main_box.add(_treeview);

@@ -81,7 +81,7 @@ public:
 			new MenuItem(
 				delegate(MenuItem m) { // the action to perform if that menu entry is selected
 					// look at all selected entries in the treeview ...
-					auto gui = new Gui(_parentGui.getApplication(), _sessionTid, _parentGui.getInOtherThread()); 
+					auto gui = new Gui(_parentGui.getApplication(), _sessionTid, _parentGui.getInOtherThread(), false, true); 
 					auto iters = _treeview.getSelectedIters();
 					import std.concurrency, std.array, std.algorithm, std.stdio;
 					import session;

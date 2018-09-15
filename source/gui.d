@@ -102,12 +102,14 @@ public:
 		super(application);
 		application_running = true;
 		_application = application;
-
 		_sessionTid  = sessionTid;
-
 		_in_other_thread = in_other_thread;
+		_mode2d = mode2d;
+
 
 		_gui_idx = guis.length;
+		guis ~= this;
+
 		import std.stdio;
 		//writeln("new Gui with _gui_idx=", _gui_idx,"\r");
 		// main layout is:
@@ -115,6 +117,7 @@ public:
 		// both sides are organized inside of the main_box
 		import gtk.Box;
 		auto main_box = new Box(GtkOrientation.HORIZONTAL,0);
+		_main_box = main_box;
 
 		import gdk.Event;
 		import gtk.Widget;
@@ -135,32 +138,39 @@ public:
 			});
 
 		// add the control panel
-		_control_panel = new ControlPanel(sessionTid, this);
-		main_box.add(_control_panel);
+		if (controlpanel) {
+			_control_panel = new ControlPanel(sessionTid, this);
+			main_box.add(_control_panel);
+			if (!plotarea) {
+				main_box.setChildPacking(_control_panel,true,true,0,GtkPackType.START);
+			}
+		}
 
 		// add the plot area
 
-		_visualization = new Visualization(sessionTid, in_other_thread, mode2d, this);
-		main_box.add(_visualization);
-		main_box.setChildPacking(_visualization,true,true,0,GtkPackType.START);
+		if (plotarea) {
+			_visualization = new Visualization(sessionTid, in_other_thread, mode2d, this);
+			main_box.add(_visualization);
+			main_box.setChildPacking(_visualization,true,true,0,GtkPackType.START);
 
 
 
-		// define some hotkeys
-		import gtk.Widget;
-		addOnKeyPress(delegate bool(GdkEventKey* e, Widget w) { // the action to perform if that menu entry is selected
-							//writeln("key press: ", e.keyval, "\r");
-							switch(e.keyval) {
-								case 'f': _visualization.setFit();             break;
-								case 'z': _visualization.toggle_autoscale_z(); break;
-								case 'y': _visualization.toggle_autoscale_y(); break;
-								case 'x': _visualization.toggle_autoscale_x(); break;
-								case 'l': _visualization.toggle_logscale();    break;
-								case 'o': _visualization.toggle_overlay();     break;
-								default:
-							}
-							return true;
-						});
+			// define some hotkeys
+			import gtk.Widget;
+			addOnKeyPress(delegate bool(GdkEventKey* e, Widget w) { // the action to perform if that menu entry is selected
+								//writeln("key press: ", e.keyval, "\r");
+								switch(e.keyval) {
+									case 'f': _visualization.setFit();             break;
+									case 'z': _visualization.toggle_autoscale_z(); break;
+									case 'y': _visualization.toggle_autoscale_y(); break;
+									case 'x': _visualization.toggle_autoscale_x(); break;
+									case 'l': _visualization.toggle_logscale();    break;
+									case 'o': _visualization.toggle_overlay();     break;
+									default:
+								}
+								return true;
+							});
+		}
 
 		setTitle("gtkD Spectrum Viewer");
 		setDefaultSize( 300, 300 );
@@ -177,7 +187,6 @@ public:
 		//gdk.Threads.threadsAddIdle(&threadIdleProcess, cast(void*)this);
 
 
-		guis ~= this;
 
 
 		import std.stdio;
@@ -186,8 +195,25 @@ public:
 		// get up to date with the session data
 		import session;
 		_sessionTid.send(MsgGuiStarted(), thisTid);
-		_control_panel.refresh();
+		if (controlpanel) {
+			_control_panel.refresh();
+		}
 
+	}
+
+	void destroyVisualizer() {
+		if (_visualization !is null) {
+			_visualization.destroy();
+			_visualization = null;
+			_main_box.setChildPacking(_control_panel,true,true,0,GtkPackType.START);
+		} else {
+
+			_visualization = new Visualization(_sessionTid, _in_other_thread, _mode2d, this);
+			_main_box.add(_visualization);
+			_main_box.setChildPacking(_visualization,true,true,0,GtkPackType.START);
+			_main_box.setChildPacking(_control_panel,false,false,0,GtkPackType.START);
+			showAll();
+		}
 	}
 
 	ulong getGuiIdx() {
@@ -205,14 +231,18 @@ public:
 
 	void redraw_content()
 	{
-		_visualization.redraw_content();
+		if (_visualization !is null) {
+			_visualization.redraw_content();
+		}
 	}
 
 	void second_handler()
 	{
 		foreach (gui; guis) {
-			if (gui._visualization.autoRefresh()) {
-				gui._visualization.refresh();
+			if (gui._visualization !is null) {
+				if (gui._visualization.autoRefresh()) {
+					gui._visualization.refresh();
+				}
 			}
 		}
 	}
@@ -231,14 +261,18 @@ void message_handler()
 		(MsgRefreshItemList refresh_list) {
 			foreach(gui; guis) {
 				if (gui !is null) {
-					gui._control_panel.refresh();
+					if (gui._control_panel !is null ) {
+						gui._control_panel.refresh();
+					}
 				}
 			}
 		},
 		(MsgItemList itemlist) {
 			foreach(gui; guis) {
 				if (gui !is null) {
-					gui._control_panel.updateTreeStoreFromSession(itemlist);
+					if (gui._control_panel !is null ) {
+						gui._control_panel.updateTreeStoreFromSession(itemlist);
+					}
 				}
 			}
 		},
@@ -253,15 +287,19 @@ void message_handler()
 					                             // was in flight
 					auto gui = guis[msg.gui_idx];
 					if (gui !is null) {
-						guis[msg.gui_idx]._visualization.addVisualizer(msg.itemname, visualizer);
+						if (gui._visualization !is null ) {
+							guis[msg.gui_idx]._visualization.addVisualizer(msg.itemname, visualizer);
+						}
 					}
 				}
 			}
 		},
 		(MsgRemoveVisualizedItem msg) {
 			foreach(gui; guis) {
-				gui._visualization.remove(msg.itemname);
-				gui._visualization.redraw_content();
+				if (gui._visualization !is null ) {
+					gui._visualization.remove(msg.itemname);
+					gui._visualization.redraw_content();
+				}
 			}
 		},
 		//(string message) {
@@ -270,12 +308,16 @@ void message_handler()
 		//},
 		(MsgRedrawContent redraw) {
 			if (redraw.gui_idx < guis.length) { 
-				guis[redraw.gui_idx]._visualization.redraw_content();
+				if (guis[redraw.gui_idx]._visualization !is null) {
+					guis[redraw.gui_idx]._visualization.redraw_content();
+				}
 			}
 		},
 		(MsgFitContent fit) {
 			if (fit.gui_idx < guis.length) { 
-				guis[fit.gui_idx]._visualization.setFit();
+				if (guis[fit.gui_idx]._visualization !is null) {
+					guis[fit.gui_idx]._visualization.setFit();
+				}
 			}
 		}
 	);
@@ -285,6 +327,10 @@ void message_handler()
 private:
 	Tid _sessionTid;
 	Application _application;
+	bool _mode2d;
+
+	import gtk.Box;
+	Box _main_box;
 
 	import gui_controlpanel, gui_visualization;
 	ControlPanel _control_panel;
