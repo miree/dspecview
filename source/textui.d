@@ -12,10 +12,11 @@ void populate_list_of_commands()
 	list_of_commands["run"]         = &runSession;
 	//list_of_commands["addint"]      = &addIntValue;
 	list_of_commands["ls"]          = &listItems;
+	list_of_commands["rm"]          = &rmItem;
 	list_of_commands["filehist1"]   = &addFileHist1;
 	//list_of_commands["visualizer"]  = &getItemVisualizer;
 	list_of_commands["gui"]         = &runGui;
-	list_of_commands["rm"]          = &rmItem;
+	list_of_commands["guistatus"]   = &showGuiStatus;
 	list_of_commands["!ls"]         = &listDir;
 }
 
@@ -135,16 +136,19 @@ void addFileHist1(immutable string[] args)
 }
 
 Tid guiTid;
-bool guiRunning = false;
 void runGui(immutable string[] args)
 {
 	import gui, session;
-	//gui.run(args, sessionTid);
 	guiTid = gui.startguithread(args, sessionTid);
-	guiRunning = true;
-
-	// tell the session, that a gui thread was started;
-	//sessionTid.send(MsgGuiStarted(), guiTid);
+}
+void showGuiStatus(immutable string[] args)
+{
+	import std.stdio;
+	if (guiRunning()) {
+		writeln("running");
+	} else {
+		writeln("not running");
+	}
 }
 
 //////////////////////////////////////////////////
@@ -232,6 +236,12 @@ auto cstring2string(const char *buf) {
 	return result;
 }
 
+bool guiRunning() {
+	import session;
+	sessionTid.send(MsgIsGuiRunning(), thisTid);
+	auto status = receiveOnly!MsgGuiRunningStatus;
+	return status.running;
+}
 
 
 import std.concurrency;

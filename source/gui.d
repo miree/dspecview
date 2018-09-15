@@ -16,7 +16,6 @@ void threadfunction(immutable string[] args, Tid sessionTid)
     run(args, sessionTid, true);
 }
 
-
 import gio.Application : GioApplication = Application;
 import gtk.Application;
 import gtk.ApplicationWindow;
@@ -55,18 +54,12 @@ extern(C) nothrow static int threadIdleProcess(void* data) {
 		static int cnt = 0;
 		++second_cnt;
 		if (second_cnt == 10) {
+			// now do the "per second" business
 			import std.stdio;
 			second_cnt = 0;
 			foreach(gui; guis) {
 				gui.second_handler();
 			}
-			// now do the "per second" business
-			//Gui gui = cast(Gui)data;
-			//foreach(gui; gui_windows){
-			//	gui.updateSession();
-			//	gui._plot_area.refresh();
-			//	gui._plot_area.queueDraw();
-			//}
 		}
 
 		if (!application_running) {
@@ -78,9 +71,8 @@ extern(C) nothrow static int threadIdleProcess(void* data) {
 		try {
 			writeln("exceptions in threadIdleProcess", t.msg, "\r");
 			} catch (Throwable t) {
-				//...
+				// nothing
 			}
-		//return 0;
 	}
 	return 1;
 }
@@ -124,20 +116,12 @@ public:
 		import gtk.Widget;
 		main_box.addOnDestroy(delegate( Widget w) { 
 				import std.stdio;
-				//Gui[] new_guis;
-				//foreach(idx, gui; guis) {
-				//	if (idx != _gui_idx) {
-				//		gui._gui_idx = new_guis.length;
-				//		new_guis ~= gui;
-				//	}
-				//}
-				//guis = new_guis;
 				guis.remove(_gui_idx);
-
 				if (guis.length == 0) {
 					application_running = false;
+					import session;
+					_sessionTid.send(MsgGuiQuit());
 				}
-				//writeln("OnDestroy received\r");
 			});
 
 		// add the control panel
@@ -178,22 +162,11 @@ public:
 		setTitle("gtkD Spectrum Viewer");
 		setDefaultSize( 300, 300 );
 
-
-
-		//auto plotarea_box = build_plotarea(_sessionTid, in_other_thread, mode2d);
-		//main_box.add(plotarea_box);
-
 		add(main_box);
 		showAll();
 
-		//import gdk.Threads;
-		//gdk.Threads.threadsAddIdle(&threadIdleProcess, cast(void*)this);
-
-
-
-
 		import std.stdio;
-		//writeln("Gui this() thisTid: ", thisTid, "\r");
+
 
 		// get up to date with the session data
 		import session;
@@ -300,10 +273,6 @@ void message_handler()
 				}
 			}
 		},
-		//(string message) {
-		//	import std.stdio;
-		//	writeln(message,"\r");
-		//},
 		(MsgRedrawContent redraw) {
 			if (guis[redraw.gui_idx]._visualization !is null) {
 				guis[redraw.gui_idx]._visualization.redraw_content();

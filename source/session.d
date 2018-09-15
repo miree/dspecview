@@ -113,6 +113,13 @@ struct MsgEchoFitContent {
 
 struct MsgGuiStarted {
 }
+struct MsgGuiQuit {
+}
+struct MsgIsGuiRunning {
+}
+struct MsgGuiRunningStatus {
+	bool running;
+}
 
 class Session
 {
@@ -218,6 +225,13 @@ public:
 				(MsgGuiStarted msg, Tid guiTid) {
 					_guiRunning = true;
 					_guiTid = guiTid;
+				},
+				(MsgGuiQuit msg) {
+					import std.stdio;
+					_guiRunning = false;
+				},
+				(MsgIsGuiRunning msg, Tid requestingThread) {
+					requestingThread.send(MsgGuiRunningStatus(_guiRunning));
 				}
 			); // receive
 		}
