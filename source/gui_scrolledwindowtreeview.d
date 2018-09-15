@@ -114,8 +114,12 @@ public:
 						foreach(itemname; _itemnames.sort) {
 							auto selected_name = get_full_name(iter);
 							if (itemname.startsWith(selected_name)) {
-								// request a Visualizer for that item
-								_sessionTid.send(MsgRemoveItem(itemname), thisTid);
+								// forbid to remove GUIwindows from the itme list via the menu option
+								// GUIwindows will be removed automatically if the window is closed
+								if (!itemname.startsWith(guiNamePrefix)) {
+									// send request to remove that item from the list
+									_sessionTid.send(MsgRemoveItem(itemname), thisTid);
+								}
 							}
 						}					
 					}

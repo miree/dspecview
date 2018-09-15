@@ -35,6 +35,7 @@ int run(immutable string[] args, Tid sessionTid, bool in_other_thread = false)
 	return result;
 }
 
+public immutable string guiNamePrefix = "GUIwindows/";
 
 Gui[ulong] guis;
 bool application_running = false;
@@ -122,6 +123,7 @@ public:
 					import session;
 					_sessionTid.send(MsgGuiQuit());
 				}
+				_sessionTid.send(MsgRemoveItem(guiName), thisTid);
 			});
 
 		// add the control panel
@@ -159,7 +161,8 @@ public:
 							});
 		}
 
-		setTitle("gtkD Spectrum Viewer");
+		import std.conv;
+		setTitle("gtkD Spectrum Viewer -- window" ~ _gui_idx.to!string);
 		setDefaultSize( 300, 300 );
 
 		add(main_box);
@@ -168,13 +171,18 @@ public:
 		import std.stdio;
 
 
+		_sessionTid.send(MsgAddGuiItem(guiName(),_gui_idx), thisTid);
+
 		// get up to date with the session data
 		import session;
 		_sessionTid.send(MsgGuiStarted(), thisTid);
-		if (controlpanel) {
-			_control_panel.refresh();
-		}
+		_sessionTid.send(MsgRequestItemList(), thisTid);
 
+	}
+
+	string guiName() {
+		import std.conv;
+		return guiNamePrefix ~ "window" ~ _gui_idx.to!string;
 	}
 
 	void destroyVisualizer() {
@@ -282,6 +290,11 @@ void message_handler()
 			if (guis[fit.gui_idx]._visualization !is null) {
 				guis[fit.gui_idx]._visualization.setFit();
 			}
+		},
+		(MsgCloseWindow close) {
+			if (guis[close.gui_idx] !is null) {
+				guis[close.gui_idx].destroy();
+			}
 		}
 	);
 }
@@ -320,12 +333,76 @@ struct MsgRedrawContent {
 struct MsgFitContent {
 	ulong gui_idx;
 }
+struct MsgCloseWindow {
+	ulong gui_idx;
+}
 
 
 ///////////////////////////////////////////////////////////////
 // make an item that represents a Gui window
+import session;
+class GuiItem : Item 
+{
+public:
+	this(string name, ulong gui_idx) {
+		_name = name;
+		_gui_idx = gui_idx;
+	}
 
+	string getTypeString() {
+		return "GUI window";
+	}
 
+	ulong guiIdx() {
+		return _gui_idx;
+	}
 
+	override immutable(GuiVisualizer) createVisualizer() 
+	{
+		import std.conv;
+		return new immutable(GuiVisualizer)(_name);
+	}
+private:
+	string _name;
+	ulong _gui_idx;
+}
+
+immutable class GuiVisualizer : Visualizer 
+{
+	import cairo.Context, cairo.Surface;
+	import view;
+	this(string name) {
+		_name = name;
+	}
+	override string getItemName() immutable {
+		return _name;
+	}
+	override ulong getDim() immutable {
+		return 1;
+	}
+	override void print(int context) immutable {
+		import std.stdio;
+		writeln(_name,"\r");
+	}
+	override void draw(ref Scoped!Context cr, ViewBox box, bool logy, bool logx, bool logz) immutable {
+		return;
+	}
+	override bool getLeftRight(out double left, out double right, bool logy, bool logx) immutable {
+		return false;
+	}
+	override bool getBottomTopInLeftRight(out double bottom, out double top, double left, double right, bool logy, bool logx) immutable 
+	{
+		return false;
+	}
+	override bool getZminZmaxInLeftRightBottomTop(out double mi, out double ma, 
+	                                     double left, double right, double bottom, double top, 
+	                                     bool logz, bool logy, bool logx) immutable
+	{
+		return false;
+	}
+
+private:
+	string _name;
+}
 
 
