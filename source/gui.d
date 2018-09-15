@@ -37,8 +37,9 @@ int run(immutable string[] args, Tid sessionTid, bool in_other_thread = false)
 }
 
 
-Gui[] guis;
+Gui[ulong] guis;
 bool application_running = false;
+ulong gui_counter = 0;
 extern(C) nothrow static int threadIdleProcess(void* data) {
 	//Don't let D exceptions get thrown from this function
 	try {
@@ -107,8 +108,8 @@ public:
 		_mode2d = mode2d;
 
 
-		_gui_idx = guis.length;
-		guis ~= this;
+		_gui_idx = gui_counter++;
+		guis[_gui_idx] = this;
 
 		import std.stdio;
 		//writeln("new Gui with _gui_idx=", _gui_idx,"\r");
@@ -123,14 +124,16 @@ public:
 		import gtk.Widget;
 		main_box.addOnDestroy(delegate( Widget w) { 
 				import std.stdio;
-				Gui[] new_guis;
-				foreach(idx, gui; guis) {
-					if (idx != _gui_idx) {
-						gui._gui_idx = new_guis.length;
-						new_guis ~= gui;
-					}
-				}
-				guis = new_guis;
+				//Gui[] new_guis;
+				//foreach(idx, gui; guis) {
+				//	if (idx != _gui_idx) {
+				//		gui._gui_idx = new_guis.length;
+				//		new_guis ~= gui;
+				//	}
+				//}
+				//guis = new_guis;
+				guis.remove(_gui_idx);
+
 				if (guis.length == 0) {
 					application_running = false;
 				}
@@ -281,15 +284,10 @@ void message_handler()
 			//writeln("gui: got visualizer for item: ", msg.itemname, "\r");
 			if (visualizer !is null) {
 				//writeln("gui[",msg.gui_idx,"]: add visualizer \r");
-				if (msg.gui_idx < guis.length) { // it can happen that the index in 
-					                             // the message is smaller then the gui array
-					                             // if a window was closed while the message 
-					                             // was in flight
-					auto gui = guis[msg.gui_idx];
-					if (gui !is null) {
-						if (gui._visualization !is null ) {
-							guis[msg.gui_idx]._visualization.addVisualizer(msg.itemname, visualizer);
-						}
+				auto gui = guis[msg.gui_idx];
+				if (gui !is null) {
+					if (gui._visualization !is null ) {
+						guis[msg.gui_idx]._visualization.addVisualizer(msg.itemname, visualizer);
 					}
 				}
 			}
@@ -307,17 +305,13 @@ void message_handler()
 		//	writeln(message,"\r");
 		//},
 		(MsgRedrawContent redraw) {
-			if (redraw.gui_idx < guis.length) { 
-				if (guis[redraw.gui_idx]._visualization !is null) {
-					guis[redraw.gui_idx]._visualization.redraw_content();
-				}
+			if (guis[redraw.gui_idx]._visualization !is null) {
+				guis[redraw.gui_idx]._visualization.redraw_content();
 			}
 		},
 		(MsgFitContent fit) {
-			if (fit.gui_idx < guis.length) { 
-				if (guis[fit.gui_idx]._visualization !is null) {
-					guis[fit.gui_idx]._visualization.setFit();
-				}
+			if (guis[fit.gui_idx]._visualization !is null) {
+				guis[fit.gui_idx]._visualization.setFit();
 			}
 		}
 	);
@@ -359,7 +353,8 @@ struct MsgFitContent {
 }
 
 
-
+///////////////////////////////////////////////////////////////
+// make an item that represents a Gui window
 
 
 
