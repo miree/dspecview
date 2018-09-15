@@ -18,6 +18,7 @@ void populate_list_of_commands()
 	list_of_commands["gui"]         = &runGui;
 	list_of_commands["guistatus"]   = &showGuiStatus;
 	list_of_commands["!ls"]         = &listDir;
+	list_of_commands["show"]        = &showItemInWindow;
 }
 
 /////////////////////////////////////////////////////////////
@@ -135,11 +136,37 @@ void addFileHist1(immutable string[] args)
 	sessionTid.send(MsgAddFileHist1(args[0]), thisTid);
 }
 
+void showItemInWindow(immutable string[] args) 
+{
+	if (guiRunning()) {
+		import std.stdio, std.concurrency, std.array, std.algorithm, std.string, std.conv;
+		import session, gui;
+
+		if (args.length != 2) {
+			writeln("expecting one argument: <windowname> <filename> , got ", args.length , "arguments: ", args);
+			return;
+		}
+
+		string windowname = args[0];
+		string itemname = args[1];
+		string window_gui_idx = windowname.chompPrefix(guiNamePrefix~"window"); 
+		ulong gui_idx = window_gui_idx.to!ulong;
+
+		sessionTid.send(MsgRequestItemVisualizer(itemname, gui_idx), guiTid);
+		sessionTid.send(MsgEchoFitContent(gui_idx), guiTid);
+	}
+}
+
 Tid guiTid;
 void runGui(immutable string[] args)
 {
 	import gui, session;
-	guiTid = gui.startguithread(args, sessionTid);
+	if (guiRunning()) {
+		import gui;
+		guiTid.send(MsgNewWindow());
+	} else {
+		guiTid = gui.startguithread(args, sessionTid);
+	}
 }
 void showGuiStatus(immutable string[] args)
 {

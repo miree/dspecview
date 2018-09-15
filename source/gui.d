@@ -90,7 +90,7 @@ public:
 		 Tid         sessionTid, 
 		 bool        in_other_thread, 
 		 bool        controlpanel = true,
-		 bool        plotarea     = false,
+		 bool        plotarea     = true,
 		 bool        mode2d       = false)
 	{
 		super(application);
@@ -295,6 +295,9 @@ void message_handler()
 			if (guis[close.gui_idx] !is null) {
 				guis[close.gui_idx].destroy();
 			}
+		},
+		(MsgNewWindow newwindow) {
+			new Gui(getApplication(), _sessionTid, getInOtherThread(), true , true); 
 		}
 	);
 }
@@ -335,6 +338,8 @@ struct MsgFitContent {
 }
 struct MsgCloseWindow {
 	ulong gui_idx;
+}
+struct MsgNewWindow {
 }
 
 

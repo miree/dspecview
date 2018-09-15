@@ -146,6 +146,9 @@ public:
 		_check_gridx.addOnToggled(
 			delegate void(ToggleButton button) {
 								_plot_area.setDrawGridVertical(button.getActive());
+								if (!button.getActive()) {
+									_plot_area.setFit();
+								}
 								_plot_area.queueDraw();
 							}
 			);
@@ -155,6 +158,9 @@ public:
 		_check_gridy.addOnToggled(
 			delegate void(ToggleButton button) {
 								_plot_area.setDrawGridHorizontal(button.getActive());
+								if (!button.getActive()) {
+									_plot_area.setFit();
+								}
 								_plot_area.queueDraw();
 							}
 			);
@@ -164,6 +170,9 @@ public:
 		_check_grid_ontop.addOnToggled(
 			delegate void(ToggleButton button) {
 								_plot_area.setGridOnTop(button.getActive());
+								if (!button.getActive()) {
+									_plot_area.setFit();
+								}
 								_plot_area.queueDraw();
 							}
 			);
