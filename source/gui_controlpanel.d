@@ -61,6 +61,14 @@ public:
 	{
 		_treeview.updateTreeStoreFromSession(itemlist); // just pass this through
 	}
+	void up()
+	{
+		_treeview.up();
+	}
+	void down()
+	{
+		_treeview.down();
+	}
 
 
 	alias _main_box this;

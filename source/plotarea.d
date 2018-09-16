@@ -645,6 +645,22 @@ protected:
 							if (!visualizer[0].getZminZmaxInLeftRightBottomTop(zmin, zmax,  _vbox.getLeft(), _vbox.getRight(), _vbox.getBottom(), _vbox.getTop(), _logscale_z, _logscale_y, _logscale_x)) {
 								default_zmin_zmax(zmin, zmax);
 							}
+							// expand z-range to full base 10 numbers (1,10,100,1000,...)
+							//if (_logscale_z) {
+							//	import std.math, std.algorithm;
+							//	double min = log(1);
+							//	while (min < zmin) min += log(10);
+							//	while (min > zmin) min -= log(10);
+							//	zmin = min;
+
+							//	double max = log(1);
+							//	while (max > zmax) max -= log(10);
+							//	while (max < zmax) max += log(10);
+							//	zmax = max;
+
+							//	if (zmax <= zmin) zmax += log(10);
+							//}
+
 							add_zmin_zmax_margin(zmin, zmax, 0.0); // margin factor of 0.0 is needed to not mess up the color-key numbers
 							_vbox.setZminZmax(zmin, zmax);
 						}
@@ -679,6 +695,13 @@ protected:
 						}
 						draw_box(cr);
 						draw_numbers(cr, size.width, size.height);
+
+						// draw the color key;
+						if (visualizer[0] !is null && visualizer[0].needsColorKey()) {
+							drawColorKey(cr, _vbox, size.width, size.height, _logscale_z);
+						}
+
+
 					} else { // if (cell_has_content)
 						if (_autoscale_x) {
 							double left, right;
@@ -705,12 +728,6 @@ protected:
 						draw_numbers(cr, size.width, size.height);
 					}
 
-					// draw the color key;
-
-
-					//if (drawable !is null && drawable.needsColorKey()) {
-					//	drawColorKey(cr, _vbox, size.width, size.height, _logscale_z);
-					//}
 
 					//if (_autoscale_x) {
 					//	// first determine the width

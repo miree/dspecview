@@ -53,7 +53,7 @@ public:
 							//writeln(" file!\r");
 							auto filename = full_filename.chompPrefix(getcwd()~"/"); 
 							//writeln(filename,"\r");
-							sessionTid.send(MsgAddFileHist1(filename), thisTid);
+							sessionTid.send(MsgAddFileHist2(filename), thisTid);
 						} else {
 							writeln(" no file, no dir!?\r");
 						}

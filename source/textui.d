@@ -14,6 +14,7 @@ void populate_list_of_commands()
 	list_of_commands["ls"]          = &listItems;
 	list_of_commands["rm"]          = &rmItem;
 	list_of_commands["filehist1"]   = &addFileHist1;
+	list_of_commands["filehist2"]   = &addFileHist2;
 	//list_of_commands["visualizer"]  = &getItemVisualizer;
 	list_of_commands["gui"]         = &runGui;
 	list_of_commands["guistatus"]   = &showGuiStatus;
@@ -134,6 +135,19 @@ void addFileHist1(immutable string[] args)
 	}
 
 	sessionTid.send(MsgAddFileHist1(args[0]), thisTid);
+}
+
+void addFileHist2(immutable string[] args)
+{
+	import std.stdio, std.concurrency, std.array, std.algorithm;
+	import session;
+
+	if (args.length != 1) {
+		writeln("expecting one argument: <filename> , got ", args.length , "arguments: ", args);
+		return;
+	}
+
+	sessionTid.send(MsgAddFileHist2(args[0]), thisTid);
 }
 
 void showItemInWindow(immutable string[] args) 

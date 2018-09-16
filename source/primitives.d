@@ -479,7 +479,6 @@ void drawGridNumbersLogY(ref Scoped!Context cr, ViewBox box, int canvas_width, i
 	} while (log_bottom <= box.getTop);
 }
 
-static if (false) // remove the following function
 void drawColorKey(ref Scoped!Context cr, ViewBox box, int canvas_width,  int canvas_height, bool logz)
 {
 	double z_min = box.getZmin();
@@ -515,10 +514,16 @@ void drawColorKey(ref Scoped!Context cr, ViewBox box, int canvas_width,  int can
 		double log_bottom = z_min;//log_color_value_of(z_min, logz);
 		double log_top    = z_max;//log_color_value_of(z_max, logz);
 
+		double min = log(1);
+		while (min < log_bottom) min += log(10);
+		while (min > log_bottom) min -= log(10);
+		log_bottom = min;
+
+
 		//writeln("colorkey: zmin=",z_min,"  zmax=",z_max,"\r");
 
 		if (log_top <= log_bottom) { // fix empty z_range
-			log_top = log_bottom + 1;
+			log_top = log_bottom + log(10);
 		}
 		//while (log_bottom < (z_min+1)) log_bottom += log(10);
 		//while (log_bottom > (z_min+1)) log_bottom -= log(10);
@@ -534,10 +539,10 @@ void drawColorKey(ref Scoped!Context cr, ViewBox box, int canvas_width,  int can
 			cr.textExtents(text,&cte);
 			//cr.moveTo(box.transform_box2canvas_x(left), box.transform_box2canvas_y(log_bottom)+cte.height/2);
 			cr.setLineWidth(1);
-			cr.moveTo(x0,                    y0+height*log_bottom/log_top);
-			cr.lineTo(x0+width/3,            y0+height*log_bottom/log_top);
+			cr.moveTo(x0,                    y0+height*(log_bottom-z_min)/(log_top-z_min));
+			cr.lineTo(x0+width/3,            y0+height*(log_bottom-z_min)/(log_top-z_min));
 			cr.stroke();
-			cr.moveTo(x0-cte.width-width/10, y0+height*log_bottom/log_top+cte.height/2);
+			cr.moveTo(x0-cte.width-width/10, y0+height*(log_bottom-z_min)/(log_top-z_min)+cte.height/2);
 			cr.showText(text);
 			cr.stroke();
 			//color = 0.8;
@@ -590,6 +595,7 @@ void drawColorKey(ref Scoped!Context cr, ViewBox box, int canvas_width,  int can
 
 		import std.math, std.stdio;
 		double bottom_oom = (cast(long)round(z_min/oomz))*oomz;
+		double bottom_oom0 = bottom_oom;
 		//writeln("z_min=",z_min, "   bottom_oom=",bottom_oom,"\r");
 		while(bottom_oom <= z_max+0.01)
 		{
@@ -606,10 +612,10 @@ void drawColorKey(ref Scoped!Context cr, ViewBox box, int canvas_width,  int can
 				(number%5 == 0))
 			{	
 				cr.setLineWidth(1);
-				cr.moveTo(x0,                    y0+height*bottom_oom/z_max);
-				cr.lineTo(x0+width/3,            y0+height*bottom_oom/z_max);
+				cr.moveTo(x0,                    y0+height*(bottom_oom-bottom_oom0)/(z_max-bottom_oom0));
+				cr.lineTo(x0+width/3,            y0+height*(bottom_oom-bottom_oom0)/(z_max-bottom_oom0));
 				cr.stroke();
-				cr.moveTo(x0-cte.width-width/10, y0+height*bottom_oom/z_max+cte.height/2);
+				cr.moveTo(x0-cte.width-width/10, y0+height*(bottom_oom-bottom_oom0)/(z_max-bottom_oom0)+cte.height/2);
 				cr.showText(text);
 				//writeln("show ", text);
 			}

@@ -46,6 +46,29 @@ public:
 				_expanded[expanded_row] = false;
 			}
 		);
+		_treeview.addOnCursorChanged( // add selected items to the preview plot area
+				delegate void(TreeView view) {
+					auto iters = _treeview.getSelectedIters();
+					import std.concurrency, std.array, std.algorithm, std.stdio;
+					import session;
+					writeln("_treeview OnCursorChanged\r");
+					//outerfor: foreach(iter; iters) {
+					//	foreach(itemname; _itemnames.sort) {
+					//		auto selected_name = get_full_name(iter);
+					//		if (itemname.startsWith(selected_name)) {
+					//			// request a Visualizer for that item
+					//			_sessionTid.send(MsgRequestItemVisualizer(itemname, _parentGui.getGuiIdx()), thisTid);
+					//			break outerfor;
+					//		}
+					//	}					
+					//}
+					//// ask the session to send us a "FitContent message"
+					//_sessionTid.send(MsgEchoFitContent(_parentGui.getGuiIdx()), thisTid); 
+					//// ask the session to send us a "RedrawContent message"
+					//_sessionTid.send(MsgEchoRedrawContent(_parentGui.getGuiIdx()), thisTid);
+				}
+			);
+
 
 
 		////////////////////////////////////////////////////////
@@ -141,6 +164,41 @@ public:
 			} //anonymous function
 		);
 
+	}
+
+	void up()
+	{
+		auto sel_iters= _treeview.getSelectedIters();
+		if (sel_iters.length == 0) return;
+
+		auto iter     = _treeview.getSelectedIter();
+		auto iter_old = _treeview.getSelectedIter();
+		iter_old.copy(iter); // make sure they are the same
+		auto selection = _treeview.getSelection();
+		if (_treestore.iterPrevious(iter)) {
+			//selection.unselectIter(iter_old);
+			foreach(sel_iter; sel_iters) {
+				selection.unselectIter(sel_iter);
+			}
+			selection.selectIter(iter);
+		} 
+	}
+	void down() 
+	{
+		auto sel_iters= _treeview.getSelectedIters();
+		if (sel_iters.length == 0) return;
+
+		auto iter     = _treeview.getSelectedIter();
+		auto iter_old = _treeview.getSelectedIter();
+		iter_old.copy(iter); // make sure they are the same
+		auto selection = _treeview.getSelection();
+		if (_treestore.iterNext(iter)) {
+			//selection.unselectIter(iter_old);
+			foreach(sel_iter; sel_iters) {
+				selection.unselectIter(sel_iter);
+			}
+			selection.selectIter(iter);
+		} 
 	}
 
 

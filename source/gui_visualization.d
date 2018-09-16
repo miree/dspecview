@@ -195,6 +195,9 @@ public:
 
 		auto layout_box = new Box(GtkOrientation.HORIZONTAL,0);
 
+		layout_box.add(_clear_plot_area);		
+		layout_box.add(new Separator(GtkOrientation.VERTICAL));
+
 		layout_box.add(_refresh_plot_area);		
 		layout_box.add(_check_auto_refresh);
 		layout_box.add(new Separator(GtkOrientation.VERTICAL));
@@ -226,8 +229,6 @@ public:
 		layout_box.add(_spin_columns);
 		layout_box.add(columns_label);
 
-		layout_box.add(new Separator(GtkOrientation.VERTICAL));
-		layout_box.add(_clear_plot_area);		
 
 
 		//_radio_overlay.show();

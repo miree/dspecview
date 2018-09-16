@@ -259,6 +259,17 @@ public:
 										default:
 									}
 								}
+								if (_control_panel !is null) {
+									import gdk.Keymap;
+									auto km = Keymap.getDefault();
+									auto upValue = km.keyvalFromName("Up");
+									auto downValue = km.keyvalFromName("Down");
+									if (e.keyval == upValue) {
+										_control_panel.up();
+									} else if (e.keyval == downValue) {
+										_control_panel.down();
+									} 
+								}								
 								return true;
 							});
 		}
@@ -525,6 +536,9 @@ immutable class GuiVisualizer : Visualizer
 	override void print(int context) immutable {
 		import std.stdio;
 		writeln(_name,"\r");
+	}
+	override bool needsColorKey() immutable {
+		return false;
 	}
 	override void draw(ref Scoped!Context cr, ViewBox box, bool logy, bool logx, bool logz) immutable {
 		return;

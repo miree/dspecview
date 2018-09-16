@@ -31,6 +31,7 @@ public:
 	string getItemName() immutable;
 	ulong getDim() immutable;
 	void print(int context) immutable;
+	bool needsColorKey() immutable;
 	void draw(ref Scoped!Context cr, ViewBox box, bool logy, bool logx, bool logz) immutable;
 	bool getLeftRight(out double left, out double right, bool logy, bool logx) immutable;
 	bool getBottomTopInLeftRight(out double bottom, out double top, double left, double right, bool logy, bool logx) immutable;
@@ -71,6 +72,9 @@ struct MsgRun {
 ////////////////////////////////////////
 // Add a 1d file histogram
 struct MsgAddFileHist1{
+	string filename;
+}
+struct MsgAddFileHist2{
 	string filename;
 }
 struct MsgAddGuiItem{
@@ -185,6 +189,20 @@ public:
 					try {
 						import hist1;
 						_items[filehist1.filename] = new FileHist1(filehist1.filename);
+						//requestingThread.send("added filehist1: " ~ filehist1.filename);
+						if (_guiRunning) {
+							import gui;
+							_guiTid.send(MsgRefreshItemList());
+						}
+					} catch (Exception e) {
+						//requestingThread.send(e.msg);
+					}
+				},
+				(MsgAddFileHist2 filehist2, Tid requestingThread) {
+					if (_output_all_messages) { writeln("got MsgAddFileHist2\r"); }
+					try {
+						import hist2;
+						_items[filehist2.filename] = new FileHist2(filehist2.filename);
 						//requestingThread.send("added filehist1: " ~ filehist1.filename);
 						if (_guiRunning) {
 							import gui;

@@ -22,7 +22,7 @@ public:
 		if (_filename is null || _filename.length == 0) {
 			return "unknown";
 		}
-		return "File Hist1D";
+		return "File Hist 1D";
 	}
 
 	override immutable(Hist1Visualizer) createVisualizer() 
@@ -128,8 +128,9 @@ private: // some private functions
 			}
 			if (!line.startsWith("#") && line.length > 0) {
 				foreach(number; split(line.dup(), " ")) {
-					if (number.length > 0)
+					if (number.length > 0) {
 						bin_data ~= std.conv.to!double(number);
+					}
 				}
 			}
 		}
@@ -187,12 +188,17 @@ public:
 
 	override void print(int context) immutable 
 	{
-		import std.stdio;
-		writeln("length of _bin_data: ", _bin_data.length);
-		writeln("mipmap levels: ", _mipmap_data.length);
-		foreach(idx, mipmap; _mipmap_data) {
-			writeln("level(", idx, "): ", mipmap.length);
-		}
+		//import std.stdio;
+		//writeln("length of _bin_data: ", _bin_data.length);
+		//writeln("mipmap levels: ", _mipmap_data.length);
+		//foreach(idx, mipmap; _mipmap_data) {
+		//	writeln("level(", idx, "): ", mipmap.length);
+		//}
+	}
+
+	override bool needsColorKey() immutable
+	{
+		return false;
 	}
 
 	import cairo.Context, cairo.Surface;
