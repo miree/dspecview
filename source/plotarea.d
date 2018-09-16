@@ -503,7 +503,7 @@ protected:
 
 
 
-		if (_overlay && !_preview_mode) {
+		if (_overlay) {
 			//writeln("overlay true\r");
 			bool draw_color_key = false;
 			_vbox._rows = 1;
@@ -610,7 +610,7 @@ protected:
 						// handle the preview mode (just a number of fixed settings on the plot_area properties)
 						// in preview mode: 1d hists are log xy, 2d hists are log z
 						if (_preview_mode){ 
-							_autoscale_x = _autoscale_y = true;
+							_autoscale_z = _autoscale_x = _autoscale_y = true;
 							if (visualizer[0].getDim() == 1) {
 								_logscale_x = _logscale_y = true;
 								_logscale_z = false;
@@ -619,7 +619,7 @@ protected:
 							if (visualizer[0].getDim() == 2) {
 								_logscale_x = _logscale_y = false;
 								_logscale_z = true;
-								_grid_ontop = true;
+								_grid_ontop = false;
 							}
 						}
 						// handle autoscaling individual items (if enabled)
