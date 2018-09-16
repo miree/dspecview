@@ -171,39 +171,43 @@ public:
 		button_newwindow.addOnClicked(button => create_new_window(button)); 
 		_hbar.packEnd(button_newwindow);
 
-		auto button_open = new Button();//"open");
-		Image iOpen = new Image(StockID.OPEN, IconSize.MENU);
-		button_open.add(iOpen);
-		void f_button_open(Button button) {
-			import multi_file_chooser;
-			string[] result;
-			auto child_window = new MultiFileChooser(getApplication(), _sessionTid);
-		}
-		button_open.addOnClicked(button => f_button_open(button)); 
-		_hbar.add(button_open);
+		if (controlpanel) {
 
-		auto button_refresh = new Button();//"refresh");
-		button_refresh.add(new Image(StockID.REFRESH, IconSize.MENU));
-		void f_button_refresh(Button button) {
-			_control_panel.refresh();
-		}
-		button_refresh.addOnClicked(button => f_button_refresh(button)); 
-		_hbar.add(button_refresh);
-
-
-		auto button_toggle_visualizer = new Button();//"toggle\nvisualizer");
-		auto button_toggle_visualizer_image = new Image(StockID.CLEAR, IconSize.MENU);
-		button_toggle_visualizer.setImage(button_toggle_visualizer_image);
-		void f_button_toggle_visualizer(ref Button button) {
-			toggleVisualizer();
-			if (_visualization is null) { 
-				button.setImage(new Image(StockID.ZOOM_FIT, IconSize.MENU));
-			} else {
-				button.setImage(new Image(StockID.CLEAR, IconSize.MENU));
+			auto button_open = new Button();//"open");
+			Image iOpen = new Image(StockID.OPEN, IconSize.MENU);
+			button_open.add(iOpen);
+			void f_button_open(Button button) {
+				import multi_file_chooser;
+				string[] result;
+				auto child_window = new MultiFileChooser(getApplication(), _sessionTid);
 			}
+			button_open.addOnClicked(button => f_button_open(button)); 
+			_hbar.add(button_open);
+
+			auto button_refresh = new Button();//"refresh");
+			button_refresh.add(new Image(StockID.REFRESH, IconSize.MENU));
+			void f_button_refresh(Button button) {
+				_control_panel.refresh();
+			}
+			button_refresh.addOnClicked(button => f_button_refresh(button)); 
+			_hbar.add(button_refresh);
+
+
+			auto button_toggle_visualizer = new Button();//"toggle\nvisualizer");
+			auto button_toggle_visualizer_image = new Image(StockID.CLEAR, IconSize.MENU);
+			button_toggle_visualizer.setImage(button_toggle_visualizer_image);
+			void f_button_toggle_visualizer(ref Button button) {
+				toggleVisualizer();
+				if (_visualization is null) { 
+					button.setImage(new Image(StockID.ZOOM_FIT, IconSize.MENU));
+				} else {
+					button.setImage(new Image(StockID.CLEAR, IconSize.MENU));
+				}
+			}
+			button_toggle_visualizer.addOnClicked(button => f_button_toggle_visualizer(button)); 
+
+			_hbar.add(button_toggle_visualizer);
 		}
-		button_toggle_visualizer.addOnClicked(button => f_button_toggle_visualizer(button)); 
-		_hbar.add(button_toggle_visualizer);
 
 
 

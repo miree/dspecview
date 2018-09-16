@@ -230,12 +230,14 @@ public:
 						//writeln("session: sending visualizer for: ", msg.itemname, "\r");
 						try {
 							auto visualizer = item.createVisualizer();
-							//writeln("visualizer created\r");
-							requestingThread.send(MsgVisualizeItem(msg.itemname, msg.gui_idx), visualizer);
-							//writeln("message sent\r");
-							} catch (Exception e) {
-								writeln("Exception while creating visualizer " ~ e.msg,"\r");
+							if (visualizer !is null) {
+								//writeln("visualizer created\r");
+								requestingThread.send(MsgVisualizeItem(msg.itemname, msg.gui_idx), visualizer);
 							}
+							//writeln("message sent\r");
+						} catch (Exception e) {
+							writeln("Exception while creating visualizer " ~ e.msg,"\r");
+						}
 						//writeln("session: sending visualizer done \r");
 					}
 				},

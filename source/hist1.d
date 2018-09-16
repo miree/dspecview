@@ -52,7 +52,7 @@ public:
 		import std.stdio;
 		//writeln("_visualizer.length = ", _visualizer.length, "\r");
 		if (_visualizer.length < 1) { // no visualizer created yet
-			_visualizer ~= new immutable(Hist1Visualizer)();
+			_visualizer ~= null;//new immutable(Hist1Visualizer)();
 		}
 		return _visualizer[0];
 	}
