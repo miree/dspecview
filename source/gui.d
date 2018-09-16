@@ -1,32 +1,32 @@
 import std.concurrency;
-void startgui(immutable string[] args, Tid sessionTid)
+void startgui(immutable string[] args, Tid sessionTid, string window_title)
 {
-    run(args,sessionTid,false);
+    run(args, sessionTid, window_title, false);
 }
-Tid startguithread(immutable string[] args, Tid sessionTid)
+Tid startguithread(immutable string[] args, Tid sessionTid, string window_title)
 {
 	import std.concurrency;
-    return spawn(&threadfunction, args, sessionTid);
+    return spawn(&threadfunction, args, sessionTid, window_title);
 }
-void threadfunction(immutable string[] args, Tid sessionTid)
+void threadfunction(immutable string[] args, Tid sessionTid, string window_title)
 {
 	// last parameter tells the gui that it runs in a separate thread. This is 
 	// important because memory handling is different in this case and memory
 	// leaks if that is not handled explicitely
-    run(args, sessionTid, true);
+    run(args, sessionTid, window_title, true);
 }
 
 import gio.Application : GioApplication = Application;
 import gtk.Application;
 import gtk.ApplicationWindow;
 Application application;
-int run(immutable string[] args, Tid sessionTid, bool in_other_thread = false)
+int run(immutable string[] args, Tid sessionTid, string window_title, bool in_other_thread = false)
 {
 	import std.concurrency;
 	import gdk.Threads;
 	application = new Application("de.egelsbach.dspecview", GApplicationFlags.FLAGS_NONE);
 	application.addOnActivate(delegate void(GioApplication app) { 
-			auto gui = new Gui(application, sessionTid, in_other_thread); 
+			auto gui = new Gui(application, sessionTid, in_other_thread, window_title); 
 			gdk.Threads.threadsAddIdle(&threadIdleProcess, cast(void*)gui);
 		});
 	auto result = application.run(cast(string[])args);
@@ -36,6 +36,7 @@ int run(immutable string[] args, Tid sessionTid, bool in_other_thread = false)
 }
 
 public immutable string guiNamePrefix = "GUIwindows/";
+immutable string baseTitle = "GtkD Spectrum Viewer";
 
 Gui[ulong] guis;
 bool application_running = false;
@@ -78,7 +79,38 @@ extern(C) nothrow static int threadIdleProcess(void* data) {
 	return 1;
 }
 
+	import gtk.Popover, gtk.Widget;
+    Popover createPopover(Widget parent) {
+		import gio.Menu : GMenu = Menu;
+		import gio.MenuItem : GMenuItem = MenuItem;
+        GMenu model = new GMenu();
 
+        GMenu mFileSection = new GMenu();
+        mFileSection.appendItem(new GMenuItem("Open…", null));
+        mFileSection.appendItem(new GMenuItem("Save", null));
+        mFileSection.appendItem(new GMenuItem("Save As…", null));
+        mFileSection.appendItem(new GMenuItem("Close", null));
+        model.appendSection(null, mFileSection);
+
+        //GMenu mSessionSection = new GMenu();
+        //mSessionSection.appendItem(new GMenuItem(_("Name…"), getActionDetailedName(ACTION_PREFIX, ACTION_SESSION_NAME)));
+        //mSessionSection.appendItem(new GMenuItem(_("Synchronize Input"), getActionDetailedName(ACTION_PREFIX, ACTION_SESSION_SYNC_INPUT)));
+        //model.appendSection(null, mSessionSection);
+
+        //if (isQuake()) {
+        //    GMenu mPrefSection = new GMenu();
+        //    mPrefSection.appendItem(new GMenuItem(_("Preferences"), getActionDetailedName("app", "preferences")));
+        //    model.appendSection(null, mPrefSection);
+        //}
+
+        //debug(GC) {
+        //    GMenu mDebugSection = new GMenu();
+        //    mDebugSection.appendItem(new GMenuItem(_("GC"), getActionDetailedName("win", "gc")));
+        //    model.appendSection(null, mDebugSection);
+        //}
+
+        return new Popover(parent, model);
+    }
 
 class Gui : ApplicationWindow
 {
@@ -89,6 +121,7 @@ public:
 	this(Application application, 
 		 Tid         sessionTid, 
 		 bool        in_other_thread, 
+		 string      title = null,
 		 bool        controlpanel = true,
 		 bool        plotarea     = true,
 		 bool        mode2d       = false)
@@ -108,14 +141,77 @@ public:
 		//writeln("new Gui with _gui_idx=", _gui_idx,"\r");
 		// main layout is:
 		// control bar on the left hand side, plot area on the right hand side
-		// both sides are organized inside of the main_box
+		// both sides are organized inside of the _main_box
 		import gtk.Box;
-		auto main_box = new Box(GtkOrientation.HORIZONTAL,0);
-		_main_box = main_box;
+
+		_vbox = new Box(GtkOrientation.VERTICAL,0);
+		_hbar = new HeaderBar();
+
+
+        ////Session Actions
+        //import gtk.Image, gtk.MenuButton;
+        //auto mb = new MenuButton();
+        //mb.setFocusOnClick(false);
+        //Image iHamburger = new Image("open-menu-symbolic", IconSize.MENU);
+        //mb.add(iHamburger);
+        //mb.setPopover(createPopover(mb));
+
+        //_hbar.packStart(mb);
+
+
+        import gtk.Button, gtk.Image;
+		auto button_newwindow = new Button();//"new\nwin");
+		Image iAdd = new Image(StockID.ADD, IconSize.MENU);
+		button_newwindow.add(iAdd);
+		void create_new_window(Button button) {
+			//import std.stdio;
+			//writeln("hello button_clicked ", button.getLabel(), "\r");
+			auto gui = new Gui(getApplication(), _sessionTid, getInOtherThread(), null, true , true); 
+		}
+		button_newwindow.addOnClicked(button => create_new_window(button)); 
+		_hbar.packEnd(button_newwindow);
+
+		auto button_open = new Button();//"open");
+		Image iOpen = new Image(StockID.OPEN, IconSize.MENU);
+		button_open.add(iOpen);
+		void f_button_open(Button button) {
+			import multi_file_chooser;
+			string[] result;
+			auto child_window = new MultiFileChooser(getApplication(), _sessionTid);
+		}
+		button_open.addOnClicked(button => f_button_open(button)); 
+		_hbar.add(button_open);
+
+		auto button_refresh = new Button();//"refresh");
+		button_refresh.add(new Image(StockID.REFRESH, IconSize.MENU));
+		void f_button_refresh(Button button) {
+			_control_panel.refresh();
+		}
+		button_refresh.addOnClicked(button => f_button_refresh(button)); 
+		_hbar.add(button_refresh);
+
+
+		auto button_toggle_visualizer = new Button();//"toggle\nvisualizer");
+		auto button_toggle_visualizer_image = new Image(StockID.CLEAR, IconSize.MENU);
+		button_toggle_visualizer.setImage(button_toggle_visualizer_image);
+		void f_button_toggle_visualizer(ref Button button) {
+			toggleVisualizer();
+			if (_visualization is null) { 
+				button.setImage(new Image(StockID.ZOOM_FIT, IconSize.MENU));
+			} else {
+				button.setImage(new Image(StockID.CLEAR, IconSize.MENU));
+			}
+		}
+		button_toggle_visualizer.addOnClicked(button => f_button_toggle_visualizer(button)); 
+		_hbar.add(button_toggle_visualizer);
+
+
+
+		_main_box = new Box(GtkOrientation.HORIZONTAL,0);
 
 		import gdk.Event;
 		import gtk.Widget;
-		main_box.addOnDestroy(delegate( Widget w) { 
+		_main_box.addOnDestroy(delegate( Widget w) { 
 				import std.stdio;
 				guis.remove(_gui_idx);
 				if (guis.length == 0) {
@@ -129,9 +225,9 @@ public:
 		// add the control panel
 		if (controlpanel) {
 			_control_panel = new ControlPanel(sessionTid, this);
-			main_box.add(_control_panel);
+			_main_box.add(_control_panel);
 			if (!plotarea) {
-				main_box.setChildPacking(_control_panel,true,true,0,GtkPackType.START);
+				_main_box.setChildPacking(_control_panel,true,true,0,GtkPackType.START);
 			}
 		}
 
@@ -139,8 +235,8 @@ public:
 
 		if (plotarea) {
 			_visualization = new Visualization(sessionTid, in_other_thread, mode2d, this);
-			main_box.add(_visualization);
-			main_box.setChildPacking(_visualization,true,true,0,GtkPackType.START);
+			_main_box.add(_visualization);
+			_main_box.setChildPacking(_visualization,true,true,0,GtkPackType.START);
 
 
 
@@ -148,24 +244,37 @@ public:
 			import gtk.Widget;
 			addOnKeyPress(delegate bool(GdkEventKey* e, Widget w) { // the action to perform if that menu entry is selected
 								//writeln("key press: ", e.keyval, "\r");
-								switch(e.keyval) {
-									case 'f': _visualization.setFit();             break;
-									case 'z': _visualization.toggle_autoscale_z(); break;
-									case 'y': _visualization.toggle_autoscale_y(); break;
-									case 'x': _visualization.toggle_autoscale_x(); break;
-									case 'l': _visualization.toggle_logscale();    break;
-									case 'o': _visualization.toggle_overlay();     break;
-									default:
+								if (_visualization !is null) {
+									switch(e.keyval) {
+										case 'f': _visualization.setFit();             break;
+										case 'z': _visualization.toggle_autoscale_z(); break;
+										case 'y': _visualization.toggle_autoscale_y(); break;
+										case 'x': _visualization.toggle_autoscale_x(); break;
+										case 'l': _visualization.toggle_logscale();    break;
+										case 'o': _visualization.toggle_overlay();     break;
+										default:
+									}
 								}
 								return true;
 							});
 		}
 
 		import std.conv;
-		setTitle("gtkD Spectrum Viewer -- window" ~ _gui_idx.to!string);
+		if (title is null)  {
+			title = "window" ~ _gui_idx.to!string;
+		}
+
+		_hbar.setTitle (title);
+		_hbar.setSubtitle (baseTitle);
+		newTitle(title);
+
 		setDefaultSize( 300, 300 );
 
-		add(main_box);
+		_vbox.add(_hbar);
+		_vbox.add(_main_box);
+		_vbox.setChildPacking(_main_box,true,true,0,GtkPackType.START);
+
+		add(_vbox);
 		showAll();
 
 		import std.stdio;
@@ -180,12 +289,17 @@ public:
 
 	}
 
+	void newTitle(string title)
+	{
+		setTitle(baseTitle ~ " -- " ~ title);
+	}
+
 	string guiName() {
 		import std.conv;
 		return guiNamePrefix ~ "window" ~ _gui_idx.to!string;
 	}
 
-	void destroyVisualizer() {
+	void toggleVisualizer() {
 		if (_visualization !is null) {
 			_visualization.destroy();
 			_visualization = null;
@@ -297,7 +411,10 @@ void message_handler()
 			}
 		},
 		(MsgNewWindow newwindow) {
-			new Gui(getApplication(), _sessionTid, getInOtherThread(), true , true); 
+			new Gui(getApplication(), _sessionTid, getInOtherThread(), newwindow.title, true , true); 
+		},
+		(MsgVisuWindowSettings settings) {
+
 		}
 	);
 }
@@ -308,8 +425,13 @@ private:
 	Application _application;
 	bool _mode2d;
 
+
+	import gtk.HeaderBar;
+	HeaderBar _hbar;
+
 	import gtk.Box;
-	Box _main_box;
+	Box _main_box; // contains all interactive gui elements
+	Box _vbox;     // contains the header bar (_hbar) and the _main_box
 
 	import gui_controlpanel, gui_visualization;
 	ControlPanel _control_panel;
@@ -340,6 +462,17 @@ struct MsgCloseWindow {
 	ulong gui_idx;
 }
 struct MsgNewWindow {
+	string title;
+}
+struct MsgVisuWindowSettings {
+	bool autoRefresh;
+	bool overview;
+	bool autoscaleX, autoscaleY, autoscaleZ;
+	bool logX, logY, logZ;
+	bool gridX, gridY, gridTop;
+	bool overlay;
+	bool row_major;
+	uint columns_or_rows;
 }
 
 

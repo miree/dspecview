@@ -50,7 +50,7 @@ public:
 
 
 
-		_radio_rowmajor = new RadioButton("1 2\n34");
+		_radio_rowmajor = new RadioButton("1 2\n3 4");
 		_radio_rowmajor.addOnToggled(
 							delegate void(ToggleButton button) {
 								//writeln("overlay button toggled ", button.getActive(), "\r");
@@ -63,12 +63,12 @@ public:
 								}
 								_plot_area.queueDraw();
 							} );
-		_radio_colmajor = new RadioButton("13\n24");
+		_radio_colmajor = new RadioButton("1 3\n2 4");
 		_radio_colmajor.joinGroup(_radio_rowmajor);
 
 		_check_auto_refresh = new CheckButton("auto");
 
-		auto _check_overview_mode = new CheckButton("over\nview");
+		_check_overview_mode = new CheckButton("over\nview");
 		_check_overview_mode.addOnToggled(delegate void(ToggleButton button) {
 								//writeln("overlay button toggled ", button.getActive(), "\r");
 								bool active = button.getActive();
@@ -179,12 +179,14 @@ public:
 		if (mode2d == true) _check_grid_ontop.setActive(true);
 
 
-		_refresh_plot_area = new Button("refresh");
+		_refresh_plot_area = new Button();//"refresh");
+		_refresh_plot_area.setImage(new Image(StockID.REFRESH, IconSize.MENU));
 		_refresh_plot_area.addOnClicked(delegate void(Button b) {
 				_plot_area.refresh();
 				//_plot_area.queueDraw();
 			});
-		_clear_plot_area = new Button("clear");
+		_clear_plot_area = new Button();//"clear");
+		_clear_plot_area.setImage(new Image(StockID.CLEAR, IconSize.MENU));
 		_clear_plot_area.addOnClicked(delegate void(Button b) {
 				_plot_area.clear();
 				_plot_area.queueDraw();
@@ -193,8 +195,8 @@ public:
 
 		auto layout_box = new Box(GtkOrientation.HORIZONTAL,0);
 
-		layout_box.add(_check_auto_refresh);
 		layout_box.add(_refresh_plot_area);		
+		layout_box.add(_check_auto_refresh);
 		layout_box.add(new Separator(GtkOrientation.VERTICAL));
 		layout_box.add(_check_overview_mode);
 		layout_box.add(new Separator(GtkOrientation.VERTICAL));
@@ -242,6 +244,9 @@ public:
 
 	}
 
+	void set_overview(bool state) {
+		_check_overview_mode.setActive(state);
+	}
 	void toggle_autoscale_z() {
 		_check_autoscale_z.setActive(!_check_autoscale_z.getActive());
 	}
@@ -251,12 +256,30 @@ public:
 	void toggle_autoscale_x() {
 		_check_autoscale_x.setActive(!_check_autoscale_x.getActive());
 	}
+	void set_autoscale_z(bool state) {
+		_check_autoscale_z.setActive(state);
+	}
+	void set_autoscale_y(bool state) {
+		_check_autoscale_y.setActive(state);
+	}
+	void set_autoscale_x(bool state) {
+		_check_autoscale_x.setActive(state);
+	}
 	void toggle_logscale() {
 		if (_plot_area.getMode2d()){
 			_check_logz.setActive(!_check_logz.getActive());
 		} else {
 			_check_logy.setActive(!_check_logy.getActive());
 		}
+	}
+	void set_logscaleX(bool state) {
+		_check_logx.setActive(state);
+	}
+	void set_logscaleY(bool state) {
+		_check_logy.setActive(state);
+	}
+	void set_logscaleZ(bool state) {
+		_check_logz.setActive(state);
 	}
 	void setFitX() {
 		_plot_area.setFitY();
@@ -270,6 +293,9 @@ public:
 	}
 	void toggle_overlay() {
 		_check_overlay.setActive(!_check_overlay.getActive());
+	}
+	void set_overlay(bool state) {
+		_check_overlay.setActive(state);
 	}
 	void redraw_content() {
 		_plot_area.queueDraw();
@@ -298,8 +324,9 @@ private:
 
 	Gui _parentGui;
 
-	import gtk.CheckButton, gtk.RadioButton, gtk.SpinButton, gtk.Button;
+	import gtk.CheckButton, gtk.RadioButton, gtk.SpinButton, gtk.Button, gtk.Image;
 	import gtk.Label, gtk.Separator, gtk.ToggleButton, gtk.ScrolledWindow;
+	CheckButton _check_overview_mode;
 	CheckButton _check_auto_refresh;
 	CheckButton _check_overlay;
 	RadioButton _radio_overlay, _radio_grid;

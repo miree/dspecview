@@ -160,12 +160,16 @@ void showItemInWindow(immutable string[] args)
 Tid guiTid;
 void runGui(immutable string[] args)
 {
+	string window_title = null;
+	if (args.length == 1) {
+		window_title = args[0];
+	}
 	import gui, session;
 	if (guiRunning()) {
 		import gui;
-		guiTid.send(MsgNewWindow());
+		guiTid.send(MsgNewWindow(window_title));
 	} else {
-		guiTid = gui.startguithread(args, sessionTid);
+		guiTid = gui.startguithread(args, sessionTid, window_title);
 	}
 }
 void showGuiStatus(immutable string[] args)
@@ -287,6 +291,8 @@ int run(immutable string[] args, Tid sesTid)
 		if (arg == "--multiline") {
 			linenoiseSetMultiLine(1);
 			writeln("Multi-line mode enabled.");
+		} else if (arg == "--gui") {
+			runGui(null);
 		} else {
 			stderr.writefln("Usage: %s [--multiline] [--gui]", prgname);
 			return 1;
