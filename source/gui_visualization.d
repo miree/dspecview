@@ -304,6 +304,17 @@ public:
 	import session;
 	void addVisualizer(string itemname, immutable(Visualizer) visualizer) {
 		_plot_area.add(itemname, visualizer);
+		if (_plot_area.length == 1) {
+			if (_plot_area.getMode2d())  {
+				_check_logy.setActive(false);
+				_check_logz.setActive(true);
+				_check_autoscale_y.setActive(false);
+			} else {
+				_check_logy.setActive(true);
+				_check_logz.setActive(false);
+				_check_autoscale_y.setActive(true);
+			}
+		}
 	}
 	void remove(string itemname) {
 		_plot_area.remove(itemname);

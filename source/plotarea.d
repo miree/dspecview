@@ -58,13 +58,17 @@ public:
 	}
 
 
-	ulong length() {
+	@property ulong length() {
 		return _itemnames.length;
 	}
 
 	void add(string itemname, immutable(Visualizer) visualizer) 
 	{
 		import std.stdio;
+		if (visualizer !is null && _visualizers.length == 0) {
+			_mode2d = (visualizer.getDim() == 2);
+		}
+
 		auto v = (itemname in _visualizers);
 		if (v is null) {
 			_itemnames ~= itemname;
@@ -199,13 +203,13 @@ public:
 		//_drawables.length = 0;
 	}
 
-	@property bool isEmpty() {
-		//if (_drawables is null) {
-		//	return true;
-		//}
-		//return _drawables.length == 0;
-		return true;
-	}
+	//@property bool isEmpty() {
+	//	if (_visualizers is null) {
+	//		return true;
+	//	}
+	//	return _visualizers.length == 0;
+	//	return true;
+	//}
 
 protected:
 	bool onMotionNotify(GdkEventMotion *event_motion, Widget w)
