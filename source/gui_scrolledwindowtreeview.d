@@ -11,18 +11,81 @@ public:
 	// instead of the get() function we can do suptyping with alias this
 	alias _treeview_scrollwin this;
 
+	enum {
+	COLUMN_NAME,
+	COLUMN_BOOL,
+	COLUMN_TYPE,
+	}
+
 	import std.concurrency;
 	this(Tid sessionTid, Gui parentGui) {
 		_sessionTid = sessionTid;
 		_parentGui = parentGui; // a refrence to the parent Gui
 		// define the layout (number and types of columns for the treeview)
-		_treestore = new TreeStore([GType.STRING,GType.STRING]);
+		_treestore = new TreeStore([GType.STRING, GType.INT, GType.STRING]);
 		_treeview = new TreeView(_treestore);
 
-		import gtk.TreeViewColumn, gtk.CellRendererText;
-		auto renderer = new CellRendererText;
-		_treeview.appendColumn(new TreeViewColumn("Name", renderer, "text", 0));
-		_treeview.appendColumn(new TreeViewColumn("Type", renderer, "text", 1)); 
+		import gtk.TreeViewColumn, gtk.CellRendererText, gtk.CellRendererToggle;
+		auto text_renderer = new CellRendererText;
+		auto toggle_renderer = new CellRendererToggle;
+		toggle_renderer.addOnToggled( delegate void(string p, CellRendererToggle crt){
+			import gtk.TreePath, gtk.TreeIter;
+			import std.stdio;
+			auto path = new TreePath(p);
+			auto it = new TreeIter(_treestore, path);
+			auto name = get_full_name_from_path(path.toString(), _itemnames);
+
+			_treestore.setValue(it, COLUMN_BOOL, (it.getValueInt( COLUMN_BOOL ) == 1) ? 0 : 1 );
+			if (it.getValueInt(COLUMN_BOOL) == 1) {
+				_checked[name] = true;
+			} else {
+				_checked[name] = false;
+			}
+
+			if (is_checked(name)) {
+				import std.algorithm;
+				foreach(itemname; _itemnames.sort) {
+					if (itemname.startsWith(name)) {
+						_sessionTid.send(MsgRequestItemVisualizer(itemname, _parentGui.getGuiIdx()), thisTid);
+						auto check_path = new TreePath(get_path_name_from_name(itemname, _itemnames));
+						auto check_it = new TreeIter(_treestore, check_path);
+						_treestore.setValue(check_it, COLUMN_BOOL, 1);
+						_checked[itemname] = true;
+					}
+				}
+				// ask the session to send us a "FitContent message"
+				_sessionTid.send(MsgEchoFitContent(_parentGui.getGuiIdx()), thisTid); 
+				// ask the session to send us a "RedrawContent message"
+				_sessionTid.send(MsgEchoRedrawContent(_parentGui.getGuiIdx()), thisTid);
+			} else {
+				import std.algorithm;
+				foreach(itemname; _itemnames.sort) {
+					if (itemname.startsWith(name)) {
+						thisTid.send(MsgRemoveVisualizedItem(itemname, _parentGui.getGuiIdx()));
+						auto uncheck_path = new TreePath(get_path_name_from_name(itemname, _itemnames));
+						auto uncheck_it = new TreeIter(_treestore, uncheck_path);
+						_treestore.setValue(uncheck_it, COLUMN_BOOL, 0);
+						_checked[itemname] = false;
+
+						//_sessionTid.send(MsgRequestItemVisualizer(itemname, _parentGui.getGuiIdx()), thisTid);
+					}
+				}
+			}
+
+			//crt.setActive(!crt.getActive);
+		});		
+		//auto column = new TreeViewColumn();
+		//column.setTitle("Show");
+		//column.addAttribute(toggle_renderer, "active", COLUMN_BOOL);
+		//column.addAttribute(toggle_renderer, "visible", COLUMN_BOOL);
+		//_treeview.appendColumn(column);
+		
+		//auto column = new TreeViewColumn("Show", toggle_renderer, "active", COLUMN_BOOL);
+		//_treeview.appendColumn(column);
+
+		_treeview.appendColumn(new TreeViewColumn("Name", text_renderer, "text", COLUMN_NAME));
+		_treeview.appendColumn(new TreeViewColumn("Show", toggle_renderer, "active", COLUMN_BOOL));
+		_treeview.appendColumn(new TreeViewColumn("Type", text_renderer, "text", COLUMN_TYPE)); 
 		_treeview.getSelection().setMode(GtkSelectionMode.MULTIPLE);
 
 		_treeview_scrollwin = new ScrolledWindow();
@@ -32,6 +95,7 @@ public:
 
 
 		import gtk.TreeIter, gtk.TreePath, gtk.TreeView;
+
 		_treeview.addOnRowExpanded(
 			delegate void(TreeIter iter, TreePath path, TreeView view) {
 				string expanded_row = get_full_name_from_path(path.toString(), _itemnames);
@@ -46,28 +110,28 @@ public:
 				_expanded[expanded_row] = false;
 			}
 		);
-		_treeview.addOnCursorChanged( // add selected items to the preview plot area
-				delegate void(TreeView view) {
-					auto iters = _treeview.getSelectedIters();
-					import std.concurrency, std.array, std.algorithm, std.stdio;
-					import session;
-					writeln("_treeview OnCursorChanged\r");
-					//outerfor: foreach(iter; iters) {
-					//	foreach(itemname; _itemnames.sort) {
-					//		auto selected_name = get_full_name(iter);
-					//		if (itemname.startsWith(selected_name)) {
-					//			// request a Visualizer for that item
-					//			_sessionTid.send(MsgRequestItemVisualizer(itemname, _parentGui.getGuiIdx()), thisTid);
-					//			break outerfor;
-					//		}
-					//	}					
-					//}
-					//// ask the session to send us a "FitContent message"
-					//_sessionTid.send(MsgEchoFitContent(_parentGui.getGuiIdx()), thisTid); 
-					//// ask the session to send us a "RedrawContent message"
-					//_sessionTid.send(MsgEchoRedrawContent(_parentGui.getGuiIdx()), thisTid);
-				}
-			);
+		//_treeview.addOnCursorChanged( // add selected items to the preview plot area
+		//		delegate void(TreeView view) {
+		//			auto iters = _treeview.getSelectedIters();
+		//			import std.concurrency, std.array, std.algorithm, std.stdio;
+		//			import session;
+		//			writeln("_treeview OnCursorChanged\r");
+		//			//outerfor: foreach(iter; iters) {
+		//			//	foreach(itemname; _itemnames.sort) {
+		//			//		auto selected_name = get_full_name(iter);
+		//			//		if (itemname.startsWith(selected_name)) {
+		//			//			// request a Visualizer for that item
+		//			//			_sessionTid.send(MsgRequestItemVisualizer(itemname, _parentGui.getGuiIdx()), thisTid);
+		//			//			break outerfor;
+		//			//		}
+		//			//	}					
+		//			//}
+		//			//// ask the session to send us a "FitContent message"
+		//			//_sessionTid.send(MsgEchoFitContent(_parentGui.getGuiIdx()), thisTid); 
+		//			//// ask the session to send us a "RedrawContent message"
+		//			//_sessionTid.send(MsgEchoRedrawContent(_parentGui.getGuiIdx()), thisTid);
+		//		}
+		//	);
 
 
 
@@ -88,6 +152,7 @@ public:
 							if (itemname.startsWith(selected_name)) {
 								// request a Visualizer for that item
 								_sessionTid.send(MsgRequestItemVisualizer(itemname, _parentGui.getGuiIdx()), thisTid);
+								_checked[itemname] = true;
 							}
 						}					
 					}
@@ -95,6 +160,8 @@ public:
 					_sessionTid.send(MsgEchoFitContent(_parentGui.getGuiIdx()), thisTid); 
 					// ask the session to send us a "RedrawContent message"
 					_sessionTid.send(MsgEchoRedrawContent(_parentGui.getGuiIdx()), thisTid);
+
+					thisTid.send(MsgRefreshItemList());
 				},
 				"show selected recusive", // menu entry label
 				"show seleted items and all items in selected folders"// description
@@ -201,6 +268,16 @@ public:
 		} 
 	}
 
+	void check_itemname(string itemname) {
+		import gtk.TreeIter, gtk.TreePath, gtk.TreeView;
+		import std.algorithm;
+		if (_itemnames.canFind(itemname)) {
+			auto check_path = new TreePath(get_path_name_from_name(itemname, _itemnames));
+			auto check_it = new TreeIter(_treestore, check_path);
+			_treestore.setValue(check_it, COLUMN_BOOL, 1);
+			_checked[itemname] = true;
+		}
+	}
 
 	string get_full_name(TreeIter iter) 
 	{
@@ -211,9 +288,9 @@ public:
 		}
 		auto parent = iter.getParent();
 		if (parent is null) {
-			return iter.getValueString(0);
+			return iter.getValueString(COLUMN_NAME);
 		} else {
-			return get_full_name(parent) ~ "/" ~ iter.getValueString(0);
+			return get_full_name(parent) ~ "/" ~ iter.getValueString(COLUMN_NAME);
 		}
 	}
 	string get_tree_path(TreeStore treestore, TreeIter iter) {
@@ -234,7 +311,8 @@ public:
 		TreeIter *iter = (base in folders);
 		if (iter == null) iter = add_folder(base, folders);
 		iter = &(folders[name] = _treestore.append(*iter));
-		_treestore.set(*iter, [0,1], [head[0..$-1], ""]);
+		_treestore.set(*iter, [COLUMN_BOOL,COLUMN_NAME,COLUMN_TYPE], ["false", head[0..$-1], ""]);
+		_treestore.setValue(*iter, COLUMN_BOOL, is_checked(name) );
 		return iter;
 	}
 	TreeIter add_item(string name, string typename, ref TreeIter[string] folders) {
@@ -243,7 +321,8 @@ public:
 		if (!name.canFind('/')) { // special case of a name without a folder
 			auto root_child = _treestore.append(null);
 			folders[name~"/"] = root_child;
-			_treestore.set(root_child, [0,1], [name, typename]);
+			_treestore.set(root_child, [COLUMN_BOOL,COLUMN_NAME,COLUMN_TYPE], ["false", name, typename]);
+			_treestore.setValue(root_child, COLUMN_BOOL, is_checked(name) );
 			return root_child;
 		}
 		auto idx = name.lastIndexOf('/');
@@ -259,7 +338,8 @@ public:
 		}
 		auto child = _treestore.append(*iter);
 		folders[name~"/"] = child;
-		_treestore.set(child, [0,1], [relname, typename]);
+		_treestore.set(child, [COLUMN_BOOL,COLUMN_NAME,COLUMN_TYPE], ["false", relname, typename]);
+		_treestore.setValue(child, COLUMN_BOOL, is_checked(name) );
 		return child;
 	}
 	import session;
@@ -306,6 +386,7 @@ public:
 				string theirpath = _treestore.getStringFromIter(iter);
 				if (_expanded[expanded_name]) {
 					_treeview.expandRow(path, false);
+					_treestore.setValue(iter, COLUMN_BOOL, is_checked(expanded_name));
 				}
 			} else {
 				removed_expansions ~= expanded_name;
@@ -313,8 +394,18 @@ public:
 		}
 		foreach(rem_ex; removed_expansions) {
 			_expanded.remove(rem_ex);
+			_checked.remove(rem_ex);
 		}
 	}
+
+	bool is_checked(string name) {
+		auto checked = name in _checked;
+		if (checked !is null && *checked == true) {
+			return true;
+		}
+		return false;
+	}
+
 
 private:
 	Tid _sessionTid;
@@ -331,6 +422,7 @@ private:
 
 	// remember which treeview rows are expanded
 	bool[string] _expanded; 
+	bool[string] _checked;
 
 public: 
 	// this has to be public to be used with alias this

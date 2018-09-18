@@ -168,6 +168,8 @@ void showItemInWindow(immutable string[] args)
 
 		sessionTid.send(MsgRequestItemVisualizer(itemname, gui_idx), guiTid);
 		sessionTid.send(MsgEchoFitContent(gui_idx), guiTid);
+		guiTid.send(MsgRefreshItemList());
+		
 	}
 }
 

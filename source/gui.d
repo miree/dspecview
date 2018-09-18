@@ -398,16 +398,16 @@ void message_handler()
 				if (gui !is null) {
 					if (gui._visualization !is null ) {
 						guis[msg.gui_idx]._visualization.addVisualizer(msg.itemname, visualizer);
+						guis[msg.gui_idx]._control_panel.check_itemname(msg.itemname);
 					}
 				}
 			}
 		},
 		(MsgRemoveVisualizedItem msg) {
-			foreach(gui; guis) {
-				if (gui._visualization !is null ) {
-					gui._visualization.remove(msg.itemname);
-					gui._visualization.redraw_content();
-				}
+			auto gui = guis[msg.gui_idx];
+			if (gui._visualization !is null ) {
+				gui._visualization.remove(msg.itemname);
+				gui._visualization.redraw_content();
 			}
 		},
 		(MsgRedrawContent redraw) {
@@ -464,6 +464,7 @@ struct MsgVisualizeItem {
 }
 struct MsgRemoveVisualizedItem {
 	string itemname;
+	ulong gui_idx;
 }
 struct MsgRefreshItemList {
 }

@@ -70,6 +70,10 @@ public:
 		_treeview.down();
 	}
 
+	void check_itemname(string itemname) 
+	{
+		_treeview.check_itemname(itemname);
+	}
 
 	alias _main_box this;
 
