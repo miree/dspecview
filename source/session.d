@@ -15,6 +15,8 @@ public:
 	// the returned value will be shown in 
 	// the tree view column "type"
 	string getTypeString();
+
+	//double[3] get_color();
 }
 
 ////////////////////////////////////////

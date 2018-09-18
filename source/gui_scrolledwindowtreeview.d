@@ -13,6 +13,8 @@ public:
 
 	enum {
 	COLUMN_NAME,
+	COLUMN_COLOR,
+	COLUMN_COLOR_TEXT,
 	COLUMN_BOOL,
 	COLUMN_TYPE,
 	}
@@ -22,11 +24,11 @@ public:
 		_sessionTid = sessionTid;
 		_parentGui = parentGui; // a refrence to the parent Gui
 		// define the layout (number and types of columns for the treeview)
-		_treestore = new TreeStore([GType.STRING, GType.INT, GType.STRING]);
+		import gdk.Color;
+		_treestore = new TreeStore([GType.STRING, Color.getType(), GType.STRING, GType.INT, GType.STRING]);
 		_treeview = new TreeView(_treestore);
 
 		import gtk.TreeViewColumn, gtk.CellRendererText, gtk.CellRendererToggle;
-		auto text_renderer = new CellRendererText;
 		auto toggle_renderer = new CellRendererToggle;
 		toggle_renderer.addOnToggled( delegate void(string p, CellRendererToggle crt){
 			import gtk.TreePath, gtk.TreeIter;
@@ -82,8 +84,14 @@ public:
 		
 		//auto column = new TreeViewColumn("Show", toggle_renderer, "active", COLUMN_BOOL);
 		//_treeview.appendColumn(column);
+		auto text_renderer = new CellRendererText;
+		auto color_renderer = new CellRendererText;
 
 		_treeview.appendColumn(new TreeViewColumn("Name", text_renderer, "text", COLUMN_NAME));
+		auto column = new TreeViewColumn("Col", color_renderer, "foreground-gdk", COLUMN_COLOR);
+		column.addAttribute(color_renderer, "text", COLUMN_COLOR_TEXT);
+		_treeview.appendColumn(column);
+		//_treeview.appendColumn(new TreeViewColumn("Col", color_renderer, "foreground-gdk", COLUMN_COLOR));
 		_treeview.appendColumn(new TreeViewColumn("Show", toggle_renderer, "active", COLUMN_BOOL));
 		_treeview.appendColumn(new TreeViewColumn("Type", text_renderer, "text", COLUMN_TYPE)); 
 		_treeview.getSelection().setMode(GtkSelectionMode.MULTIPLE);
@@ -311,18 +319,22 @@ public:
 		TreeIter *iter = (base in folders);
 		if (iter == null) iter = add_folder(base, folders);
 		iter = &(folders[name] = _treestore.append(*iter));
-		_treestore.set(*iter, [COLUMN_BOOL,COLUMN_NAME,COLUMN_TYPE], ["false", head[0..$-1], ""]);
+		_treestore.set(*iter, [COLUMN_COLOR_TEXT,COLUMN_NAME,COLUMN_TYPE], [" ", head[0..$-1], ""]);
 		_treestore.setValue(*iter, COLUMN_BOOL, is_checked(name) );
+		import gdk.Color;
+		_treestore.setValue(*iter, COLUMN_COLOR, new Color(200,20,100) );
 		return iter;
 	}
 	TreeIter add_item(string name, string typename, ref TreeIter[string] folders) {
 		import std.algorithm, std.string;
+		import gdk.Color;
 		//writeln("add_item(", name, ")\r");
 		if (!name.canFind('/')) { // special case of a name without a folder
 			auto root_child = _treestore.append(null);
 			folders[name~"/"] = root_child;
-			_treestore.set(root_child, [COLUMN_BOOL,COLUMN_NAME,COLUMN_TYPE], ["false", name, typename]);
+			_treestore.set(root_child, [COLUMN_COLOR_TEXT,COLUMN_NAME,COLUMN_TYPE], ["⬤", name, typename]);
 			_treestore.setValue(root_child, COLUMN_BOOL, is_checked(name) );
+			_treestore.setValue(root_child, COLUMN_COLOR, new Color(200,20,100) );
 			return root_child;
 		}
 		auto idx = name.lastIndexOf('/');
@@ -338,8 +350,9 @@ public:
 		}
 		auto child = _treestore.append(*iter);
 		folders[name~"/"] = child;
-		_treestore.set(child, [COLUMN_BOOL,COLUMN_NAME,COLUMN_TYPE], ["false", relname, typename]);
+		_treestore.set(child, [COLUMN_COLOR_TEXT,COLUMN_NAME,COLUMN_TYPE], ["⬤", relname, typename]);
 		_treestore.setValue(child, COLUMN_BOOL, is_checked(name) );
+		_treestore.setValue(child, COLUMN_COLOR, new Color(200,20,100) );
 		return child;
 	}
 	import session;

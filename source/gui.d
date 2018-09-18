@@ -398,7 +398,9 @@ void message_handler()
 				if (gui !is null) {
 					if (gui._visualization !is null ) {
 						guis[msg.gui_idx]._visualization.addVisualizer(msg.itemname, visualizer);
-						guis[msg.gui_idx]._control_panel.check_itemname(msg.itemname);
+						if (guis[msg.gui_idx]._control_panel !is null) {
+							guis[msg.gui_idx]._control_panel.check_itemname(msg.itemname);
+						}
 					}
 				}
 			}
