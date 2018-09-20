@@ -16,7 +16,7 @@ public:
 	// the tree view column "type"
 	string getTypeString();
 
-	//double[3] get_color();
+	int getColorIdx();
 }
 
 ////////////////////////////////////////
@@ -31,6 +31,7 @@ public:
 	import cairo.Context, cairo.Surface;
 	import view;
 	string getItemName() immutable;
+	int getColorIdx() immutable;
 	ulong getDim() immutable;
 	void print(int context) immutable;
 	bool needsColorKey() immutable;
@@ -190,7 +191,7 @@ public:
 					if (_output_all_messages) { writeln("got MsgAddFileHist1\r"); }
 					try {
 						import hist1;
-						_items[filehist1.filename] = new FileHist1(filehist1.filename);
+						_items[filehist1.filename] = new FileHist1(filehist1.filename, _colorIdx_counter++);
 						//requestingThread.send("added filehist1: " ~ filehist1.filename);
 						if (_guiRunning) {
 							import gui;
@@ -204,7 +205,7 @@ public:
 					if (_output_all_messages) { writeln("got MsgAddFileHist2\r"); }
 					try {
 						import hist2;
-						_items[filehist2.filename] = new FileHist2(filehist2.filename);
+						_items[filehist2.filename] = new FileHist2(filehist2.filename, _colorIdx_counter++);
 						//requestingThread.send("added filehist1: " ~ filehist1.filename);
 						if (_guiRunning) {
 							import gui;
@@ -230,7 +231,8 @@ public:
 					} else {
 						string itemlist; // will contains items separated by spaces (' ')
 						foreach(itemname, item; _items) {
-							itemlist ~= itemname ~ '$' ~ item.getTypeString() ~ '|';
+							import std.conv;
+							itemlist ~= itemname ~ '$' ~ item.getTypeString() ~ '$' ~ item.getColorIdx().to!string ~ '|';
 						}
 						itemlist = itemlist[0..$-1]; // remove last ' '
 
@@ -311,6 +313,8 @@ private:
 	import std.concurrency;
 	bool _guiRunning = false;
 	Tid _guiTid;
+
+	int _colorIdx_counter = 0;
 }
 
 void runSession()

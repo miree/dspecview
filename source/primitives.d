@@ -2,6 +2,31 @@ import cairo.Context;
 import cairo.Surface;
 
 
+
+double[3] getColor(int colorIdx) {
+	return _color_table[colorIdx % _color_table.length];
+}
+private double[3][] _color_table = [
+
+		[0.8, 0.1, 0.1],
+		[0.7, 0.7, 0.1],
+		[0.7, 0.1, 0.7],
+		[0.1, 0.7, 0.1],
+		[0.1, 0.7, 0.7],
+		[0.1, 0.1, 0.7],
+
+		[0.8, 0.1, 0.4],
+		[0.4, 0.8, 0.1],
+		[0.1, 0.4, 0.8],
+		[0.8, 0.4, 0.1],
+		[0.1, 0.8, 0.4],
+		[0.4, 0.1, 0.8]
+
+		];
+
+
+
+
 import view;
 // this should not be part of this struct
 // before this makes sense, update_coefficients had to be called

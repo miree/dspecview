@@ -31,8 +31,8 @@ public:
 				auto selected = chooser.getFilenames();
 				if (selected !is null) {
 					string[] full_filenames = selected.toArray!string;
-
-					foreach(full_filename; full_filenames) {
+					import std.algorithm;
+					foreach(full_filename; full_filenames.sort()) {
 						import std.stdio, std.file, std.string, std.path;
 						//writeln("----\r");
 						//writeln(full_filename,"\r");
@@ -45,7 +45,7 @@ public:
 					        					.filter!(a => a.isFile)
 		        								.map!(a => baseName(a.name))
 		        								.array;
-		        			foreach(filename; filenames) {
+		        			foreach(filename; filenames.sort()) {
 		        				//writeln(pathname ~ '/' ~ filename,"\r");
 								sessionTid.send(MsgAddFileHist1(pathname ~ '/' ~ filename), thisTid);
 		        			}					

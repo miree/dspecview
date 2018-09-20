@@ -541,11 +541,12 @@ protected:
 			import std.array, std.algorithm;
 			//foreach(itemname, visualizer; _visualizers) {
 			foreach(idx, itemname; _itemnames) {
-				ulong color_idx = idx % _color_table.length;
-				cr.setSourceRgba(_color_table[color_idx][0], _color_table[color_idx][1], _color_table[color_idx][2], 1.0);
-				cr.setLineWidth( 2);
 				auto visualizer = _visualizers[itemname];
 				if (visualizer.length == 1) {
+					import primitives;
+					double[3] color = getColor(visualizer[0].getColorIdx());
+					cr.setSourceRgba(color[0], color[1], color[2], 1.0);
+					cr.setLineWidth( 2);
 					visualizer[0].draw(cr, _vbox, _logscale_y, _logscale_x, _logscale_z);
 					cr.stroke();
 						//if (drawable.needsColorKey()) {
@@ -600,7 +601,6 @@ protected:
 					if (_row_major) {
 						idx = row * columns + column;
 					}
-					ulong color_idx = idx % _color_table.length; // same color as in overlay mode
 					// check if this cell has anything drawn in it
 					bool cell_has_content = (idx < _itemnames.length);
 					// get itemname from index
@@ -689,7 +689,10 @@ protected:
 							draw_grid(cr, size.width, size.height);
 						}
 
-						cr.setSourceRgba(_color_table[color_idx][0], _color_table[color_idx][1], _color_table[color_idx][2], 1.0);
+						import primitives;
+						double[3] color = getColor(visualizer[0].getColorIdx());
+						cr.setSourceRgba(color[0], color[1], color[2], 1.0);
+
 						cr.setLineWidth(2);
 						visualizer[0].draw(cr, _vbox, _logscale_y, _logscale_x, _logscale_z);
 						cr.stroke();
@@ -810,14 +813,14 @@ protected:
 	import std.concurrency;
 	Tid _sessionTid;
 
-	double[3][] _color_table = [
-		[0.8, 0.0, 0.0],
-		[0.6, 0.6, 0.0],
-		[0.6, 0.0, 0.6],
-		[0.0, 0.8, 0.0],
-		[0.0, 0.6, 0.6],
-		[0.0, 0.0, 0.8]
-		];
+	//double[3][] _color_table = [
+	//	[0.8, 0.0, 0.0],
+	//	[0.6, 0.6, 0.0],
+	//	[0.6, 0.0, 0.6],
+	//	[0.0, 0.8, 0.0],
+	//	[0.0, 0.6, 0.6],
+	//	[0.0, 0.0, 0.8]
+	//	];
 
 }
 

@@ -334,7 +334,10 @@ public:
 			folders[name~"/"] = root_child;
 			_treestore.set(root_child, [COLUMN_COLOR_TEXT,COLUMN_NAME,COLUMN_TYPE], ["⬤", name, typename]);
 			_treestore.setValue(root_child, COLUMN_BOOL, is_checked(name) );
-			_treestore.setValue(root_child, COLUMN_COLOR, new Color(200,20,100) );
+			import primitives;
+			double[3] col = getColor(_colorIdx[name]);
+			auto color = new Color(cast(byte)(256*col[0]),cast(byte)(256*col[1]),cast(byte)(256*col[2]));
+			_treestore.setValue(root_child, COLUMN_COLOR, color );
 			return root_child;
 		}
 		auto idx = name.lastIndexOf('/');
@@ -352,7 +355,11 @@ public:
 		folders[name~"/"] = child;
 		_treestore.set(child, [COLUMN_COLOR_TEXT,COLUMN_NAME,COLUMN_TYPE], ["⬤", relname, typename]);
 		_treestore.setValue(child, COLUMN_BOOL, is_checked(name) );
-		_treestore.setValue(child, COLUMN_COLOR, new Color(200,20,100) );
+		import primitives;
+		double[3] col = getColor(_colorIdx[name]);
+		auto color = new Color(cast(byte)(256*col[0]),cast(byte)(256*col[1]),cast(byte)(256*col[2]));
+		_treestore.setValue(child, COLUMN_COLOR, color );
+		//_treestore.setValue(child, COLUMN_COLOR, new Color(200,20,100) );
 		return child;
 	}
 	import session;
@@ -361,12 +368,13 @@ public:
 		_treestore.clear();
 		TreeIter[string] _folders;
 
-		import std.string, std.array, std.algorithm;
+		import std.string, std.array, std.algorithm, std.conv;
 		_itemnames.length = 0;
 		_typenames.length = 0;
 		foreach(nametype; itemlist.nametype.split('|').array.sort) {
 			_itemnames ~= nametype.split('$').array[0];
 			_typenames ~= nametype.split('$').array[1];
+			_colorIdx[_itemnames[$-1]] = nametype.split('$').array[2].to!int;
 		}
 
 		TreeIter[string] folders;
@@ -436,6 +444,7 @@ private:
 	// remember which treeview rows are expanded
 	bool[string] _expanded; 
 	bool[string] _checked;
+	int[string]  _colorIdx;
 
 public: 
 	// this has to be public to be used with alias this

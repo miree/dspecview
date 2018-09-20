@@ -10,19 +10,24 @@ public:
 	import std.datetime : Clock, seconds;		
 	import std.file;
 
-	this(string filename) {
+	this(string filename, int colorIdx) {
 		if (attrIsFile(getAttributes(filename))) {
 			_filename = filename;
+			_colorIdx = colorIdx;
 		} else {
 			throw new Exception("not a valid file: " ~ filename);
 		}
 	}
 
-	string getTypeString() {
+	override string getTypeString() {
 		if (_filename is null || _filename.length == 0) {
 			return "unknown";
 		}
 		return "File Hist 1D";
+	}
+
+	override int getColorIdx() {
+		return _colorIdx;
 	}
 
 	override immutable(Hist1Visualizer) createVisualizer() 
@@ -37,7 +42,7 @@ public:
 	            // If nobody else holds a reference to this object the GC will take care
 				_visualizer.length = 0; 
 				// create a Visualizer for the loaded data
-				_visualizer ~= new immutable(Hist1Visualizer)(_filename, hist.data, hist.left, hist.right);
+				_visualizer ~= new immutable(Hist1Visualizer)(_filename, _colorIdx, hist.data, hist.left, hist.right);
 				if (_visualizer[0]._bin_data is null) {
 					import std.stdio;
 					writeln("visualizer was created with _bin_data is null\r");
@@ -150,6 +155,7 @@ private: // private state
 	immutable(Hist1Visualizer)[] _visualizer;
 	string _filename;
 	SysTime _time_of_last_update;
+	int _colorIdx;
 }
 
 
@@ -163,10 +169,12 @@ public:
 		_bin_data = null;
 		_left = _right = double.init;
 		_mipmap_data = null;
+		_colorIdx = 0;
 	}
-	this(string itemname, double[] data, double left, double right)
+	this(string itemname, int colorIdx, double[] data, double left, double right)
 	{
 		_itemname = itemname;
+		_colorIdx = colorIdx;
 		_bin_data = data.idup;
 		_left     = left;
 		_right    = right;
@@ -184,6 +192,10 @@ public:
 	override ulong getDim() immutable
 	{
 		return 1;
+	}
+	override int getColorIdx() immutable
+	{
+		return _colorIdx;
 	}
 
 	override void print(int context) immutable 
@@ -383,6 +395,8 @@ private:
 
 private: // state	
 	string _itemname;
+
+	int _colorIdx;
 
 	double[] _bin_data;
 	double _left, _right;

@@ -508,10 +508,14 @@ public:
 	string getTypeString() {
 		return "GUI window";
 	}
+	int getColorIdx() {
+		return 0;
+	}
 
 	ulong guiIdx() {
 		return _gui_idx;
 	}
+
 
 	override immutable(GuiVisualizer) createVisualizer() 
 	{
@@ -535,6 +539,10 @@ immutable class GuiVisualizer : Visualizer
 	}
 	override ulong getDim() immutable {
 		return 1;
+	}
+	override int getColorIdx() immutable
+	{
+		return 0;
 	}
 	override void print(int context) immutable {
 		import std.stdio;
