@@ -62,11 +62,13 @@ public:
 		return _itemnames.length;
 	}
 
-	void add(string itemname, immutable(Visualizer) visualizer) 
+	bool add(string itemname, immutable(Visualizer) visualizer) 
 	{
 		import std.stdio;
+		bool first_time_add = false;
 		if (visualizer !is null && _visualizers.length == 0) {
 			_mode2d = (visualizer.getDim() == 2);
+			first_time_add = true;
 		}
 
 		auto v = (itemname in _visualizers);
@@ -76,6 +78,7 @@ public:
 		//writeln("_itemnames.length=",_itemnames.length,"\r");
 		_visualizers[itemname].length = 0;
 		_visualizers[itemname] ~= visualizer;
+		return first_time_add;
 	}
 	void remove(string removed_itemname) {
 		import std.algorithm;
