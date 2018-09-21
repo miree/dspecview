@@ -39,19 +39,36 @@ public immutable string guiNamePrefix = "GUIwindows/";
 immutable string baseTitle = "GtkD Spectrum Viewer";
 
 Gui[ulong] guis;
+ulong[] deleted_guis;
 bool application_running = false;
 ulong gui_counter = 0;
 extern(C) nothrow static int threadIdleProcess(void* data) {
 	//Don't let D exceptions get thrown from this function
 	try {
 
+		import std.stdio;
+		//writeln("a guis.length=",guis.length,"\r");
 		//Gui gui = cast(Gui)data;
-		foreach(gui; guis) {
+		foreach(key, gui; guis) {
+			//writeln("key=",key,"\r");
 			gui.message_handler();
 		}
+		//writeln("b\r");
+
+		foreach(deleted_gui; deleted_guis) {
+			if (guis.length == 1) {
+				application_running = false;
+				import session;
+				guis[deleted_gui]._sessionTid.send(MsgGuiQuit());
+			}
+			guis.remove(deleted_gui);
+		}
+		deleted_guis.length = 0;
+		//writeln("c\r");
+
 
 		import core.thread;
-		//Thread.sleep( dur!("msecs")( 50 ) );
+		//Thread.sleep( dur!("msecs")( 10 ) );
 		static int second_cnt = 0;
 		static int cnt = 0;
 		++second_cnt;
@@ -63,15 +80,17 @@ extern(C) nothrow static int threadIdleProcess(void* data) {
 				gui.second_handler();
 			}
 		}
+		//writeln("d\r");
 
 		if (!application_running) {
 			return 0;
 		}
+		//writeln("e\r");
 
 	} catch (Throwable t) {
 		import std.stdio;
 		try {
-			writeln("exceptions in threadIdleProcess ", t.msg, "\r");
+			writeln("Exception in threadIdleProcess ", t.msg, "\r");
 			} catch (Throwable t) {
 				// nothing
 			}
@@ -214,12 +233,8 @@ public:
 		import gtk.Widget;
 		_main_box.addOnDestroy(delegate( Widget w) { 
 				import std.stdio;
-				guis.remove(_gui_idx);
-				if (guis.length == 0) {
-					application_running = false;
-					import session;
-					_sessionTid.send(MsgGuiQuit());
-				}
+				//guis.remove(_gui_idx);
+				deleted_guis ~= _gui_idx;
 				_sessionTid.send(MsgRemoveItem(guiName), thisTid);
 			});
 
@@ -347,80 +362,91 @@ public:
 	}
 
 
-void message_handler()
-{
-	import std.concurrency;
-	import std.variant : Variant;
-	import std.datetime;
+	void message_handler()
+	{
+		import std.concurrency;
+		import std.variant : Variant;
+		import std.datetime;
 
-	import session;
+		import session;
 
-	// get messages from other threads
-	receiveTimeout(dur!"usecs"(1_000),
-		(MsgRefreshItemList refresh_list) {
-			foreach(gui; guis) {
-				if (gui !is null) {
-					if (gui._control_panel !is null ) {
-						gui._control_panel.refresh();
-					}
-				}
-			}
-		},
-		(MsgItemList itemlist) {
-			foreach(gui; guis) {
-				if (gui !is null) {
-					if (gui._control_panel !is null ) {
-						gui._control_panel.updateTreeStoreFromSession(itemlist);
-					}
-				}
-			}
-		},
-		(MsgVisualizeItem msg, immutable(Visualizer) visualizer) {
-			import std.stdio;
-			//writeln("gui: got visualizer for item: ", msg.itemname, "\r");
-			if (visualizer !is null) {
-				//writeln("gui[",msg.gui_idx,"]: add visualizer \r");
-				auto gui = guis[msg.gui_idx];
-				if (gui !is null) {
-					if (gui._visualization !is null ) {
-						guis[msg.gui_idx]._visualization.addVisualizer(msg.itemname, visualizer);
-						if (guis[msg.gui_idx]._control_panel !is null) {
-							guis[msg.gui_idx]._control_panel.check_itemname(msg.itemname);
+		// get messages from other threads
+		receiveTimeout(dur!"usecs"(1_000),
+			(MsgRefreshItemList refresh_list) {
+				foreach(gui; guis) {
+					if (gui !is null) {
+						if (gui._control_panel !is null ) {
+							gui._control_panel.refresh();
 						}
 					}
 				}
-			}
-		},
-		(MsgRemoveVisualizedItem msg) {
-			auto gui = guis[msg.gui_idx];
-			if (gui._visualization !is null ) {
-				gui._visualization.remove(msg.itemname);
-				gui._visualization.redraw_content();
-			}
-		},
-		(MsgRedrawContent redraw) {
-			if (guis[redraw.gui_idx]._visualization !is null) {
-				guis[redraw.gui_idx]._visualization.redraw_content();
-			}
-		},
-		(MsgFitContent fit) {
-			if (guis[fit.gui_idx]._visualization !is null) {
-				guis[fit.gui_idx]._visualization.setFit();
-			}
-		},
-		(MsgCloseWindow close) {
-			if (guis[close.gui_idx] !is null) {
-				guis[close.gui_idx].destroy();
-			}
-		},
-		(MsgNewWindow newwindow) {
-			new Gui(getApplication(), _sessionTid, getInOtherThread(), newwindow.title, true , true); 
-		},
-		(MsgVisuWindowSettings settings) {
+			},
+			(MsgItemList itemlist) {
+				foreach(gui; guis) {
+					if (gui !is null) {
+						if (gui._control_panel !is null ) {
+							gui._control_panel.updateTreeStoreFromSession(itemlist);
+						}
+					}
+				}
+			},
+			(MsgVisualizeItem msg, immutable(Visualizer) visualizer) {
+				import std.stdio;
+				//writeln("gui: got visualizer for item: ", msg.itemname, "\r");
+				if (visualizer !is null) {
+					//writeln("gui[",msg.gui_idx,"]: add visualizer \r");
+					auto gui = msg.gui_idx in guis;
+					if (gui !is null) {
+						if (gui._visualization !is null ) {
+							guis[msg.gui_idx]._visualization.addVisualizer(msg.itemname, visualizer);
+							if (guis[msg.gui_idx]._control_panel !is null) {
+								guis[msg.gui_idx]._control_panel.check_itemname(msg.itemname);
+							}
+						}
+					}
+				}
+			},
+			(MsgRemoveVisualizedItem msg) {
+				auto gui = msg.gui_idx in guis;
+				if (gui !is null) {
+					if (gui._visualization !is null ) {
+						gui._visualization.remove(msg.itemname);
+						gui._visualization.redraw_content();
+					}
+				}
+			},
+			(MsgRedrawContent redraw) {
+				auto gui = redraw.gui_idx in guis;
+				if (gui !is null) {
+					if (gui._visualization !is null) {
+						gui._visualization.redraw_content();
+					}
+				}
+			},
+			(MsgFitContent fit) {
+				auto gui = fit.gui_idx in guis;
+				if (gui !is null) {
+					if (gui._visualization !is null) {
+						gui._visualization.setFit();
+					}
+				}
+			},
+			(MsgCloseWindow close) {
+				auto gui = close.gui_idx in guis;
+				if (gui !is null) {
+					if (guis[close.gui_idx] !is null) {
+						guis[close.gui_idx].destroy();
+					}
+				}
+			},
+			(MsgNewWindow newwindow) {
+				new Gui(getApplication(), _sessionTid, getInOtherThread(), newwindow.title, true , true); 
+			},
+			(MsgVisuWindowSettings settings) {
 
-		}
-	);
-}
+			}
+		);
+	}
 
 
 private:
