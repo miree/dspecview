@@ -171,47 +171,44 @@ public:
 		button_newwindow.addOnClicked(button => create_new_window(button)); 
 		_hbar.packEnd(button_newwindow);
 
-		if (controlpanel) {
-
-			auto button_open = new Button();//"open");
-			Image iOpen = new Image(StockID.OPEN, IconSize.MENU);
-			button_open.add(iOpen);
-			void f_button_open(Button button) {
-				import multi_file_chooser;
-				string[] result;
-				auto child_window = new MultiFileChooser(getApplication(), _sessionTid);
-			}
-			button_open.addOnClicked(button => f_button_open(button)); 
-			_hbar.add(button_open);
-
-			auto button_refresh = new Button();//"refresh");
-			button_refresh.add(new Image(StockID.REFRESH, IconSize.MENU));
-			void f_button_refresh(Button button) {
-				_control_panel.refresh();
-			}
-			button_refresh.addOnClicked(button => f_button_refresh(button)); 
-			_hbar.add(button_refresh);
-
-
-			auto button_toggle_visualizer = new Button();//"toggle\nvisualizer");
-			auto button_toggle_visualizer_image = new Image(StockID.CLEAR, IconSize.MENU);
-			button_toggle_visualizer.setImage(button_toggle_visualizer_image);
-			void f_button_toggle_visualizer(ref Button button) {
-				toggleVisualizer();
-				if (_visualization is null) { 
-					button.setImage(new Image(StockID.ZOOM_FIT, IconSize.MENU));
-				} else {
-					button.setImage(new Image(StockID.CLEAR, IconSize.MENU));
-				}
-			}
-			button_toggle_visualizer.addOnClicked(button => f_button_toggle_visualizer(button)); 
-
-			_hbar.add(button_toggle_visualizer);
+		auto button_open = new Button();//"open");
+		Image iOpen = new Image(StockID.OPEN, IconSize.MENU);
+		button_open.add(iOpen);
+		void f_button_open(Button button) {
+			import multi_file_chooser;
+			string[] result;
+			auto child_window = new MultiFileChooser(getApplication(), _sessionTid);
 		}
+		button_open.addOnClicked(button => f_button_open(button)); 
+		_hbar.add(button_open);
+
+		auto button_refresh = new Button();//"refresh");
+		button_refresh.add(new Image(StockID.REFRESH, IconSize.MENU));
+		void f_button_refresh(Button button) {
+			_control_panel.refresh();
+		}
+		button_refresh.addOnClicked(button => f_button_refresh(button)); 
+		_hbar.add(button_refresh);
+
+
+		//auto button_toggle_visualizer = new Button();//"toggle\nvisualizer");
+		//auto button_toggle_visualizer_image = new Image(StockID.CLEAR, IconSize.MENU);
+		//button_toggle_visualizer.setImage(button_toggle_visualizer_image);
+		//void f_button_toggle_visualizer(ref Button button) {
+		//	toggleVisualizer();
+		//	if (_visualization is null) { 
+		//		button.setImage(new Image(StockID.ZOOM_FIT, IconSize.MENU));
+		//	} else {
+		//		button.setImage(new Image(StockID.CLEAR, IconSize.MENU));
+		//	}
+		//}
+		//button_toggle_visualizer.addOnClicked(button => f_button_toggle_visualizer(button)); 
+
+		//_hbar.add(button_toggle_visualizer);
 
 
 
-		_main_box = new Box(GtkOrientation.HORIZONTAL,0);
+		_main_box = new Paned(GtkOrientation.HORIZONTAL);
 
 		import gdk.Event;
 		import gtk.Widget;
@@ -226,53 +223,42 @@ public:
 				_sessionTid.send(MsgRemoveItem(guiName), thisTid);
 			});
 
-		// add the control panel
-		if (controlpanel) {
-			_control_panel = new ControlPanel(sessionTid, this);
-			_main_box.add(_control_panel);
-			if (!plotarea) {
-				_main_box.setChildPacking(_control_panel,true,true,0,GtkPackType.START);
-			}
-		}
-
+		_control_panel = new ControlPanel(sessionTid, this);
 		// add the plot area
+		_visualization = new Visualization(sessionTid, in_other_thread, mode2d, this);
 
-		if (plotarea) {
-			_visualization = new Visualization(sessionTid, in_other_thread, mode2d, this);
-			_main_box.add(_visualization);
-			_main_box.setChildPacking(_visualization,true,true,0,GtkPackType.START);
-
-
-
-			// define some hotkeys
-			import gtk.Widget;
-			addOnKeyPress(delegate bool(GdkEventKey* e, Widget w) { // the action to perform if that menu entry is selected
-								//writeln("key press: ", e.keyval, "\r");
-								if (_visualization !is null) {
-									switch(e.keyval) {
-										case 'f': _visualization.setFit();             break;
-										case 'z': _visualization.toggle_autoscale_z(); break;
-										case 'y': _visualization.toggle_autoscale_y(); break;
-										case 'x': _visualization.toggle_autoscale_x(); break;
-										case 'l': _visualization.toggle_logscale();    break;
-										case 'o': _visualization.toggle_overlay();     break;
-										default:
-									}
+		// define some hotkeys
+		import gtk.Widget;
+		addOnKeyPress(delegate bool(GdkEventKey* e, Widget w) { // the action to perform if that menu entry is selected
+							//writeln("key press: ", e.keyval, "\r");
+							if (_visualization !is null) {
+								switch(e.keyval) {
+									case 'f': _visualization.setFit();             break;
+									case 'z': _visualization.toggle_autoscale_z(); break;
+									case 'y': _visualization.toggle_autoscale_y(); break;
+									case 'x': _visualization.toggle_autoscale_x(); break;
+									case 'l': _visualization.toggle_logscale();    break;
+									case 'o': _visualization.toggle_overlay();     break;
+									default:
 								}
-								if (_control_panel !is null) {
-									import gdk.Keymap;
-									auto km = Keymap.getDefault();
-									auto upValue = km.keyvalFromName("Up");
-									auto downValue = km.keyvalFromName("Down");
-									if (e.keyval == upValue) {
-										_control_panel.up();
-									} else if (e.keyval == downValue) {
-										_control_panel.down();
-									} 
-								}								
-								return true;
-							});
-		}
+							}
+							if (_control_panel !is null) {
+								import gdk.Keymap;
+								auto km = Keymap.getDefault();
+								auto upValue = km.keyvalFromName("Up");
+								auto downValue = km.keyvalFromName("Down");
+								if (e.keyval == upValue) {
+									_control_panel.up();
+								} else if (e.keyval == downValue) {
+									_control_panel.down();
+								} 
+							}								
+							return true;
+						});
+
+		_main_box.add(_control_panel, _visualization);
+		//_main_box.setChildPacking(_control_panel,true,true,0,GtkPackType.START);
+		//_main_box.setChildPacking(_visualization,true,true,0,GtkPackType.START);
 
 		import std.conv;
 		if (title is null)  {
@@ -314,20 +300,20 @@ public:
 		return guiNamePrefix ~ "window" ~ _gui_idx.to!string;
 	}
 
-	void toggleVisualizer() {
-		if (_visualization !is null) {
-			_visualization.destroy();
-			_visualization = null;
-			_main_box.setChildPacking(_control_panel,true,true,0,GtkPackType.START);
-		} else {
+	//void toggleVisualizer() {
+	//	if (_visualization !is null) {
+	//		_visualization.destroy();
+	//		_visualization = null;
+	//		_main_box.setChildPacking(_control_panel,true,true,0,GtkPackType.START);
+	//	} else {
 
-			_visualization = new Visualization(_sessionTid, _in_other_thread, _mode2d, this);
-			_main_box.add(_visualization);
-			_main_box.setChildPacking(_visualization,true,true,0,GtkPackType.START);
-			_main_box.setChildPacking(_control_panel,false,false,0,GtkPackType.START);
-			showAll();
-		}
-	}
+	//		_visualization = new Visualization(_sessionTid, _in_other_thread, _mode2d, this);
+	//		_main_box.add(_visualization);
+	//		_main_box.setChildPacking(_visualization,true,true,0,GtkPackType.START);
+	//		_main_box.setChildPacking(_control_panel,false,false,0,GtkPackType.START);
+	//		showAll();
+	//	}
+	//}
 
 	ulong getGuiIdx() {
 		return _gui_idx;
@@ -446,8 +432,8 @@ private:
 	import gtk.HeaderBar;
 	HeaderBar _hbar;
 
-	import gtk.Box;
-	Box _main_box; // contains all interactive gui elements
+	import gtk.Box, gtk.Paned;
+	Paned _main_box; // contains all interactive gui elements
 	Box _vbox;     // contains the header bar (_hbar) and the _main_box
 
 	import gui_controlpanel, gui_visualization;

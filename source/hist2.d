@@ -83,6 +83,7 @@ public:
 				_visualizer.length = 0; 
 				// create a Visualizer for the loaded data
 				_visualizer ~= new immutable(Hist2Visualizer)(_filename, _colorIdx, hist.data, 
+															 cast(immutable(ubyte[]))rgb_data,              cast(immutable(ubyte[]))log_rgb_data,
 															 cast(immutable(Pattern))image_surface_pattern, cast(immutable(Pattern))log_image_surface_pattern,
 															 hist.bins_x, hist.bins_y, 
 															 hist.left, hist.right, hist.bottom, hist.top);
@@ -233,6 +234,8 @@ public:
 		_itemname    = null;
 		_colorIdx    = 0;
 		_bin_data    = null;
+		_rgb_data    = null;
+		_log_rgb_data = null;
 		_image_surface_pattern     = null;
 		_log_image_surface_pattern = null;
 		_left        = _right = double.init;
@@ -243,6 +246,7 @@ public:
 	}
 	import cairo.Pattern, gdk.Cairo;
 	this(string itemname, int colorIdx, double[] data, 
+		immutable(ubyte[]) rgb_data             , immutable(ubyte[]) log_rgb_data,
 		immutable(Pattern) image_surface_pattern, immutable(Pattern) log_image_surface_pattern,
 		ulong width, ulong height, 
 		double left, double right, double bottom, double top)
@@ -250,6 +254,8 @@ public:
 		_itemname = itemname;
 		_colorIdx = colorIdx;
 		_bin_data = data.idup;
+		_rgb_data = rgb_data;
+		_log_rgb_data = log_rgb_data;
 		_image_surface_pattern     = image_surface_pattern;
 		_log_image_surface_pattern = log_image_surface_pattern;
 		_bins_x   = width;
@@ -528,6 +534,9 @@ private: // state
 	// mipmap data // TODO implement
 	struct MinMax {double min; double max;} ;
 	//MinMax[][] _mipmap_data;
+
+	ubyte[] _rgb_data;
+	ubyte[] _log_rgb_data;
 
 	import cairo.Pattern, gdk.Cairo;
 	Pattern _image_surface_pattern;
