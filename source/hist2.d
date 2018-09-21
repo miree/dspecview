@@ -40,9 +40,52 @@ public:
 				auto hist = read_file(_filename);
 				// In case we have an old referenced: release it. 	
 	            // If nobody else holds a reference to this object the GC will take care
+
+	            // create surface pattern for fast drawing
+				import cairo.ImageSurface, cairo.Pattern, gdk.Cairo;
+				auto stride = ImageSurface.formatStrideForWidth(CairoFormat.RGB24, cast(int)hist.bins_x);
+				//writeln("stride = ", stride, "\r");
+				auto rgb_data = new shared ubyte[hist.data.length*(stride/hist.bins_x)];
+				auto log_rgb_data = new shared ubyte[hist.data.length*(stride/hist.bins_x)];
+
+				rgb_data[] = 255;
+				log_rgb_data[] = 255;
+				import std.algorithm;
+				double max_bin = maxElement(hist.data);
+				if (max_bin == 0) max_bin = 1;
+				foreach(ulong y; 0..hist.bins_y) {
+					foreach(ulong x; 0..hist.bins_x) {
+						ulong idx = y*hist.bins_x+x;
+						ulong rgb_idx = 3*idx;
+						auto bin = hist.data[idx];
+						if (bin == 0) {
+							continue;
+						}
+						import std.math;
+						auto rgb_data_idx = (y)*stride + 4*x;
+
+
+						Hist2Visualizer.get_rgb(log(1+bin)/log(max_bin+1), &log_rgb_data[rgb_data_idx]);
+						Hist2Visualizer.get_rgb(bin/max_bin, &rgb_data[rgb_data_idx]);
+					}
+				}
+
+				//ImageSurface image_surface; // this contains the RGB data
+				//ImageSurface log_image_surface; // this contains the RGB data in logscale
+				auto image_surface = ImageSurface.createForData(cast(ubyte*)(&rgb_data[0]), CairoFormat.RGB24, cast(int)hist.bins_x, cast(int)hist.bins_y, stride);
+				auto image_surface_pattern = Pattern.createForSurface(image_surface);
+				image_surface_pattern.setFilter(CairoFilter.NEAREST);
+
+				auto log_image_surface = ImageSurface.createForData(cast(ubyte*)(&log_rgb_data[0]), CairoFormat.RGB24, cast(int)hist.bins_x, cast(int)hist.bins_y, stride);
+				auto log_image_surface_pattern = Pattern.createForSurface(log_image_surface);
+				log_image_surface_pattern.setFilter(CairoFilter.NEAREST);
+
 				_visualizer.length = 0; 
 				// create a Visualizer for the loaded data
-				_visualizer ~= new immutable(Hist2Visualizer)(_filename, _colorIdx, hist.data, hist.bins_x, hist.bins_y, hist.left, hist.right, hist.bottom, hist.top);
+				_visualizer ~= new immutable(Hist2Visualizer)(_filename, _colorIdx, hist.data, 
+															 cast(immutable(Pattern))image_surface_pattern, cast(immutable(Pattern))log_image_surface_pattern,
+															 hist.bins_x, hist.bins_y, 
+															 hist.left, hist.right, hist.bottom, hist.top);
 				if (_visualizer[0]._bin_data is null) {
 					import std.stdio;
 					writeln("visualizer was created with _bin_data is null\r");
@@ -190,17 +233,25 @@ public:
 		_itemname    = null;
 		_colorIdx    = 0;
 		_bin_data    = null;
+		_image_surface_pattern     = null;
+		_log_image_surface_pattern = null;
 		_left        = _right = double.init;
 		_bottom      = _top   = double.init;
 		_bins_x      = 0;
 		_bins_y      = 0;
 		//_mipmap_data = null;
 	}
-	this(string itemname, int colorIdx, double[] data, ulong width, ulong height, double left, double right, double bottom, double top)
+	import cairo.Pattern, gdk.Cairo;
+	this(string itemname, int colorIdx, double[] data, 
+		immutable(Pattern) image_surface_pattern, immutable(Pattern) log_image_surface_pattern,
+		ulong width, ulong height, 
+		double left, double right, double bottom, double top)
 	{
 		_itemname = itemname;
 		_colorIdx = colorIdx;
 		_bin_data = data.idup;
+		_image_surface_pattern     = image_surface_pattern;
+		_log_image_surface_pattern = log_image_surface_pattern;
 		_bins_x   = width;
 		_bins_y   = height;
 		_left     = left;
@@ -254,38 +305,52 @@ public:
 						 box.transform_box2canvas_x(log_x_value_of(_right , box, logx)) - box.transform_box2canvas_x(log_x_value_of(_left, box, logx)),
 						 box.transform_box2canvas_y(log_y_value_of(_top   , box, logy)) - box.transform_box2canvas_y(log_y_value_of(_bottom, box, logy)));
 			cr.fill();
-			//double max_bin = maxElement(_bin_data);
+			if (logx || logy) {
+				//double max_bin = maxElement(_bin_data);
 
-			//writeln("max_bin = ", max_bin, "\r");
-			ulong idx = 0;//y_idx*_bins_x+x_idx;
-			foreach(y_idx; 0.._bins_y) {
-				foreach(x_idx; 0.._bins_x) {
-					double value = _bin_data[idx++];
-					if (value == 0) {
-						continue;
+				//writeln("max_bin = ", max_bin, "\r");
+				ulong idx = 0;//y_idx*_bins_x+x_idx;
+				foreach(y_idx; 0.._bins_y) {
+					foreach(x_idx; 0.._bins_x) {
+						double value = _bin_data[idx++];
+						if (value == 0) {
+							continue;
+						}
+						double x      = box.transform_box2canvas_x(log_x_value_of(_left+getWidth()*(x_idx)/_bins_x,box,logx));
+						double xplus1 = box.transform_box2canvas_x(log_x_value_of(_left+getWidth()*(x_idx+1)/_bins_x,box,logx));
+						double y      = box.transform_box2canvas_y(log_y_value_of(_bottom+getHeight()*(y_idx)/_bins_y,box,logy));
+						double yplus1 = box.transform_box2canvas_y(log_y_value_of(_bottom+getHeight()*(y_idx+1)/_bins_y,box,logy));
+						double color  = box.transform_box2canvas_z(log_z_value_of(value,logz));
+						//writeln("value=",value, " -> color=",color,"   zrange=",box.getZrange(),"\r");
+						double width = xplus1-x;
+						double height = yplus1-y;
+						ubyte[3] rgb;
+						if (logz) {
+							import std.math;
+							//get_rgb(log(value+1.0)/log(max_bin+1.0), cast(shared ubyte*)&rgb[0]);
+							get_rgb(color, cast(shared ubyte*)&rgb[0]);
+						} else {
+							//get_rgb(value/max_bin, cast(shared ubyte*)&rgb[0]);
+							get_rgb(color, cast(shared ubyte*)&rgb[0]);
+						}
+						cr.setSourceRgba(rgb[2]/255.0, rgb[1]/255.0, rgb[0]/255.0, 1);
+						cr.rectangle(x-0.25, y+0.25, width+0.5, height-0.5);
+						cr.fill();
 					}
-					double x      = box.transform_box2canvas_x(log_x_value_of(_left+getWidth()*(x_idx)/_bins_x,box,logx));
-					double xplus1 = box.transform_box2canvas_x(log_x_value_of(_left+getWidth()*(x_idx+1)/_bins_x,box,logx));
-					double y      = box.transform_box2canvas_y(log_y_value_of(_bottom+getHeight()*(y_idx)/_bins_y,box,logy));
-					double yplus1 = box.transform_box2canvas_y(log_y_value_of(_bottom+getHeight()*(y_idx+1)/_bins_y,box,logy));
-					double color  = box.transform_box2canvas_z(log_z_value_of(value,logz));
-					//writeln("value=",value, " -> color=",color,"   zrange=",box.getZrange(),"\r");
-					double width = xplus1-x;
-					double height = yplus1-y;
-					ubyte[3] rgb;
-					if (logz) {
-						import std.math;
-						//get_rgb(log(value+1.0)/log(max_bin+1.0), cast(shared ubyte*)&rgb[0]);
-						get_rgb(color, cast(shared ubyte*)&rgb[0]);
-					} else {
-						//get_rgb(value/max_bin, cast(shared ubyte*)&rgb[0]);
-						get_rgb(color, cast(shared ubyte*)&rgb[0]);
-					}
-					cr.setSourceRgba(rgb[2]/255.0, rgb[1]/255.0, rgb[0]/255.0, 1);
-					cr.rectangle(x-0.25, y+0.25, width+0.5, height-0.5);
-					cr.fill();
 				}
-			}
+			} else {
+				cr.save();
+					cr.scale(box._b_x*getBinWidth(), box._b_y*getBinHeight());
+					cr.translate(_left/getBinWidth()+box._a_x/(box._b_x*getBinWidth()),  _bottom/getBinHeight()+box._a_y/(box._b_y*getBinHeight()));
+					cr.rectangle(0,0,_bins_x, _bins_y);
+					if (logz) {
+						cr.setSource(cast(Pattern)_log_image_surface_pattern);
+					} else {
+						cr.setSource(cast(Pattern)_image_surface_pattern);
+					}
+					cr.fill();
+				cr.restore();
+			}			
 
 
 			
@@ -463,5 +528,9 @@ private: // state
 	// mipmap data // TODO implement
 	struct MinMax {double min; double max;} ;
 	//MinMax[][] _mipmap_data;
+
+	import cairo.Pattern, gdk.Cairo;
+	Pattern _image_surface_pattern;
+	Pattern _log_image_surface_pattern;
 }
 

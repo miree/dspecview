@@ -71,7 +71,7 @@ extern(C) nothrow static int threadIdleProcess(void* data) {
 	} catch (Throwable t) {
 		import std.stdio;
 		try {
-			writeln("exceptions in threadIdleProcess", t.msg, "\r");
+			writeln("exceptions in threadIdleProcess ", t.msg, "\r");
 			} catch (Throwable t) {
 				// nothing
 			}
