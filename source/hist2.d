@@ -82,6 +82,12 @@ public:
 		try {
 
 			import logscale;
+			cr.setLineWidth(4.0);
+			cr.rectangle(box.transform_box2canvas_x(log_x_value_of(_left  , box, logx)),
+						 box.transform_box2canvas_y(log_y_value_of(_bottom, box, logy)),
+						 box.transform_box2canvas_x(log_x_value_of(_right , box, logx)) - box.transform_box2canvas_x(log_x_value_of(_left, box, logx)),
+						 box.transform_box2canvas_y(log_y_value_of(_top   , box, logy)) - box.transform_box2canvas_y(log_y_value_of(_bottom, box, logy)));
+			cr.stroke();
 			cr.setSourceRgba(1, 1, 1, 1);
 			cr.rectangle(box.transform_box2canvas_x(log_x_value_of(_left  , box, logx)),
 						 box.transform_box2canvas_y(log_y_value_of(_bottom, box, logy)),
