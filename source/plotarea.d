@@ -576,16 +576,7 @@ protected:
 					cr.setLineWidth( 2);
 					visualizer[0].draw(cr, _vbox, _logscale_y, _logscale_x, _logscale_z);
 					cr.stroke();
-						//if (drawable.needsColorKey()) {
-						//	if (!draw_color_key) {// first assignment
-						//		min_color_key = drawable.minColorKey();
-						//		max_color_key = drawable.maxColorKey();
-						//	} else {
-						//		min_color_key = min(min_color_key, drawable.minColorKey());
-						//		max_color_key = max(max_color_key, drawable.maxColorKey());
-						//	}
-						//	draw_color_key |= drawable.needsColorKey();
-						//}
+					draw_color_key |= visualizer[0].needsColorKey();
 				}
 			}
 			if (_grid_ontop == true) {
@@ -596,7 +587,7 @@ protected:
 			draw_numbers(cr, size.width, size.height);
 			// draw the color key;
 			if (draw_color_key) {
-				//drawColorKey(cr, _vbox, size.width, size.height, _logscale_z);
+				drawColorKey(cr, _vbox, size.width, size.height, _logscale_z);
 			}
 			//writeln("done\r");
 		} else { // !overlay_mode => grid mode or preview mode

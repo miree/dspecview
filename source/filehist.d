@@ -241,6 +241,26 @@ private: // some private functions
 				//}
 			}
 			file.close();
+
+			// some heuristics to find the correct way to interpret the data
+			// is first column only increasing?
+			//if (max_width == 2 && 
+			//	(bin_data.length%2) == 0 ) { // sparse 1d histogram
+			//	double min_gap;
+			//	bool only_increasing = true;
+			//	if (bin_data.length > 4)
+			//	foreach(idx; 2..bin_data.length/2) {
+			//		double gap = bin_data[idx]-bin_data[idx-2];
+			//		if (gap <= 0) {
+			//			only_increasing = false;
+			//			break;
+			//		}
+			//		if (min_gap is min_gap.init || min_gap > gap) {
+			//			min_gap = gap;
+			//		}
+			//	}
+			//	if ()
+			//}
 			// did we read a 1d histogram?
 			if (max_width == 1 || max_width == bin_data.length) {
 				_dim = 1;
