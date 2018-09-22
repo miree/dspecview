@@ -47,13 +47,13 @@ public:
 		        								.array;
 		        			foreach(filename; filenames.sort()) {
 		        				//writeln(pathname ~ '/' ~ filename,"\r");
-								sessionTid.send(MsgAddFileHist1(pathname ~ '/' ~ filename), thisTid);
+								sessionTid.send(MsgAddFileHist(pathname ~ '/' ~ filename), thisTid);
 		        			}					
 						} else if (dir_entry.isFile) {
 							//writeln(" file!\r");
 							auto filename = full_filename.chompPrefix(getcwd()~"/"); 
 							//writeln(filename,"\r");
-							sessionTid.send(MsgAddFileHist2(filename), thisTid);
+							sessionTid.send(MsgAddFileHist(filename), thisTid);
 						} else {
 							writeln(" no file, no dir!?\r");
 						}

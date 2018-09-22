@@ -74,10 +74,7 @@ struct MsgRun {
 
 ////////////////////////////////////////
 // Add a 1d file histogram
-struct MsgAddFileHist1{
-	string filename;
-}
-struct MsgAddFileHist2{
+struct MsgAddFileHist{
 	string filename;
 }
 struct MsgAddGuiItem{
@@ -188,25 +185,11 @@ public:
 						//writeln("item ",msg.itemname," not found\r");
 					}
 				},
-				(MsgAddFileHist1 filehist1, Tid requestingThread) {
-					if (_output_all_messages) { writeln("got MsgAddFileHist1\r"); }
+				(MsgAddFileHist msg, Tid requestingThread) {
+					if (_output_all_messages) { writeln("got MsgAddFileHist\r"); }
 					try {
-						import hist1;
-						_items[filehist1.filename] = new FileHist1(filehist1.filename, _colorIdx_counter++);
-						//requestingThread.send("added filehist1: " ~ filehist1.filename);
-						if (_guiRunning) {
-							import gui;
-							_guiTid.send(MsgRefreshItemList());
-						}
-					} catch (Exception e) {
-						//requestingThread.send(e.msg);
-					}
-				},
-				(MsgAddFileHist2 filehist2, Tid requestingThread) {
-					if (_output_all_messages) { writeln("got MsgAddFileHist2\r"); }
-					try {
-						import hist2;
-						_items[filehist2.filename] = new FileHist2(filehist2.filename, _colorIdx_counter++);
+						import filehist;
+						_items[msg.filename] = new FileHist(msg.filename, _colorIdx_counter++);
 						//requestingThread.send("added filehist1: " ~ filehist1.filename);
 						if (_guiRunning) {
 							import gui;
