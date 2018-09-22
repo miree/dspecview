@@ -139,6 +139,7 @@ public:
 		_draw_grid_vertical = draw;
 	}
 	void setLogscaleX(bool logscale) {
+		import std.stdio;
 		_logscale_x = logscale;
 		setFitX();
 		// adjust the zoom ranges for linear and logarithmic axis scaling
@@ -181,6 +182,7 @@ public:
 	}
 
 	void setFit() {
+		import std.stdio;
 		setFitX();
 		setFitY();
 		setFitZ();
@@ -319,6 +321,10 @@ protected:
 		} else {
 			//writeln("zmin=",zmin, "  zmax=",zmax,"\r");
 			//assert(zmax == zmin);
+			if (zmin > zmax) {
+				writeln("add_zmin_zmax_margin(): zmin > zmax should not happen\r");
+				zmax = zmin;
+			}
 			double t,b;
 			default_zmin_zmax(b,t);
 			zmax += t;
@@ -331,7 +337,11 @@ protected:
 			top    += margin_factor * height;
 			bottom -= margin_factor * height;
 		} else {
-			assert(top == bottom);
+			//assert(top == bottom);
+			if (bottom > top) {
+				writeln("add_bottom_top_margin(): bottom > top should not happen\r");
+				top = bottom;
+			}
 			double t,b;
 			default_bottom_top(b,t);
 			top    += t;
@@ -344,7 +354,11 @@ protected:
 			right    += margin_factor * height;
 			left -= margin_factor * height;
 		} else {
-			assert(right == left);
+			//assert(right == left);
+			if (left > right) {
+				writeln("add_left_right_margin(): left > right should not happen\r");
+				right = left;
+			}
 			double t,b;
 			default_left_right(b,t);
 			right    += t;

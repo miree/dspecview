@@ -100,8 +100,8 @@ public:
 	{
 		import std.stdio;
 		import logscale;
-		left  = log_x_value_of(_left,  logx);
-		right = log_x_value_of(_right, logx);
+		left  = log_x_value_of(_left,  logx, getBinWidth()/2.0); // set the default_zero to half the bin size
+		right = log_x_value_of(_right, logx, getBinWidth()/2.0);
 		if (left is left.init || right is right.init) {
 			return false;
 		}

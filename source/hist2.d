@@ -97,18 +97,85 @@ public:
 			if (logx || logy) {
 				//double max_bin = maxElement(_bin_data);
 
-				//writeln("max_bin = ", max_bin, "\r");
-				ulong idx = 0;//y_idx*_bins_x+x_idx;
-				foreach(y_idx; 0.._bins_y) {
-					foreach(x_idx; 0.._bins_x) {
+				if (_bin_data is null) {
+					return ;
+				}
+				if (_bin_data.length == 0) {
+					return ;
+				}
+				if (_bottom is double.init || _top is double.init || 
+					_left is double.init   || _right is double.init) {
+					return ;
+				}
+				double right = box.getRight();
+				double left =  box.getLeft();
+				double bottom = box.getBottom();
+				double top = box.getTop();
+				import std.math;
+				if (logx) { // special treatment for logx case
+					right = exp(right);
+					left = exp(left);
+				}
+				if (logy) { // special treatment for logy case
+					bottom = exp(bottom);
+					top = exp(top);
+				}
+				// transform into bin numbers
+				left    = (left-_left)/getBinWidth();
+				right   = (right-_left)/getBinWidth();
+				bottom  = (bottom-_bottom)/getBinHeight();
+				top     = (top-_bottom)/getBinHeight();
+
+
+				import std.algorithm, std.stdio;
+				import logscale;
+				double minimum, maximum;
+				bool initialize = true;
+				int leftbin   = cast(int)(max(left,0));
+				int rightbin  = cast(int)(min(right,_bins_x));
+				int bottombin = cast(int)(max(bottom,0));
+				int topbin    = cast(int)(min(top,_bins_y));
+				//writeln("bins:", leftbin, " ", rightbin, " ", bottombin, " ", topbin, "\r");
+				if (leftbin > rightbin) return ;
+				if (bottombin > topbin) return ;
+
+				foreach(j ; bottombin..topbin+1) {
+					if (j < 0) {
+						continue;
+					}
+					if (j >= _bins_y) {
+						break;
+					}
+					foreach(i ; leftbin..rightbin+1){
+						//writeln(i, " ", j );
+						if (i < 0) {
+							continue;
+						}
+						if (i >= _bins_x) {
+							break;
+						}
+						import std.algorithm;
+						assert(i >= 0 && i < _bins_x);
+						assert(j >= 0 && j < _bins_y);
+						ulong idx = _bins_y*j+i;
 						double value = _bin_data[idx++];
 						if (value == 0) {
 							continue;
 						}
-						double x      = box.transform_box2canvas_x(log_x_value_of(_left+getWidth()*(x_idx)/_bins_x,box,logx));
-						double xplus1 = box.transform_box2canvas_x(log_x_value_of(_left+getWidth()*(x_idx+1)/_bins_x,box,logx));
-						double y      = box.transform_box2canvas_y(log_y_value_of(_bottom+getHeight()*(y_idx)/_bins_y,box,logy));
-						double yplus1 = box.transform_box2canvas_y(log_y_value_of(_bottom+getHeight()*(y_idx+1)/_bins_y,box,logy));
+
+						int x_idx = i;
+						int y_idx = j;
+
+						double box_x      = log_x_value_of(_left+getWidth()*(x_idx)/_bins_x,box,logx);
+						double box_xplus1 = log_x_value_of(_left+getWidth()*(x_idx+1)/_bins_x,box,logx);
+						double box_y      = log_y_value_of(_bottom+getHeight()*(y_idx)/_bins_y,box,logy);
+						double box_yplus1 = log_y_value_of(_bottom+getHeight()*(y_idx+1)/_bins_y,box,logy);
+
+
+						double x      = box.transform_box2canvas_x(box_x);
+						double xplus1 = box.transform_box2canvas_x(box_xplus1);
+						double y      = box.transform_box2canvas_y(box_y);
+						double yplus1 = box.transform_box2canvas_y(box_yplus1);
 						double color  = box.transform_box2canvas_z(log_z_value_of(value,logz));
 						//writeln("value=",value, " -> color=",color,"   zrange=",box.getZrange(),"\r");
 						double width = xplus1-x;
@@ -127,6 +194,46 @@ public:
 						cr.fill();
 					}
 				}
+
+
+				//writeln("draw\r");
+				////writeln("max_bin = ", max_bin, "\r");
+				//ulong idx = 0;//y_idx*_bins_x+x_idx;
+				//outer_foreach: foreach(y_idx; 0.._bins_y) {
+				//	inner_foreach: foreach(x_idx; 0.._bins_x) {
+				//		double value = _bin_data[idx++];
+				//		if (value == 0) {
+				//			continue;
+				//		}
+
+				//		double box_x      = log_x_value_of(_left+getWidth()*(x_idx)/_bins_x,box,logx);
+				//		double box_xplus1 = log_x_value_of(_left+getWidth()*(x_idx+1)/_bins_x,box,logx);
+				//		double box_y      = log_y_value_of(_bottom+getHeight()*(y_idx)/_bins_y,box,logy);
+				//		double box_yplus1 = log_y_value_of(_bottom+getHeight()*(y_idx+1)/_bins_y,box,logy);
+
+
+				//		double x      = box.transform_box2canvas_x(box_x);
+				//		double xplus1 = box.transform_box2canvas_x(box_xplus1);
+				//		double y      = box.transform_box2canvas_y(box_y);
+				//		double yplus1 = box.transform_box2canvas_y(box_yplus1);
+				//		double color  = box.transform_box2canvas_z(log_z_value_of(value,logz));
+				//		//writeln("value=",value, " -> color=",color,"   zrange=",box.getZrange(),"\r");
+				//		double width = xplus1-x;
+				//		double height = yplus1-y;
+				//		ubyte[3] rgb;
+				//		if (logz) {
+				//			import std.math;
+				//			//get_rgb(log(value+1.0)/log(max_bin+1.0), cast(shared ubyte*)&rgb[0]);
+				//			get_rgb(color, cast(shared ubyte*)&rgb[0]);
+				//		} else {
+				//			//get_rgb(value/max_bin, cast(shared ubyte*)&rgb[0]);
+				//			get_rgb(color, cast(shared ubyte*)&rgb[0]);
+				//		}
+				//		cr.setSourceRgba(rgb[2]/255.0, rgb[1]/255.0, rgb[0]/255.0, 1);
+				//		cr.rectangle(x-0.25, y+0.25, width+0.5, height-0.5);
+				//		cr.fill();
+				//	}
+				//}
 			} else {
 				cr.save();
 					cr.scale(box._b_x*getBinWidth(), box._b_y*getBinHeight());
@@ -171,8 +278,8 @@ public:
 	{
 		import std.stdio;
 		import logscale;
-		left  = log_x_value_of(_left,  logx);
-		right = log_x_value_of(_right, logx);
+		left  = log_x_value_of(_left,  logx, getBinWidth()/2.0); // set the default_zero to half the bin size
+		right = log_x_value_of(_right, logx, getBinWidth()/2.0);
 		if (left is left.init || right is right.init) {
 			return false;
 		}
@@ -209,7 +316,7 @@ public:
 		top     = (top-_bottom)/getBinHeight();
 
 
-		import std.algorithm;
+		import std.algorithm, std.stdio;
 		import logscale;
 		double minimum, maximum;
 		bool initialize = true;
@@ -218,8 +325,8 @@ public:
 		int bottombin = cast(int)(max(bottom,0));
 		int topbin    = cast(int)(min(top,_bins_y));
 		//writeln("bins:", leftbin, " ", rightbin, " ", bottombin, " ", topbin, "\r");
-		if (leftbin >= rightbin) return false;
-		if (bottombin >= topbin) return false;
+		if (leftbin > rightbin) return false;
+		if (bottombin > topbin) return false;
 
 		foreach(j ; bottombin..topbin+1) {
 			if (j < 0) {
@@ -237,8 +344,12 @@ public:
 					break;
 				}
 				import std.algorithm;
-				assert(i >= 0 && i < _bins_x);
-				assert(j >= 0 && j < _bins_y);
+				if(!(i >= 0 && i < _bins_x)) { 
+					writeln ("getZminZmaxInLeftRightBottomTop() (i >= 0 && i < _bins_x) was violated\r");
+				}
+				if(!(j >= 0 && j < _bins_y)) { 
+					writeln ("getZminZmaxInLeftRightBottomTop() (j >= 0 && j < _bins_y) was violated\r");
+				}
 				ulong idx = _bins_y*j+i;
 				if ((logz && (_bin_data[idx] > 0)) || !logz) {
 					if (initialize) {
@@ -279,10 +390,10 @@ public:
 			return false;
 		}
 		import logscale;
-		bottom = log_y_value_of(_bottom, logy);
-		top    = log_y_value_of(_top   , logy);
-		left   = log_x_value_of(_left  , logx);
-		right  = log_x_value_of(_right , logx);
+		bottom = log_y_value_of(_bottom, logy, getBinHeight()/2.0); // set the default_zero to half the bin size
+		top    = log_y_value_of(_top   , logy, getBinHeight()/2.0);
+		left   = log_x_value_of(_left  , logx, getBinWidth()/2.0);
+		right  = log_x_value_of(_right , logx, getBinWidth()/2.0);
 		return true;
 	}
 

@@ -235,7 +235,10 @@ public:
 				import std.stdio;
 				//guis.remove(_gui_idx);
 				deleted_guis ~= _gui_idx;
-				_sessionTid.send(MsgRemoveItem(guiName), thisTid);
+
+				// part of the "gui windows as items" idea (I don't like this anymore)
+				//import session;
+				//_sessionTid.send(MsgRemoveItem(guiName), thisTid);
 			});
 
 		_control_panel = new ControlPanel(sessionTid, this);
@@ -295,8 +298,9 @@ public:
 
 		import std.stdio;
 
-
-		_sessionTid.send(MsgAddGuiItem(guiName(),_gui_idx), thisTid);
+		// part of the "gui windows as items" idea (I don't like this anymore)
+		//import session;
+		//_sessionTid.send(MsgAddGuiItem(guiName(),_gui_idx), thisTid);
 
 		// get up to date with the session data
 		import session;
@@ -506,82 +510,82 @@ struct MsgVisuWindowSettings {
 }
 
 
-///////////////////////////////////////////////////////////////
-// make an item that represents a Gui window
-import session;
-class GuiItem : Item 
-{
-public:
-	this(string name, ulong gui_idx) {
-		_name = name;
-		_gui_idx = gui_idx;
-	}
+/////////////////////////////////////////////////////////////////
+//// make an item that represents a Gui window
+//import session;
+//class GuiItem : Item 
+//{
+//public:
+//	this(string name, ulong gui_idx) {
+//		_name = name;
+//		_gui_idx = gui_idx;
+//	}
 
-	string getTypeString() {
-		return "GUI window";
-	}
-	int getColorIdx() {
-		return 0;
-	}
+//	string getTypeString() {
+//		return "GUI window";
+//	}
+//	int getColorIdx() {
+//		return 0;
+//	}
 
-	ulong guiIdx() {
-		return _gui_idx;
-	}
+//	ulong guiIdx() {
+//		return _gui_idx;
+//	}
 
 
-	override immutable(GuiVisualizer) createVisualizer() 
-	{
-		import std.conv;
-		return new immutable(GuiVisualizer)(_name);
-	}
-private:
-	string _name;
-	ulong _gui_idx;
-}
+//	override immutable(GuiVisualizer) createVisualizer() 
+//	{
+//		import std.conv;
+//		return new immutable(GuiVisualizer)(_name);
+//	}
+//private:
+//	string _name;
+//	ulong _gui_idx;
+//}
 
-immutable class GuiVisualizer : Visualizer 
-{
-	import cairo.Context, cairo.Surface;
-	import view;
-	this(string name) {
-		_name = name;
-	}
-	override string getItemName() immutable {
-		return _name;
-	}
-	override ulong getDim() immutable {
-		return 1;
-	}
-	override int getColorIdx() immutable
-	{
-		return 0;
-	}
-	override void print(int context) immutable {
-		import std.stdio;
-		writeln(_name,"\r");
-	}
-	override bool needsColorKey() immutable {
-		return false;
-	}
-	override void draw(ref Scoped!Context cr, ViewBox box, bool logy, bool logx, bool logz) immutable {
-		return;
-	}
-	override bool getLeftRight(out double left, out double right, bool logy, bool logx) immutable {
-		return false;
-	}
-	override bool getBottomTopInLeftRight(out double bottom, out double top, double left, double right, bool logy, bool logx) immutable 
-	{
-		return false;
-	}
-	override bool getZminZmaxInLeftRightBottomTop(out double mi, out double ma, 
-	                                     double left, double right, double bottom, double top, 
-	                                     bool logz, bool logy, bool logx) immutable
-	{
-		return false;
-	}
+//immutable class GuiVisualizer : Visualizer 
+//{
+//	import cairo.Context, cairo.Surface;
+//	import view;
+//	this(string name) {
+//		_name = name;
+//	}
+//	override string getItemName() immutable {
+//		return _name;
+//	}
+//	override ulong getDim() immutable {
+//		return 1;
+//	}
+//	override int getColorIdx() immutable
+//	{
+//		return 0;
+//	}
+//	override void print(int context) immutable {
+//		import std.stdio;
+//		writeln(_name,"\r");
+//	}
+//	override bool needsColorKey() immutable {
+//		return false;
+//	}
+//	override void draw(ref Scoped!Context cr, ViewBox box, bool logy, bool logx, bool logz) immutable {
+//		return;
+//	}
+//	override bool getLeftRight(out double left, out double right, bool logy, bool logx) immutable {
+//		return false;
+//	}
+//	override bool getBottomTopInLeftRight(out double bottom, out double top, double left, double right, bool logy, bool logx) immutable 
+//	{
+//		return false;
+//	}
+//	override bool getZminZmaxInLeftRightBottomTop(out double mi, out double ma, 
+//	                                     double left, double right, double bottom, double top, 
+//	                                     bool logz, bool logy, bool logx) immutable
+//	{
+//		return false;
+//	}
 
-private:
-	string _name;
-}
+//private:
+//	string _name;
+//}
 
 

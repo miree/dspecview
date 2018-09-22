@@ -199,12 +199,12 @@ public:
 						//requestingThread.send(e.msg);
 					}
 				},
-				(MsgAddGuiItem guiitem, Tid requestingThread) {
-					if (_output_all_messages) { writeln("got MsgAddGuiItem\r"); }
-					import gui;
-					import std.conv;
-					_items[guiitem.guiname] = new GuiItem(guiitem.guiname, guiitem.gui_idx);
-				},
+				//(MsgAddGuiItem guiitem, Tid requestingThread) {
+				//	if (_output_all_messages) { writeln("got MsgAddGuiItem\r"); }
+				//	import gui;
+				//	import std.conv;
+				//	_items[guiitem.guiname] = new GuiItem(guiitem.guiname, guiitem.gui_idx);
+				//},
 				(MsgRequestItemList msg, Tid requestingThread) {
 					if (_output_all_messages) { writeln("got MsgRequestItemList\r"); }
 					import textui;
