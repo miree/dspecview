@@ -48,7 +48,7 @@ public:
 						_visualizer ~= new immutable(Hist1Visualizer)(_filename, _colorIdx, hist.data, hist.left, hist.right);
 						if (hist.data is null) {
 							import std.stdio;
-							writeln("visualizer was created with _bin_data is null\r");
+							//writeln("visualizer was created with _bin_data is null\r");
 						}
 					break;
 					case 2: {
@@ -198,7 +198,7 @@ private: // some private functions
 							if (hist_left !is double.init && hist_right !is double.init &&
 								hist_bottom !is double.init && hist_top !is double.init) {
 								has_fairy_header_2d = true;
-								writeln("read 2d fairy header");
+								//writeln("read 2d fairy header");
 							}
 							//writeln("left = ", hist_left, " right = ", hist_right, "\r");
 						} catch (Exception e) {
@@ -212,7 +212,7 @@ private: // some private functions
 							hist_right = left+binwidth*nbins;
 							if (hist_left !is double.init && hist_right !is double.init) {
 								has_fairy_header_1d = true;
-								writeln("read 1d fairy header");
+								//writeln("read 1d fairy header");
 							}
 							//writeln("left = ", hist_left, " right = ", hist_right, "\r");
 						} catch (Exception e) {
