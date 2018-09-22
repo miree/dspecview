@@ -43,10 +43,10 @@ public:
 		_top      = top;
 	}
 
-	override string getItemName() immutable
-	{
-		return _itemname;
-	}
+	//override string getItemName() immutable
+	//{
+	//	return _itemname;
+	//}
 
 	override ulong getDim() immutable
 	{

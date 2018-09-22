@@ -30,7 +30,7 @@ immutable interface Visualizer
 public:
 	import cairo.Context, cairo.Surface;
 	import view;
-	string getItemName() immutable;
+	//string getItemName() immutable;
 	int getColorIdx() immutable;
 	ulong getDim() immutable;
 	void print(int context) immutable;
@@ -87,6 +87,10 @@ struct MsgRemoveItem{
 	string itemname;
 }
 
+struct MsgAddNumber{
+	string itemname;
+	double value;
+}
 
 
 
@@ -191,6 +195,19 @@ public:
 						import filehist;
 						_items[msg.filename] = new FileHist(msg.filename, _colorIdx_counter++);
 						//requestingThread.send("added filehist1: " ~ filehist1.filename);
+						if (_guiRunning) {
+							import gui;
+							_guiTid.send(MsgRefreshItemList());
+						}
+					} catch (Exception e) {
+						//requestingThread.send(e.msg);
+					}
+				},
+				(MsgAddNumber msg, Tid requestingThread) {
+					if (_output_all_messages) { writeln("got MsgAddNumber\r"); }
+					try {
+						import number;
+						_items[msg.itemname] = new Number(msg.value, _colorIdx_counter++, Direction.x);
 						if (_guiRunning) {
 							import gui;
 							_guiTid.send(MsgRefreshItemList());

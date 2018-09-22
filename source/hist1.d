@@ -25,10 +25,10 @@ public:
 		//writeln("done generating mipmap data\r");
 	}
 
-	override string getItemName() immutable
-	{
-		return _itemname;
-	}
+	//override string getItemName() immutable
+	//{
+	//	return _itemname;
+	//}
 
 	override ulong getDim() immutable
 	{
