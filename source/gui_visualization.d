@@ -299,10 +299,14 @@ public:
 		_check_overlay.setActive(state);
 	}
 	void redraw_content() {
-		_plot_area.queueDraw();
+		if (_dirty) {
+			_dirty = false;
+			_plot_area.queueDraw();
+		}
 	}
 	import session;
 	void addVisualizer(string itemname, immutable(Visualizer) visualizer) {
+		_dirty = true;
 		if (_plot_area.add(itemname, visualizer)) {
 			if (_plot_area.length == 1) {
 				if (_plot_area.getMode2d())  {
@@ -318,6 +322,7 @@ public:
 		}
 	}
 	void remove(string itemname) {
+		_dirty = true;
 		_plot_area.remove(itemname);
 	}
 
@@ -334,6 +339,7 @@ private:
 
 	import plotarea;
 	PlotArea _plot_area;
+	bool _dirty;
 
 	Gui _parentGui;
 

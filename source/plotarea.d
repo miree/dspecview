@@ -165,7 +165,17 @@ public:
 		//writeln(" plotarea.refresh()\r");
 		foreach(itemname, visualizer; _visualizers) {
 			//writeln("   guis[", _parentGui.getGuiIdx(),"] requests visualizer for item: ", itemname, "\r");
-			_sessionTid.send(MsgRequestItemVisualizer(itemname, _parentGui.getGuiIdx()), thisTid);
+
+			// send the previously used visualizer to the session 
+			// so it can decide if it would send us the
+			// exact same one and skip the update
+			auto old_visualizer_buffer = itemname in _visualizers;
+			if (old_visualizer_buffer !is null && old_visualizer_buffer.length > 0) {
+				auto old_visualizer = (*old_visualizer_buffer)[0];
+				_sessionTid.send(MsgRequestItemVisualizer(itemname, _parentGui.getGuiIdx(), old_visualizer), thisTid);
+			} else {
+				_sessionTid.send(MsgRequestItemVisualizer(itemname, _parentGui.getGuiIdx(), null), thisTid);
+			}
 		}
 		_sessionTid.send(MsgEchoRedrawContent(_parentGui.getGuiIdx()), thisTid);
 	}

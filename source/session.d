@@ -107,6 +107,7 @@ struct MsgItemList {
 struct MsgRequestItemVisualizer {
 	string itemname;
 	ulong gui_idx;
+	immutable(Visualizer) old_visualizer = null;
 }
 
 ////////////////////////////////////////
@@ -252,7 +253,9 @@ public:
 						//writeln("session: sending visualizer for: ", msg.itemname, "\r");
 						try {
 							auto visualizer = item.createVisualizer();
-							if (visualizer !is null) {
+							// only send an updated visualizer if we have something to send
+							// and if the sent visualizer is different from the previous one
+							if (visualizer !is null && visualizer !is msg.old_visualizer) {
 								//writeln("visualizer created\r");
 								requestingThread.send(MsgVisualizeItem(msg.itemname, msg.gui_idx), visualizer);
 							}
