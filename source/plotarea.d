@@ -589,6 +589,32 @@ protected:
 			if (draw_color_key) {
 				drawColorKey(cr, _vbox, size.width, size.height, _logscale_z);
 			}
+
+			// write itemnames 
+			foreach(idx, itemname; _itemnames) {
+				auto visualizer = _visualizers[itemname];
+				if (visualizer.length == 1) {
+					auto text = itemname;
+					cairo_text_extents_t cte;
+					cr.textExtents(text,&cte);
+					//double x = _vbox.transform_box2canvas_x(_vbox.getLeft());
+					//double y = _vbox.transform_box2canvas_y(_vbox.getTop())+cte.height;
+
+					double x = _vbox.transform_box2canvas_x(_vbox.getRight())-cte.width-2;
+					double y = _vbox.transform_box2canvas_y(_vbox.getTop())+1.1*cte.height+2;
+
+					cr.setSourceRgba(1, 1, 1, 0.75);
+					cr.rectangle(x, 2+y+1.1*cte.height*idx, cte.width, -1.1*cte.height);
+					cr.fill();
+					double[3] color = getColor(visualizer[0].getColorIdx());
+					cr.setSourceRgba(color[0], color[1], color[2], 1.0);
+					cr.moveTo(x,y+1.1*cte.height*idx);
+					//cr.moveTo(size.width/10.0, size.height/10+1.1*cte.height*idx);
+					cr.showText(text);
+					cr.stroke();
+				}
+			}
+
 			//writeln("done\r");
 		} else { // !overlay_mode => grid mode or preview mode
 			//writeln("overlay false\r");
@@ -725,6 +751,31 @@ protected:
 						if (visualizer[0] !is null && visualizer[0].needsColorKey()) {
 							drawColorKey(cr, _vbox, size.width, size.height, _logscale_z);
 						}
+
+
+						if (visualizer[0] !is null) {
+							//color = getColor(visualizer[0].getColorIdx());
+							//cr.setSourceRgba(color[0], color[1], color[2], 1.0);
+							auto text = _itemnames[idx];
+							cairo_text_extents_t cte;
+							cr.textExtents(text,&cte);
+							//double x = _vbox.transform_box2canvas_x(_vbox.getLeft());
+							//double y = _vbox.transform_box2canvas_y(_vbox.getTop())+cte.height;
+							//cr.moveTo(x,y);
+
+							double x = _vbox.transform_box2canvas_x(_vbox.getRight())-cte.width-2;
+							double y = _vbox.transform_box2canvas_y(_vbox.getTop())+1.1*cte.height+2;
+							cr.setSourceRgba(1, 1, 1, 0.75);
+							cr.rectangle(x, 2+y, cte.width, -1.1*cte.height);
+							cr.fill();
+							color = getColor(visualizer[0].getColorIdx());
+							cr.setSourceRgba(color[0], color[1], color[2], 1.0);
+							cr.moveTo(x,y);
+
+
+							cr.showText(text);
+							cr.stroke();
+						}						
 
 
 					} else { // if (cell_has_content)

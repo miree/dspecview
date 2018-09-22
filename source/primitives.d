@@ -459,7 +459,7 @@ void drawGridNumbersLogX(ref Scoped!Context cr, ViewBox box, int canvas_width, i
 		cr.moveTo(box.transform_box2canvas_x(log_left)-cte.width/2, box.transform_box2canvas_y(bottom)-cte.height/3);
 		cr.showText(text);
 		cr.stroke();
-		cr.stroke();
+		//cr.stroke();
 		//color = 0.8;
 		//cr.setSourceRgba(color, color, color, 1.0);
 		//foreach(i ; 2..9) {
