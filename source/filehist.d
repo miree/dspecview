@@ -45,7 +45,7 @@ public:
 				// create a Visualizer for the loaded data
 				switch(_dim) {
 					case 1:
-						_visualizer ~= new immutable(Hist1Visualizer)(_filename, _colorIdx, hist.data, hist.left, hist.right);
+						_visualizer ~= new immutable(Hist1Visualizer)(_colorIdx, hist.data, hist.left, hist.right);
 						if (hist.data is null) {
 							import std.stdio;
 							//writeln("visualizer was created with _bin_data is null\r");
@@ -92,7 +92,7 @@ public:
 
 						_visualizer.length = 0; 
 						// create a Visualizer for the loaded data
-						_visualizer ~= new immutable(Hist2Visualizer)(_filename, _colorIdx, hist.data, 
+						_visualizer ~= new immutable(Hist2Visualizer)(_colorIdx, hist.data, 
 																	 cast(immutable(ubyte[]))rgb_data,              cast(immutable(ubyte[]))log_rgb_data,
 																	 cast(immutable(Pattern))image_surface_pattern, cast(immutable(Pattern))log_image_surface_pattern,
 																	 hist.bins_x, hist.bins_y, 

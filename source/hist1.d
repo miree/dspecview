@@ -1,52 +1,28 @@
-import session, hist2;
+import session;
 
 //////////////////////////////////////////////////
 // Visualizer for 1D Histograms
-immutable class Hist1Visualizer : Visualizer 
+immutable class Hist1Visualizer : BaseVisualizer 
 {
 public:
 	this() {
-		_itemname = null;
+		super(0);
 		_bin_data = null;
 		_left = _right = double.init;
 		_mipmap_data = null;
-		_colorIdx = 0;
 	}
-	this(string itemname, int colorIdx, double[] data, double left, double right)
+	this(int colorIdx, double[] data, double left, double right)
 	{
-		_itemname = itemname;
-		_colorIdx = colorIdx;
+		super(colorIdx);
 		_bin_data = data.idup;
 		_left     = left;
 		_right    = right;
-		import std.stdio;
-		//writeln("make mipmap data\r");
 		_mipmap_data = make_mipmap_data();
-		//writeln("done generating mipmap data\r");
 	}
-
-	//override string getItemName() immutable
-	//{
-	//	return _itemname;
-	//}
 
 	override ulong getDim() immutable
 	{
 		return 1;
-	}
-	override int getColorIdx() immutable
-	{
-		return _colorIdx;
-	}
-
-	override void print(int context) immutable 
-	{
-		//import std.stdio;
-		//writeln("length of _bin_data: ", _bin_data.length);
-		//writeln("mipmap levels: ", _mipmap_data.length);
-		//foreach(idx, mipmap; _mipmap_data) {
-		//	writeln("level(", idx, "): ", mipmap.length);
-		//}
 	}
 
 	override bool needsColorKey() immutable
@@ -96,7 +72,7 @@ public:
 		return (_right - _left) / _bin_data.length;
 	}
 
-	bool getLeftRight(out double left, out double right, bool logy, bool logx) immutable
+	override bool getLeftRight(out double left, out double right, bool logy, bool logx) immutable
 	{
 		import std.stdio;
 		import logscale;
@@ -107,12 +83,8 @@ public:
 		}
 		return true;
 	}
-	bool getZminZmaxInLeftRightBottomTop(out double mi, out double ma, 
-	                                     double left, double right, double bottom, double top, 
-	                                     bool logz, bool logy, bool logx) immutable
-	{ return false; }
 
-	bool getBottomTopInLeftRight(out double bottom, out double top, double left, double right, bool logy, bool logx) immutable
+	override bool getBottomTopInLeftRight(out double bottom, out double top, double left, double right, bool logy, bool logx) immutable
 	{
 		import std.stdio;
 		//writeln("getBottomTopInLeftRight ", left, " ", right, "\r");
@@ -235,10 +207,6 @@ private:
 	}
 
 private: // state	
-	string _itemname;
-
-	int _colorIdx;
-
 	double[] _bin_data;
 	double _left, _right;
 

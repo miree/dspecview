@@ -4,12 +4,11 @@ import session;
 
 //////////////////////////////////////////////////
 // Visualizer for 2D Histograms
-immutable class Hist2Visualizer : Visualizer 
+immutable class Hist2Visualizer : BaseVisualizer 
 {
 public:
 	this() {
-		_itemname    = null;
-		_colorIdx    = 0;
+		super(0);
 		_bin_data    = null;
 		_rgb_data    = null;
 		_log_rgb_data = null;
@@ -22,14 +21,13 @@ public:
 		//_mipmap_data = null;
 	}
 	import cairo.Pattern, gdk.Cairo;
-	this(string itemname, int colorIdx, double[] data, 
+	this(int colorIdx, double[] data, 
 		immutable(ubyte[]) rgb_data             , immutable(ubyte[]) log_rgb_data,
 		immutable(Pattern) image_surface_pattern, immutable(Pattern) log_image_surface_pattern,
 		ulong width, ulong height, 
 		double left, double right, double bottom, double top)
 	{
-		_itemname = itemname;
-		_colorIdx = colorIdx;
+		super(colorIdx);
 		_bin_data = data.idup;
 		_rgb_data = rgb_data;
 		_log_rgb_data = log_rgb_data;
@@ -43,23 +41,9 @@ public:
 		_top      = top;
 	}
 
-	//override string getItemName() immutable
-	//{
-	//	return _itemname;
-	//}
-
 	override ulong getDim() immutable
 	{
 		return 2;
-	}
-	override int getColorIdx() immutable
-	{
-		return _colorIdx;
-	}
-
-	override void print(int context) immutable 
-	{
-		// TODO
 	}
 
 	override bool needsColorKey() immutable
@@ -196,44 +180,6 @@ public:
 				}
 
 
-				//writeln("draw\r");
-				////writeln("max_bin = ", max_bin, "\r");
-				//ulong idx = 0;//y_idx*_bins_x+x_idx;
-				//outer_foreach: foreach(y_idx; 0.._bins_y) {
-				//	inner_foreach: foreach(x_idx; 0.._bins_x) {
-				//		double value = _bin_data[idx++];
-				//		if (value == 0) {
-				//			continue;
-				//		}
-
-				//		double box_x      = log_x_value_of(_left+getWidth()*(x_idx)/_bins_x,box,logx);
-				//		double box_xplus1 = log_x_value_of(_left+getWidth()*(x_idx+1)/_bins_x,box,logx);
-				//		double box_y      = log_y_value_of(_bottom+getHeight()*(y_idx)/_bins_y,box,logy);
-				//		double box_yplus1 = log_y_value_of(_bottom+getHeight()*(y_idx+1)/_bins_y,box,logy);
-
-
-				//		double x      = box.transform_box2canvas_x(box_x);
-				//		double xplus1 = box.transform_box2canvas_x(box_xplus1);
-				//		double y      = box.transform_box2canvas_y(box_y);
-				//		double yplus1 = box.transform_box2canvas_y(box_yplus1);
-				//		double color  = box.transform_box2canvas_z(log_z_value_of(value,logz));
-				//		//writeln("value=",value, " -> color=",color,"   zrange=",box.getZrange(),"\r");
-				//		double width = xplus1-x;
-				//		double height = yplus1-y;
-				//		ubyte[3] rgb;
-				//		if (logz) {
-				//			import std.math;
-				//			//get_rgb(log(value+1.0)/log(max_bin+1.0), cast(shared ubyte*)&rgb[0]);
-				//			get_rgb(color, cast(shared ubyte*)&rgb[0]);
-				//		} else {
-				//			//get_rgb(value/max_bin, cast(shared ubyte*)&rgb[0]);
-				//			get_rgb(color, cast(shared ubyte*)&rgb[0]);
-				//		}
-				//		cr.setSourceRgba(rgb[2]/255.0, rgb[1]/255.0, rgb[0]/255.0, 1);
-				//		cr.rectangle(x-0.25, y+0.25, width+0.5, height-0.5);
-				//		cr.fill();
-				//	}
-				//}
 			} else {
 				cr.save();
 					cr.scale(box._b_x*getBinWidth(), box._b_y*getBinHeight());
@@ -274,7 +220,7 @@ public:
 		return _top-_bottom;
 	}
 
-	bool getLeftRight(out double left, out double right, bool logy, bool logx) immutable
+	override bool getLeftRight(out double left, out double right, bool logy, bool logx) immutable
 	{
 		import std.stdio;
 		import logscale;
@@ -285,7 +231,7 @@ public:
 		}
 		return true;
 	}
-	bool getZminZmaxInLeftRightBottomTop(out double mi, out double ma, 
+	override bool getZminZmaxInLeftRightBottomTop(out double mi, out double ma, 
 	                                     double left, double right, double bottom, double top, 
 	                                     bool logz, bool logy, bool logx) immutable
 	{
@@ -377,7 +323,7 @@ public:
 
 	}
 
-	bool getBottomTopInLeftRight(out double bottom, out double top, double left, double right, bool logy, bool logx) immutable
+	override bool getBottomTopInLeftRight(out double bottom, out double top, double left, double right, bool logy, bool logx) immutable
 	{
 		if (_bin_data is null) {
 			return false;
@@ -416,10 +362,6 @@ private:
 
 
 private: // state	
-	string _itemname;
-
-	int _colorIdx;
-
 	double[] _bin_data;
 	double _left, _right;
 	double _bottom, _top;
