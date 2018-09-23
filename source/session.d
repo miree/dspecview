@@ -43,7 +43,10 @@ public:
 	bool getZminZmaxInLeftRightBottomTop(out double mi, out double ma, 
 	                                     double left, double right, double bottom, double top, 
 	                                     bool logz, bool logy, bool logx) immutable;
-
+	double mouseMotionDistance(double x, double y) immutable;
+	void   mouseButtonDown(double x, double y) immutable;
+	void   mouseButtonUp(double x, double y) immutable;
+	bool   mouseActionActive() immutable;
 }
 
 
@@ -82,6 +85,21 @@ public:
 	override bool getZminZmaxInLeftRightBottomTop(out double mi, out double ma, 
 	                                     double left, double right, double bottom, double top, 
 	                                     bool logz, bool logy, bool logx) immutable
+	{
+		return false;
+	}
+
+	override double mouseMotionDistance(double x, double y) immutable
+	{
+		return -1;
+	}
+	override void mouseButtonDown(double x, double y) immutable
+	{
+	}
+	override void mouseButtonUp(double x, double y) immutable
+	{
+	}
+	override bool   mouseActionActive() immutable
 	{
 		return false;
 	}

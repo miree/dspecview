@@ -139,9 +139,9 @@ public:
 							break;
 						}
 						import std.algorithm;
-						assert(i >= 0 && i < _bins_x);
-						assert(j >= 0 && j < _bins_y);
-						ulong idx = _bins_y*j+i;
+						if (!(i >= 0 && i < _bins_x)) { writeln("Hist2Visualizer.draw assertion (i >= 0 && i < _bins_x) failed"); }
+						if (!(j >= 0 && j < _bins_y)) { writeln("Hist2Visualizer.draw assertion (j >= 0 && j < _bins_y) failed"); }
+						ulong idx = _bins_x*j+i;
 						double value = _bin_data[idx++];
 						if (value == 0) {
 							continue;
@@ -296,7 +296,7 @@ public:
 				if(!(j >= 0 && j < _bins_y)) { 
 					writeln ("getZminZmaxInLeftRightBottomTop() (j >= 0 && j < _bins_y) was violated\r");
 				}
-				ulong idx = _bins_y*j+i;
+				ulong idx = _bins_x*j+i;
 				if ((logz && (_bin_data[idx] > 0)) || !logz) {
 					if (initialize) {
 						minimum = log_z_value_of(_bin_data[idx], logz);

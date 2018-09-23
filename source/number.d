@@ -69,6 +69,14 @@ public:
 		}
 		return false;
 	}
+	override double mouseMotionDistance(double x, double y) immutable
+	{
+		import std.math;
+		double distance = abs(x-_value);
+		import std.stdio;
+		writeln("mouse distance = ", distance, "\r");
+		return distance;
+	}
 private:
 	double _value;
 	Direction _direction;

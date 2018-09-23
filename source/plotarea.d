@@ -242,11 +242,12 @@ protected:
 			queueDrawArea(0,0, size.width, size.height);
 		}
 		// ask the visualizers if they want to handle the motion event
-		//foreach(itemname, visualizer; _visualizers) {
-		//	if (visualizer.length == 1) {
-		//		visualizer[0].
-		//	}
-		//}
+		foreach(itemname, visualizer; _visualizers) {
+			if (visualizer.length == 1) {
+				//double x = _vbox.
+				//visualizer[0].mouseMotionDistance(x,y);
+			}
+		}
 		return true;
 	}
 
