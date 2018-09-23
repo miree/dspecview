@@ -35,28 +35,16 @@ private:
 }
 
 
-immutable class NumberVisualizer : Visualizer 
+immutable class NumberVisualizer : BaseVisualizer 
 {
 public:
 	import cairo.Context, cairo.Surface;
 	import view;
 
 	this(double value, int colorIdx, Direction direction) {
+		super(colorIdx);
 		_value = value;
-		_colorIdx = colorIdx;
 		_direction = direction;
-	}
-
-	override int getColorIdx() immutable {
-		return _colorIdx;
-	}
-	override ulong getDim() immutable {
-		return 0;
-	}
-	override void print(int context) immutable {
-	}
-	override bool needsColorKey() immutable {
-		return false;
 	}
 	override void draw(ref Scoped!Context cr, ViewBox box, bool logy, bool logx, bool logz) immutable
 	{
@@ -81,15 +69,7 @@ public:
 		}
 		return false;
 	}
-	override bool getZminZmaxInLeftRightBottomTop(out double mi, out double ma, 
-	                                     double left, double right, double bottom, double top, 
-	                                     bool logz, bool logy, bool logx) immutable
-	{
-		return false;
-	}
-
 private:
-	int    _colorIdx;
 	double _value;
 	Direction _direction;
 

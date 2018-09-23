@@ -241,6 +241,12 @@ protected:
 			_vbox.scale_ongoing(event_motion.x, event_motion.y);
 			queueDrawArea(0,0, size.width, size.height);
 		}
+		// ask the visualizers if they want to handle the motion event
+		//foreach(itemname, visualizer; _visualizers) {
+		//	if (visualizer.length == 1) {
+		//		visualizer[0].
+		//	}
+		//}
 		return true;
 	}
 

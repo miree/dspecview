@@ -332,8 +332,8 @@ public:
 			_refresh_in_flight = true;
 			// do this only if we are not _dirty to prevent redraw message flooding
 			// in case the drawing is slower then the redraw request rate
-			import std.stdio;
-			writeln("refresh()\r");
+			//import std.stdio;
+			//writeln("refresh()\r");
 			_plot_area.refresh();
 		}
 	}

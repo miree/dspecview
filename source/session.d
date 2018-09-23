@@ -19,6 +19,8 @@ public:
 	int getColorIdx();
 }
 
+
+
 ////////////////////////////////////////
 // All objects that are created by items
 // in order to draw have to implement
@@ -43,6 +45,51 @@ public:
 	                                     bool logz, bool logy, bool logx) immutable;
 
 }
+
+
+
+immutable class BaseVisualizer : Visualizer 
+{
+public:
+	import cairo.Context, cairo.Surface;
+	import view;
+
+	this(int colorIdx) {
+		_colorIdx = colorIdx;
+	}
+
+	override int getColorIdx() immutable {
+		return _colorIdx;
+	}
+	override ulong getDim() immutable {
+		return 0; // means undecided (can live with 1d or 2d)
+	}
+	override void print(int context) immutable {
+	}
+	override bool needsColorKey() immutable {
+		return false;
+	}
+	override void draw(ref Scoped!Context cr, ViewBox box, bool logy, bool logx, bool logz) immutable {
+	}
+	override bool getLeftRight(out double left, out double right, bool logy, bool logx) immutable
+	{
+		return false;
+	}
+	override bool getBottomTopInLeftRight(out double bottom, out double top, double left, double right, bool logy, bool logx) immutable
+	{
+		return false;
+	}
+	override bool getZminZmaxInLeftRightBottomTop(out double mi, out double ma, 
+	                                     double left, double right, double bottom, double top, 
+	                                     bool logz, bool logy, bool logx) immutable
+	{
+		return false;
+	}
+
+private:
+	int    _colorIdx;
+}
+
 
 ////////////////////////////////////////
 // Send this message if you want to test
