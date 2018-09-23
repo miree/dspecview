@@ -229,6 +229,67 @@ public:
 	//}
 
 protected:
+
+	int checkItemsForMouseAction(double event_x, double event_y) 
+	{
+		// find out which visualizer is closest to the mouse pointer
+		int closest_idx_x = -1, closest_idx_y = -1;
+		double min_dx, min_dy;
+		enum DX_RANGE = 10;
+		enum DY_RANGE = 10;
+		foreach(idx, itemname; _itemnames) {
+			auto visualizer = itemname in _visualizers;
+			if (visualizer !is null && visualizer.length == 1) {
+				auto boxinfo = itemname in _visualizer_view_boxes;
+				if (boxinfo !is null) {
+					//double x = boxinfo.box.reduce_canvas_x(event_x, boxinfo.width);
+					//double y = boxinfo.box.reduce_canvas_y(event_y, boxinfo.height);
+					import logscale;
+					double x = boxinfo.box.transform_canvas2box_x(event_x);
+					double y = boxinfo.box.transform_canvas2box_y(event_y);
+					if (x > boxinfo.box.getLeft() && x < boxinfo.box.getRight() &&
+						y > boxinfo.box.getBottom() && y < boxinfo.box.getTop()) {
+						//writeln("boxed itemname = ", itemname, "\r");
+						double dx, dy;
+						bool result = (*visualizer)[0].mouseDistance(dx, dy, x, y, boxinfo.logx, boxinfo.logy);
+						dx *= boxinfo.box._b_x; // transform distance from box to canvas space
+						dy *= boxinfo.box._b_y; // transform distance from box to canvas space
+						import std.math;
+						dx = abs(dx);
+						dy = abs(dy);
+						//writeln("dx=",dx, "     dy=",dy);
+						if (dx < DX_RANGE) {
+							if (min_dx is double.init || dx < min_dx) {
+								min_dx = dx;
+								closest_idx_x = cast(int)idx;
+							}
+						}
+						if (dy < DY_RANGE) {
+							if (min_dy is double.init || dy < min_dy) {
+								min_dy = dy;
+								closest_idx_y = cast(int)idx;
+							}
+						}
+					}
+				}
+			}
+		}
+		int mouse_hover_idx = -1;
+		if (closest_idx_x >= 0 && closest_idx_y >= 0) {
+			if (min_dx < min_dy) {
+				mouse_hover_idx = closest_idx_x;
+			} else {
+				mouse_hover_idx = closest_idx_y;
+			}
+		} else if (closest_idx_x >= 0) {
+			mouse_hover_idx = closest_idx_x;
+		} else if (closest_idx_y >= 0) {
+			mouse_hover_idx = closest_idx_y;
+		}
+		return mouse_hover_idx;
+	}
+
+
 	bool onMotionNotify(GdkEventMotion *event_motion, Widget w)
 	{
 		GtkAllocation size;
@@ -241,13 +302,45 @@ protected:
 			_vbox.scale_ongoing(event_motion.x, event_motion.y);
 			queueDrawArea(0,0, size.width, size.height);
 		}
-		// ask the visualizers if they want to handle the motion event
-		foreach(itemname, visualizer; _visualizers) {
-			if (visualizer.length == 1) {
-				//double x = _vbox.
-				//visualizer[0].mouseMotionDistance(x,y);
+
+		// interaction of items with mouse
+		int mouse_hover_idx = -1;
+		if (_item_mouse_action.idx >= 0 && _item_mouse_action.button_down) {
+			mouse_hover_idx = _item_mouse_action.idx;
+			_item_mouse_action.gui_idx = _parentGui.getGuiIdx();
+			_item_mouse_action.itemname = _itemnames[mouse_hover_idx];
+			auto visualizer = _itemnames[mouse_hover_idx] in _visualizers;
+			if (visualizer !is null && visualizer.length == 1) {
+				(*visualizer)[0].mouseDrag(_sessionTid, _item_mouse_action, _logscale_x, _logscale_y);
 			}
+		} else {
+			mouse_hover_idx = checkItemsForMouseAction(event_motion.x, event_motion.y);
 		}
+		bool send_redraw = false;
+		if (_item_mouse_action.idx != mouse_hover_idx) {
+			_item_mouse_action.idx = mouse_hover_idx;
+			send_redraw = true;
+		}
+		if (mouse_hover_idx >= 0) {
+			auto boxinfo = _itemnames[mouse_hover_idx] in _visualizer_view_boxes;
+			if (boxinfo !is null) {
+				//double x = boxinfo.box.reduce_canvas_x(event_motion.x, boxinfo.width);
+				//double y = boxinfo.box.reduce_canvas_y(event_motion.y, boxinfo.height);
+				import logscale;
+				_item_mouse_action.x_current = boxinfo.box.transform_canvas2box_x(event_motion.x);
+				_item_mouse_action.y_current = boxinfo.box.transform_canvas2box_y(event_motion.y);
+			}
+			if (_item_mouse_action.button_down) {
+				send_redraw = true;
+			}
+			//writeln("mouse_hover_idx=",mouse_hover_idx ,"      x_current = ", _item_mouse_action.x_current, "    y_current=",_item_mouse_action.y_current, "\r");
+		}
+		if (send_redraw) {
+			//_sessionTid.send(MsgEchoRedrawContent(_parentGui.getGuiIdx()), thisTid);
+			getAllocation(size);
+			queueDrawArea(0,0, size.width, size.height);
+		}
+
 		return true;
 	}
 
@@ -267,6 +360,16 @@ protected:
 		if (event_button.button == 3) // starte Scaling
 		{
 			_vbox.scale_start(event_button.x, event_button.y, size.width, size.height);
+		}
+		// interaction of items with mouse
+		if (event_button.button == 1) // item action
+		{
+			int mouse_hover_idx = _item_mouse_action.idx;
+			if (mouse_hover_idx >= 0) {
+					_item_mouse_action.button_down = true;
+					_item_mouse_action.x_start = _item_mouse_action.x_current;
+					_item_mouse_action.y_start = _item_mouse_action.y_current;
+				}
 		}
 		return true;
 	}
@@ -289,6 +392,21 @@ protected:
 				_vbox.scale_finish(event_button.x, event_button.y);
 			}
 			queueDrawArea(0,0, size.width, size.height);
+		}
+		// interaction of items with mouse
+		if (event_button.button == 1) // item action
+		{
+			int mouse_hover_idx = _item_mouse_action.idx;
+			if (mouse_hover_idx >= 0) {
+
+				_item_mouse_action.gui_idx = _parentGui.getGuiIdx();
+				_item_mouse_action.itemname = _itemnames[mouse_hover_idx];
+				auto visualizer = _itemnames[mouse_hover_idx] in _visualizers;
+				if (visualizer !is null && visualizer.length == 1) {
+					(*visualizer)[0].mouseButtonUp(_sessionTid, _item_mouse_action, _logscale_x, _logscale_y);
+				}
+				_item_mouse_action.button_down = false;
+			}
 		}
 		return true;
 	}
@@ -541,6 +659,8 @@ protected:
 			}
 		}
 
+		// clear this because it will be refilled while drawing
+		_visualizer_view_boxes = null;
 
 
 		if (_overlay) {
@@ -583,7 +703,12 @@ protected:
 					double[3] color = getColor(visualizer[0].getColorIdx());
 					cr.setSourceRgba(color[0], color[1], color[2], 1.0);
 					cr.setLineWidth( 2);
-					visualizer[0].draw(cr, _vbox, _logscale_y, _logscale_x, _logscale_z);
+					_item_mouse_action.relevant = false;
+					if (_item_mouse_action.idx == idx) {
+						_item_mouse_action.relevant = true;
+					}
+					visualizer[0].draw(cr, _vbox, _logscale_y, _logscale_x, _logscale_z, _item_mouse_action);
+					_visualizer_view_boxes[itemname] = BoxInfo(_vbox, size.width, size.height, _logscale_x, _logscale_y);
 					cr.stroke();
 					draw_color_key |= visualizer[0].needsColorKey();
 				}
@@ -746,8 +871,15 @@ protected:
 						double[3] color = getColor(visualizer[0].getColorIdx());
 						cr.setSourceRgba(color[0], color[1], color[2], 1.0);
 
+						_item_mouse_action.relevant = false;
+						if (_item_mouse_action.idx == idx) {
+							_item_mouse_action.relevant = true;
+						}
+
 						cr.setLineWidth(2);
-						visualizer[0].draw(cr, _vbox, _logscale_y, _logscale_x, _logscale_z);
+						visualizer[0].draw(cr, _vbox, _logscale_y, _logscale_x, _logscale_z, _item_mouse_action);
+						_visualizer_view_boxes[_itemnames[idx]] = BoxInfo(_vbox, size.width, size.height, _logscale_x, _logscale_y);
+
 						cr.stroke();
 
 						if (_grid_ontop == true || !cell_has_content) {
@@ -885,7 +1017,17 @@ protected:
 
 	//string[] _visualizers;
 	immutable(Visualizer)[][string] _visualizers;
+	struct BoxInfo {
+		ViewBox box;
+		int width, height;
+		bool logx, logy;
+	}
+	BoxInfo[string] _visualizer_view_boxes; // safe ViewBox for each  visualizer when it is drawn
 	string[] _itemnames;
+
+
+	ItemMouseAction _item_mouse_action; 
+
 	//string[] _drawables;
 	//shared Session _session;
 	import std.concurrency;

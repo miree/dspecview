@@ -20,6 +20,18 @@ public:
 }
 
 
+////////////////////////////////////////
+// Store information about mouse
+// intercation with the item
+struct ItemMouseAction {
+	int idx = -1; // 
+	bool relevant; // if true, this information can be used in the drawing process 
+	double x_current,y_current;
+	double x_start,y_start;
+	bool button_down; // is true if the mouse button is down 
+	string itemname;
+	ulong gui_idx;
+}
 
 ////////////////////////////////////////
 // All objects that are created by items
@@ -30,6 +42,7 @@ public:
 immutable interface Visualizer 
 {
 public:
+	import std.concurrency;
 	import cairo.Context, cairo.Surface;
 	import view;
 	//string getItemName() immutable;
@@ -37,16 +50,16 @@ public:
 	ulong getDim() immutable;
 	void print(int context) immutable;
 	bool needsColorKey() immutable;
-	void draw(ref Scoped!Context cr, ViewBox box, bool logy, bool logx, bool logz) immutable;
+	void draw(ref Scoped!Context cr, ViewBox box, bool logy, bool logx, bool logz, ItemMouseAction mouse_action) immutable;
 	bool getLeftRight(out double left, out double right, bool logy, bool logx) immutable;
 	bool getBottomTopInLeftRight(out double bottom, out double top, double left, double right, bool logy, bool logx) immutable;
 	bool getZminZmaxInLeftRightBottomTop(out double mi, out double ma, 
 	                                     double left, double right, double bottom, double top, 
 	                                     bool logz, bool logy, bool logx) immutable;
-	double mouseMotionDistance(double x, double y) immutable;
-	void   mouseButtonDown(double x, double y) immutable;
-	void   mouseButtonUp(double x, double y) immutable;
-	bool   mouseActionActive() immutable;
+	bool mouseDistance(out double dx, out double dy, double x, double y, bool logx, bool logy) immutable;
+	void mouseButtonDown(Tid sessionTid, ItemMouseAction mouse_action, bool logx, bool logy) immutable;
+	void mouseDrag(Tid sessionTid, ItemMouseAction mouse_action, bool logx, bool logy) immutable;
+	void mouseButtonUp(Tid sessionTid, ItemMouseAction mouse_action, bool logx, bool logy) immutable;
 }
 
 
@@ -54,6 +67,7 @@ public:
 immutable class BaseVisualizer : Visualizer 
 {
 public:
+	import std.concurrency;
 	import cairo.Context, cairo.Surface;
 	import view;
 
@@ -72,7 +86,7 @@ public:
 	override bool needsColorKey() immutable {
 		return false;
 	}
-	override void draw(ref Scoped!Context cr, ViewBox box, bool logy, bool logx, bool logz) immutable {
+	override void draw(ref Scoped!Context cr, ViewBox box, bool logy, bool logx, bool logz, ItemMouseAction mouse_action) immutable {
 	}
 	override bool getLeftRight(out double left, out double right, bool logy, bool logx) immutable
 	{
@@ -89,22 +103,21 @@ public:
 		return false;
 	}
 
-	override double mouseMotionDistance(double x, double y) immutable
-	{
-		return -1;
-	}
-	override void mouseButtonDown(double x, double y) immutable
-	{
-	}
-	override void mouseButtonUp(double x, double y) immutable
-	{
-	}
-	override bool   mouseActionActive() immutable
+	override bool mouseDistance(out double dx, out double dy, double x, double y, bool logx, bool logy) immutable
 	{
 		return false;
 	}
+	override void mouseButtonDown(Tid sessionTid, ItemMouseAction mouse_action, bool logx, bool logy) immutable
+	{
+	}
+	override void mouseDrag(Tid sessionTid, ItemMouseAction mouse_action, bool logx, bool logy) immutable
+	{
+	}
+	override void mouseButtonUp(Tid sessionTid, ItemMouseAction mouse_action, bool logx, bool logy) immutable
+	{
+	}
 
-private:
+protected:
 	int    _colorIdx;
 }
 
@@ -155,6 +168,14 @@ struct MsgRemoveItem{
 struct MsgAddNumber{
 	string itemname;
 	double value;
+	double delta;
+	ulong gui_idx;
+	int color_idx = -1;
+}
+
+struct MsgAddItem{
+	string itemname;
+	Item item;
 }
 
 
@@ -254,6 +275,19 @@ public:
 						//writeln("item ",msg.itemname," not found\r");
 					}
 				},
+				(MsgAddItem msg) {
+					if (_output_all_messages) { writeln("got MsgAddItem\r"); }
+					try {
+						_items[msg.itemname] = msg.item;
+						//requestingThread.send("added filehist1: " ~ filehist1.filename);
+						if (_guiRunning) {
+							import gui;
+							_guiTid.send(MsgRefreshItemList());
+						}
+					} catch (Exception e) {
+						//requestingThread.send(e.msg);
+					}
+				},
 				(MsgAddFileHist msg, Tid requestingThread) {
 					if (_output_all_messages) { writeln("got MsgAddFileHist\r"); }
 					try {
@@ -272,10 +306,21 @@ public:
 					if (_output_all_messages) { writeln("got MsgAddNumber\r"); }
 					try {
 						import number;
-						_items[msg.itemname] = new Number(msg.value, _colorIdx_counter++, Direction.x);
+						int colorIdx = msg.color_idx;
+						if (colorIdx < 0) {
+							colorIdx = _colorIdx_counter++;
+						}
+						writeln("session: ", msg.value, " ", msg.delta, "\r");
+						_items[msg.itemname] = new Number(msg.value, msg.delta, colorIdx, Direction.x);
 						if (_guiRunning) {
 							import gui;
-							_guiTid.send(MsgRefreshItemList());
+							if (msg.delta is double.init) { // this is a first time add (itemlist has to be updated)
+								_guiTid.send(MsgRefreshItemList());
+								auto visualizer = _items[msg.itemname].createVisualizer();
+								requestingThread.send(MsgVisualizeItem(msg.itemname, msg.gui_idx), visualizer);
+							} 
+							writeln("redraw ", msg.gui_idx, "\r");
+							_guiTid.send(MsgRedrawContent(msg.gui_idx));
 						}
 					} catch (Exception e) {
 						//requestingThread.send(e.msg);
