@@ -303,6 +303,7 @@ public:
 			_dirty = false;
 			_plot_area.queueDraw();
 		}
+		_refresh_in_flight = false;
 	}
 	import session;
 	void addVisualizer(string itemname, immutable(Visualizer) visualizer) {
@@ -327,7 +328,14 @@ public:
 	}
 
 	void refresh() {
-		_plot_area.refresh();
+		if (!_refresh_in_flight) {
+			_refresh_in_flight = true;
+			// do this only if we are not _dirty to prevent redraw message flooding
+			// in case the drawing is slower then the redraw request rate
+			import std.stdio;
+			writeln("refresh()\r");
+			_plot_area.refresh();
+		}
 	}
 	bool autoRefresh() {
 		return _check_auto_refresh.getActive();
@@ -339,7 +347,8 @@ private:
 
 	import plotarea;
 	PlotArea _plot_area;
-	bool _dirty;
+	bool _dirty = false;
+	bool _refresh_in_flight = false;
 
 	Gui _parentGui;
 

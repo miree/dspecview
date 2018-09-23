@@ -179,7 +179,9 @@ public:
 			}
 		}
 		_sessionTid.send(MsgEchoRedrawContent(_parentGui.getGuiIdx()), thisTid);
+
 	}
+
 
 	void setFit() {
 		import std.stdio;
