@@ -166,10 +166,13 @@ struct MsgRemoveItem{
 }
 
 struct MsgAddNumber{
+	import number;
 	string itemname;
 	double value;
-	double delta;
+	Direction direction;
 	ulong gui_idx;
+	double delta;
+	bool logscale = false;
 	int color_idx = -1;
 }
 
@@ -310,16 +313,16 @@ public:
 						if (colorIdx < 0) {
 							colorIdx = _colorIdx_counter++;
 						}
-						writeln("session: ", msg.value, " ", msg.delta, "\r");
-						_items[msg.itemname] = new Number(msg.value, msg.delta, colorIdx, Direction.x);
+						//writeln("session: ", msg.value, " ", msg.delta, " ", msg.logscale, "\r");
+						_items[msg.itemname] = new Number(msg.value, msg.delta, msg.logscale, colorIdx, msg.direction);
 						if (_guiRunning) {
 							import gui;
 							if (msg.delta is double.init) { // this is a first time add (itemlist has to be updated)
+								//writeln("sending MsgRequestItemList\r");
 								_guiTid.send(MsgRefreshItemList());
 								auto visualizer = _items[msg.itemname].createVisualizer();
 								requestingThread.send(MsgVisualizeItem(msg.itemname, msg.gui_idx), visualizer);
 							} 
-							writeln("redraw ", msg.gui_idx, "\r");
 							_guiTid.send(MsgRedrawContent(msg.gui_idx));
 						}
 					} catch (Exception e) {

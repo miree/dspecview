@@ -140,14 +140,28 @@ void addFileHist(immutable string[] args)
 void addNumber(immutable string[] args)
 {
 	import std.stdio, std.concurrency, std.array, std.algorithm, std.conv;
-	import session;
+	import session, number;
 
-	if (args.length != 2) {
-		writeln("expecting one argument: <itemname> <value>, got ", args.length , "arguments: ", args);
+	if (args.length != 2 && args.length != 3) {
+		writeln("expecting one argument: <itemname> <value> [x|y], got ", args.length , "arguments: ", args);
 		return;
 	}
 
-	sessionTid.send(MsgAddNumber(args[0], args[1].to!double), thisTid);
+	if (args.length == 2) {
+		sessionTid.send(MsgAddNumber(args[0], args[1].to!double), thisTid);
+	} 
+	if (args.length == 3) {
+		switch(args[2][0]) {
+			case 'x':
+				sessionTid.send(MsgAddNumber(args[0], args[1].to!double, Direction.x), thisTid);
+			break;
+			case 'y':
+				sessionTid.send(MsgAddNumber(args[0], args[1].to!double, Direction.y), thisTid);
+			break;
+			default:
+				writeln("expecting x or y as third argument, found ", args[2]);
+		}
+	}
 }
 
 void showItemInWindow(immutable string[] args) 

@@ -306,6 +306,7 @@ protected:
 		// interaction of items with mouse
 		int mouse_hover_idx = -1;
 		if (_item_mouse_action.idx >= 0 && _item_mouse_action.button_down) {
+			// if there is already one item index active and the button is down
 			mouse_hover_idx = _item_mouse_action.idx;
 			_item_mouse_action.gui_idx = _parentGui.getGuiIdx();
 			_item_mouse_action.itemname = _itemnames[mouse_hover_idx];
@@ -314,6 +315,7 @@ protected:
 				(*visualizer)[0].mouseDrag(_sessionTid, _item_mouse_action, _logscale_x, _logscale_y);
 			}
 		} else {
+			// see if there is an item in mouse range.
 			mouse_hover_idx = checkItemsForMouseAction(event_motion.x, event_motion.y);
 		}
 		bool send_redraw = false;

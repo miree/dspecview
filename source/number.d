@@ -9,10 +9,11 @@ enum Direction
 class Number : Item
 {
 public:
-	this(double value, double delta, int colorIdx, Direction direction ) {
+	this(double value, double delta, bool logscale, int colorIdx, Direction direction ) {
 		_colorIdx  = colorIdx;
 		_value     = value;
 		_delta     = delta;
+		_logscale  = logscale;
 		_direction = direction;
 	}
 
@@ -22,10 +23,7 @@ public:
 
 	string getTypeString() {
 		import std.conv;
-		if (_delta is double.init) {
-			return "Number " ~ _value.to!string;
-		}
-		return  "Number " ~ (_value+_delta).to!string;
+		return  "Number " ~ getValue().to!string;
 	}
 
 	int getColorIdx() {
@@ -34,6 +32,10 @@ public:
 
 	double getValue() {
 		if (_delta !is double.init) {
+			if (_logscale) {
+				import std.math;
+				return _value*exp(_delta);
+			}
 			return _value + _delta;
 		}
 		return _value;
@@ -43,6 +45,7 @@ private:
 	int       _colorIdx;
 	double    _value;
 	double    _delta;   // is needed if the modified value is used by someone else (for life update projections etc.)
+	bool      _logscale; // is needed if the delta was determined in logscale window
 	Direction _direction;
 }
 
@@ -64,6 +67,9 @@ public:
 		import std.stdio;
 		import logscale, primitives;
 		if (_direction == Direction.x) {
+			if (logx && _value < 0) {
+				return; // we can't do this
+			}
 			if (mouse_action.relevant) {
 				cr.setLineWidth(cr.getLineWidth()*2);
 			}
@@ -74,7 +80,17 @@ public:
 			drawVerticalLine(cr, box, value, box.getBottom(), box.getTop());
 		} 
 		if (_direction == Direction.y) {
-			drawHorizontalLine(cr, box, log_y_value_of(_value, logy), box.getLeft(), box.getRight());
+			if (logy && _value < 0) {
+				return; // we can't do this
+			}
+			if (mouse_action.relevant) {
+				cr.setLineWidth(cr.getLineWidth()*2);
+			}
+			double value = log_y_value_of(_value, logy);
+			if (mouse_action.relevant && mouse_action.button_down) {
+				value += mouse_action.y_current - mouse_action.y_start;
+			}
+			drawHorizontalLine(cr, box, value, box.getLeft(), box.getRight());
 		} 
 		cr.stroke();
 	}
@@ -98,11 +114,20 @@ public:
 	{
 		import std.math;
 		import logscale;
-		double value = log_x_value_of(_value, logx, double.init);
-		if (value is double.init) {
-			return false;
+		if (_direction == Direction.x) {
+			double value = log_x_value_of(_value, logx, double.init);
+			if (value is double.init) {
+				return false;
+			} else {
+				dx = x-value;
+			}
 		} else {
-			dx = x-value;
+			double value = log_y_value_of(_value, logy, double.init);
+			if (value is double.init) {
+				return false;
+			} else {
+				dy = y-value;
+			}
 		}
 		import std.stdio;
 		return true;
@@ -111,29 +136,43 @@ public:
 	override void mouseButtonDown(Tid sessionTid, ItemMouseAction mouse_action, bool logx, bool logy) immutable
 	{
 		import std.stdio;
-		writeln("cl-\r");
 	}
 	override void mouseDrag(Tid sessionTid, ItemMouseAction mouse_action, bool logx, bool logy) immutable
 	{
-		double delta = mouse_action.x_current - mouse_action.x_start;
-		//_delta = delta;
+		double delta;
+		if (_direction == Direction.x) {
+			delta = mouse_action.x_current - mouse_action.x_start;
+		} else {
+			delta = mouse_action.y_current - mouse_action.y_start;
+		}
 		import std.stdio;
-		writeln("send msg ", _value, " ", delta, "\r");
-		sessionTid.send(MsgAddNumber(mouse_action.itemname, _value, delta, mouse_action.gui_idx, _colorIdx), thisTid);
+
+		// create a new item with the updated position
+		bool logscale = false;
+		if (logx && _direction == Direction.x ||
+			logy && _direction == Direction.y) {
+			logscale = true;
+		} 
+		// send an item with the temporary changes
+		sessionTid.send(MsgAddNumber(mouse_action.itemname, _value, _direction, mouse_action.gui_idx, delta, logscale, _colorIdx), thisTid);
 	}
 	override void mouseButtonUp(Tid sessionTid, ItemMouseAction mouse_action, bool logx, bool logy) immutable
 	{
 		import std.stdio, std.math;
 		import logscale;
-		writeln("-ick\r");
-		writeln("xstart ", mouse_action.x_start,"\r");
-		writeln("xcurrent ", mouse_action.x_current,"\r");
-		double delta = mouse_action.x_current - mouse_action.x_start;
-		writeln("send msg ", _value, " ", double.init, "\r");
-		if (logx) {
-			sessionTid.send(MsgAddNumber(mouse_action.itemname, _value*exp(delta), double.init, mouse_action.gui_idx, _colorIdx), thisTid);
+		double delta;
+		if (_direction == Direction.x) {
+			delta = mouse_action.x_current - mouse_action.x_start;
 		} else {
-			sessionTid.send(MsgAddNumber(mouse_action.itemname, _value+delta, double.init, mouse_action.gui_idx, _colorIdx), thisTid);
+			delta = mouse_action.y_current - mouse_action.y_start;
+		}
+
+		if (logx && _direction == Direction.x ||
+			logy && _direction == Direction.y) {
+			// send an item with the permanent changes
+			sessionTid.send(MsgAddNumber(mouse_action.itemname, _value*exp(delta), _direction, mouse_action.gui_idx, double.init, false, _colorIdx), thisTid);
+		} else {
+			sessionTid.send(MsgAddNumber(mouse_action.itemname, _value+delta, _direction, mouse_action.gui_idx, double.init, false, _colorIdx), thisTid);
 		}
 
 	}
