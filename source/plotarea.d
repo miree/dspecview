@@ -20,6 +20,11 @@ class PlotArea : DrawingArea
 {
 public:
 
+	immutable double minWidth = 1e-3;
+	immutable double maxWidth = 1e10;
+	immutable double minLogWidth = 1e-2;
+	immutable double maxLogWidth = 1e2;
+
 	import std.concurrency;
 	import gui;
 	this(Tid sessionTid, bool in_other_thread, bool mode2d, Gui parentGui)
@@ -143,15 +148,15 @@ public:
 		_logscale_x = logscale;
 		setFitX();
 		// adjust the zoom ranges for linear and logarithmic axis scaling
-		if (logscale) { _vbox.setWidthMinMax(1e-2,1e2);}
-		else          { _vbox.setWidthMinMax(1e-3,1e10);}
+		if (logscale) { _vbox.setWidthMinMax(minLogWidth,maxLogWidth);}
+		else          { _vbox.setWidthMinMax(minWidth,   maxWidth);}
 	}
 	void setLogscaleY(bool logscale) {
 		_logscale_y = logscale;
 		setFitY();
 		// adjust the zoom ranges for linear and logarithmic axis scaling
-		if (logscale) { _vbox.setHeightMinMax(1e-2,1e2);}
-		else          { _vbox.setHeightMinMax(1e-3,1e10);}
+		if (logscale) { _vbox.setHeightMinMax(minLogWidth,maxLogWidth);}
+		else          { _vbox.setHeightMinMax(minWidth,   maxWidth);}
 	}
 	void setLogscaleZ(bool logscale) {
 		_logscale_z = logscale;
@@ -552,6 +557,7 @@ protected:
 				}
 			}
 		}
+		limit(bottom,top, bottom,top, _logscale_x);
 		add_bottom_top_margin(bottom,top);
 		return !first_assignment; // false if there was now drawable in the plotarea		
 	}
@@ -573,9 +579,41 @@ protected:
 					right = max(right, r);
 				}
 			}
-		}		
+		}
+		limit(left,right, left,right, _logscale_x);
 		add_left_right_margin(left,right);
 		return !first_assignment; // false if there was now drawable in the plotarea		
+	}
+
+	void limit(out double min_out, out double max_out, double min, double max, bool log) {
+		bool too_small = false;
+		bool too_wide = false;
+		double mean = 0.5*(min+max);
+		if (log) {
+			if (max-min < minLogWidth) {
+				min_out = mean-minLogWidth/2;
+				max_out = mean+minLogWidth/2;
+				return;
+			}
+			if (max-min > maxLogWidth) {
+				min_out = mean-maxLogWidth/2;
+				max_out = mean+maxLogWidth/2;
+				return;
+			}
+		} else {
+			if (max-min < minWidth) {
+				min_out = mean-minWidth/2;
+				max_out = mean+minWidth/2;
+				return;
+			}
+			if (max-min > maxWidth) {
+				min_out = mean-maxWidth/2;
+				max_out = mean+maxWidth/2;
+				return;
+			}
+		}
+		min_out = min;
+		max_out = max;
 	}
 
 	void draw_box(ref Scoped!Context cr)
