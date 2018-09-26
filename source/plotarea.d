@@ -403,6 +403,12 @@ protected:
 		// interaction of items with mouse
 		if (event_button.button == 1) // item action
 		{
+			// this enforces the visual glitch
+			//GdkEventMotion event_motion;
+			//event_motion.x = event_button.x;
+			//event_motion.y = event_button.y;
+			//onMotionNotify(&event_motion, w);
+
 			int mouse_hover_idx = _item_mouse_action.idx;
 			if (mouse_hover_idx >= 0) {
 
@@ -413,6 +419,7 @@ protected:
 					(*visualizer)[0].mouseButtonUp(_sessionTid, _item_mouse_action, _logscale_x, _logscale_y);
 				}
 				_item_mouse_action.button_down = false;
+				_item_mouse_action.idx = -1;
 			}
 		}
 		return true;
@@ -557,7 +564,7 @@ protected:
 				}
 			}
 		}
-		limit(bottom,top, bottom,top, _logscale_x);
+		limit(bottom,top, bottom,top, _logscale_y);
 		add_bottom_top_margin(bottom,top);
 		return !first_assignment; // false if there was now drawable in the plotarea		
 	}
