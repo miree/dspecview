@@ -30,6 +30,9 @@ public:
 	override int getColorIdx() {
 		return _colorIdx;
 	}
+	override void setColorIdx(int idx) {
+		_colorIdx = idx;
+	}
 
 	override immutable(Visualizer) createVisualizer() 
 	{

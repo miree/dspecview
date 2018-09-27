@@ -17,6 +17,13 @@ public:
 	string getTypeString();
 
 	int getColorIdx();
+	void setColorIdx(int idx);	
+}
+
+immutable interface ItemFactory 
+{
+public: 
+	Item getItem() pure;
 }
 
 
@@ -165,20 +172,9 @@ struct MsgRemoveItem{
 	string itemname;
 }
 
-struct MsgAddNumber{
-	import number;
-	string itemname;
-	double value;
-	Direction direction;
-	ulong gui_idx;
-	double delta;
-	bool logscale = false;
-	int color_idx = -1;
-}
-
 struct MsgAddItem{
 	string itemname;
-	Item item;
+	immutable ItemFactory item_factory;
 }
 
 
@@ -281,8 +277,13 @@ public:
 				(MsgAddItem msg) {
 					if (_output_all_messages) { writeln("got MsgAddItem\r"); }
 					try {
-						_items[msg.itemname] = msg.item;
-						//requestingThread.send("added filehist1: " ~ filehist1.filename);
+						// this is a bit bad because we have to cast away immutability (which is there just for sending)
+						// maybe it is better to send an immutable ItemFactory... yes I should try this.
+						string itemname = msg.itemname;
+						_items[itemname] = msg.item_factory.getItem();
+						if (_items[itemname].getColorIdx() < 0) {
+							_items[itemname].setColorIdx(_colorIdx_counter++);
+						}
 						if (_guiRunning) {
 							import gui;
 							_guiTid.send(MsgRefreshItemList());
@@ -305,36 +306,6 @@ public:
 						//requestingThread.send(e.msg);
 					}
 				},
-				(MsgAddNumber msg, Tid requestingThread) {
-					if (_output_all_messages) { writeln("got MsgAddNumber\r"); }
-					try {
-						import number;
-						int colorIdx = msg.color_idx;
-						if (colorIdx < 0) {
-							colorIdx = _colorIdx_counter++;
-						}
-						//writeln("session: ", msg.value, " ", msg.delta, " ", msg.logscale, "\r");
-						_items[msg.itemname] = new Number(msg.value, msg.delta, msg.logscale, colorIdx, msg.direction);
-						if (_guiRunning) {
-							import gui;
-							if (msg.delta is double.init) { // this is a first time add (itemlist has to be updated)
-								//writeln("sending MsgRequestItemList\r");
-								_guiTid.send(MsgRefreshItemList());
-								auto visualizer = _items[msg.itemname].createVisualizer();
-								requestingThread.send(MsgVisualizeItem(msg.itemname, msg.gui_idx), visualizer);
-							} 
-							_guiTid.send(MsgRedrawContent(msg.gui_idx));
-						}
-					} catch (Exception e) {
-						//requestingThread.send(e.msg);
-					}
-				},
-				//(MsgAddGuiItem guiitem, Tid requestingThread) {
-				//	if (_output_all_messages) { writeln("got MsgAddGuiItem\r"); }
-				//	import gui;
-				//	import std.conv;
-				//	_items[guiitem.guiname] = new GuiItem(guiitem.guiname, guiitem.gui_idx);
-				//},
 				(MsgRequestItemList msg, Tid requestingThread) {
 					if (_output_all_messages) { writeln("got MsgRequestItemList\r"); }
 					import textui;

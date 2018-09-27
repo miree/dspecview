@@ -297,6 +297,7 @@ protected:
 
 	bool onMotionNotify(GdkEventMotion *event_motion, Widget w)
 	{
+		//writeln("PlotArea motion notify ", event_motion.x, " ", event_motion.y, "\r");
 		GtkAllocation size;
 		getAllocation(size);
 		if (_vbox.translating.active) {
@@ -317,6 +318,12 @@ protected:
 			_item_mouse_action.itemname = _itemnames[mouse_hover_idx];
 			auto visualizer = _itemnames[mouse_hover_idx] in _visualizers;
 			if (visualizer !is null && visualizer.length == 1) {
+				auto boxinfo = _itemnames[mouse_hover_idx] in _visualizer_view_boxes;
+				if (boxinfo !is null) {
+					import logscale;
+					_item_mouse_action.x_current = boxinfo.box.transform_canvas2box_x(event_motion.x);
+					_item_mouse_action.y_current = boxinfo.box.transform_canvas2box_y(event_motion.y);
+				}
 				(*visualizer)[0].mouseDrag(_sessionTid, _item_mouse_action, _logscale_x, _logscale_y);
 			}
 		} else {
@@ -324,15 +331,13 @@ protected:
 			mouse_hover_idx = checkItemsForMouseAction(event_motion.x, event_motion.y);
 		}
 		bool send_redraw = false;
-		if (_item_mouse_action.idx != mouse_hover_idx) {
+		if (_item_mouse_action.idx != mouse_hover_idx ) {
 			_item_mouse_action.idx = mouse_hover_idx;
 			send_redraw = true;
 		}
 		if (mouse_hover_idx >= 0) {
 			auto boxinfo = _itemnames[mouse_hover_idx] in _visualizer_view_boxes;
 			if (boxinfo !is null) {
-				//double x = boxinfo.box.reduce_canvas_x(event_motion.x, boxinfo.width);
-				//double y = boxinfo.box.reduce_canvas_y(event_motion.y, boxinfo.height);
 				import logscale;
 				_item_mouse_action.x_current = boxinfo.box.transform_canvas2box_x(event_motion.x);
 				_item_mouse_action.y_current = boxinfo.box.transform_canvas2box_y(event_motion.y);
@@ -343,9 +348,10 @@ protected:
 			//writeln("mouse_hover_idx=",mouse_hover_idx ,"      x_current = ", _item_mouse_action.x_current, "    y_current=",_item_mouse_action.y_current, "\r");
 		}
 		if (send_redraw) {
+			//_parentGui.mark_dirty();
 			//_sessionTid.send(MsgEchoRedrawContent(_parentGui.getGuiIdx()), thisTid);
-			getAllocation(size);
-			queueDrawArea(0,0, size.width, size.height);
+			//getAllocation(size);
+			queueDraw();//Area(0,0, size.width, size.height);
 		}
 
 		return true;
@@ -385,7 +391,7 @@ protected:
 	{
 		GtkAllocation size;
 		getAllocation(size);
-		//writeln("PlotArea button released ", event_button.x, " ", event_button.y, " ", event_button.button);
+		//writeln("PlotArea button released ", event_button.x, " ", event_button.y, " ", event_button.button, "\r");
 		if (event_button.button == 2) 
 		{
 			if (_vbox.translating.active) {
@@ -403,23 +409,23 @@ protected:
 		// interaction of items with mouse
 		if (event_button.button == 1) // item action
 		{
-			// this enforces the visual glitch
-			//GdkEventMotion event_motion;
-			//event_motion.x = event_button.x;
-			//event_motion.y = event_button.y;
-			//onMotionNotify(&event_motion, w);
-
 			int mouse_hover_idx = _item_mouse_action.idx;
 			if (mouse_hover_idx >= 0) {
-
 				_item_mouse_action.gui_idx = _parentGui.getGuiIdx();
 				_item_mouse_action.itemname = _itemnames[mouse_hover_idx];
+
+				auto boxinfo = _itemnames[mouse_hover_idx] in _visualizer_view_boxes;
+				if (boxinfo !is null) {
+					import logscale;
+					_item_mouse_action.x_current = boxinfo.box.transform_canvas2box_x(event_button.x);
+					_item_mouse_action.y_current = boxinfo.box.transform_canvas2box_y(event_button.y);
+				}
+
 				auto visualizer = _itemnames[mouse_hover_idx] in _visualizers;
 				if (visualizer !is null && visualizer.length == 1) {
 					(*visualizer)[0].mouseButtonUp(_sessionTid, _item_mouse_action, _logscale_x, _logscale_y);
 				}
 				_item_mouse_action.button_down = false;
-				_item_mouse_action.idx = -1;
 			}
 		}
 		return true;

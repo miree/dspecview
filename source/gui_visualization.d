@@ -298,6 +298,9 @@ public:
 	void set_overlay(bool state) {
 		_check_overlay.setActive(state);
 	}
+	void mark_dirty() {
+		_dirty = true;
+	}
 	void redraw_content() {
 		if (_dirty) {
 			_dirty = false;

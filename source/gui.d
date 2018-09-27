@@ -347,6 +347,9 @@ public:
 
 	}
 
+	void mark_dirty() {
+		_visualization.mark_dirty();
+	}
 	void redraw_content()
 	{
 		if (_visualization !is null) {

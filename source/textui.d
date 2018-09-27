@@ -147,16 +147,22 @@ void addNumber(immutable string[] args)
 		return;
 	}
 
+	double    _value;
+	double    _delta;   // is needed if the modified value is used by someone else (for life update projections etc.)
+	bool      _logscale; // is needed if the delta was determined in logscale window
+	int       _colorIdx;
+	Direction _direction;
+
 	if (args.length == 2) {
-		sessionTid.send(MsgAddNumber(args[0], args[1].to!double), thisTid);
+		sessionTid.send(MsgAddItem(args[0], new immutable(NumberFactory)(args[1].to!double, double.init, false, -1, Direction.x)));
 	} 
 	if (args.length == 3) {
 		switch(args[2][0]) {
 			case 'x':
-				sessionTid.send(MsgAddNumber(args[0], args[1].to!double, Direction.x), thisTid);
+				sessionTid.send(MsgAddItem(args[0], new immutable(NumberFactory)(args[1].to!double, double.init, false, -1, Direction.x)));
 			break;
 			case 'y':
-				sessionTid.send(MsgAddNumber(args[0], args[1].to!double, Direction.y), thisTid);
+				sessionTid.send(MsgAddItem(args[0], new immutable(NumberFactory)(args[1].to!double, double.init, false, -1, Direction.y)));
 			break;
 			default:
 				writeln("expecting x or y as third argument, found ", args[2]);
