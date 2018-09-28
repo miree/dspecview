@@ -368,6 +368,9 @@ public:
 		}
 	}
 
+	void set_mouse_pos_label(double x, double y) {
+		_visualization.set_mouse_pos_label(x,y);
+	}
 
 	void message_handler()
 	{

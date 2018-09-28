@@ -192,6 +192,9 @@ public:
 				_plot_area.queueDraw();
 			});
 
+		_mouse_pos = new Label("  x=0\n  y=0");
+		set_mouse_pos_label(0,0);
+
 
 		auto layout_box = new Box(GtkOrientation.HORIZONTAL,0);
 
@@ -228,8 +231,9 @@ public:
 		layout_box.add(_radio_colmajor);
 		layout_box.add(_spin_columns);
 		layout_box.add(columns_label);
+		layout_box.add(new Separator(GtkOrientation.VERTICAL));
 
-
+		layout_box.add(_mouse_pos);
 
 		//_radio_overlay.show();
 		//_radio_grid.show();
@@ -308,6 +312,11 @@ public:
 		}
 		_refresh_in_flight = false;
 	}
+	void set_mouse_pos_label(double x, double y) {
+		import std.format;
+		auto label = format("  x=%g\n  y=%g", x,y);
+		_mouse_pos.setLabel(label);
+	}
 	import session;
 	void addVisualizer(string itemname, immutable(Visualizer) visualizer) {
 		_dirty = true;
@@ -369,6 +378,7 @@ private:
 	CheckButton _check_logx, _check_logy, _check_logz;
 	CheckButton _check_gridx, _check_gridy, _check_grid_ontop;
 	Button _clear_plot_area, _refresh_plot_area;	
+	Label  _mouse_pos;
 
 public:
 	import gtk.Box, gtk.Button;

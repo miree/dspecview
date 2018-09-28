@@ -309,6 +309,23 @@ protected:
 			queueDrawArea(0,0, size.width, size.height);
 		}
 
+		// determine mouse position and update the mouse_pos label
+		foreach( idx, boxinfo ; _visualizer_view_boxes_bare) {
+			double x = boxinfo.box.transform_canvas2box_x(event_motion.x);
+			double y = boxinfo.box.transform_canvas2box_y(event_motion.y);
+
+			if (x > boxinfo.box.getLeft() && x < boxinfo.box.getRight() &&
+				y > boxinfo.box.getBottom() && y < boxinfo.box.getTop()) {
+				if (boxinfo.logx) x = exp(x);
+				if (boxinfo.logy) y = exp(y);
+
+				//import std.stdio;
+				//writeln("x = " ,x, "    y = ", y, "\r");
+				_parentGui.set_mouse_pos_label(x,y);
+			}
+		}
+
+
 		// interaction of items with mouse
 		int mouse_hover_idx = -1;
 		if (_item_mouse_action.idx >= 0 && _item_mouse_action.button_down) {
@@ -323,6 +340,10 @@ protected:
 					import logscale;
 					_item_mouse_action.x_current = boxinfo.box.transform_canvas2box_x(event_motion.x);
 					_item_mouse_action.y_current = boxinfo.box.transform_canvas2box_y(event_motion.y);
+
+					import std.stdio;
+					writeln("x = " ,_item_mouse_action.x_current, "    y = ", _item_mouse_action.y_current, "\r");
+
 				}
 				(*visualizer)[0].mouseDrag(_sessionTid, _item_mouse_action, _logscale_x, _logscale_y);
 			}
@@ -684,6 +705,8 @@ protected:
 			cr.paint();
 		cr.restore();
 
+		_visualizer_view_boxes_bare = null;
+
 	//import cairo.ImageSurface;
 	//auto image_surface = ImageSurface.createFromPng("my_image.png");
 	////import gdk.Pixbuf;
@@ -739,6 +762,7 @@ protected:
 				_vbox.setZminZmax(global_zmin, global_zmax);
 			}
 			_vbox.update_coefficients(0, 0, size.width, size.height);
+			_visualizer_view_boxes_bare[0] = BoxInfo(_vbox, size.width, size.height, _logscale_x, _logscale_y);
 			//writeln("setContextClip\r");
 			setContextClip(cr, _vbox);
 			if (_grid_ontop == false) {
@@ -832,6 +856,9 @@ protected:
 					if (_row_major) {
 						idx = row * columns + column;
 					}
+
+					_visualizer_view_boxes_bare[idx] = BoxInfo(_vbox, size.width, size.height, _logscale_x, _logscale_y);
+
 					// check if this cell has anything drawn in it
 					bool cell_has_content = (idx < _itemnames.length);
 					// get itemname from index
@@ -902,6 +929,7 @@ protected:
 
 						// setup the ViewBox
 						_vbox.update_coefficients(row, column, size.width, size.height);
+						_visualizer_view_boxes_bare[idx] = BoxInfo(_vbox, size.width, size.height, _logscale_x, _logscale_y);
 						setContextClip(cr, _vbox);
 
 			//cr.save();
@@ -1077,6 +1105,8 @@ protected:
 	}
 	BoxInfo[string] _visualizer_view_boxes; // safe ViewBox for each  visualizer when it is drawn
 	string[] _itemnames;
+
+	BoxInfo[ulong] _visualizer_view_boxes_bare; // without item inside, just to show the mouse coordinates
 
 
 	ItemMouseAction _item_mouse_action; 
