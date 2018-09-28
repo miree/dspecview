@@ -61,6 +61,10 @@ public:
 	{
 		_treeview.updateTreeStoreFromSession(itemlist); // just pass this through
 	}
+	void updateItemTypeInList(MsgUpdateItem itemtype) {
+		_treeview.updateItemTypeInList(itemtype); // just pass this through
+	}
+	
 	void up()
 	{
 		_treeview.up();

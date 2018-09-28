@@ -426,6 +426,29 @@ public:
 		}
 	}
 
+	void updateItemTypeInList(MsgUpdateItem itemtype) {
+
+		import std.string, std.array, std.algorithm, std.conv;
+		import std.stdio;
+		//writeln("itemlist: ", itemlist.dup);
+
+		//writeln("nametype: ", itemtype.nametype,"\r");
+		string itemname = itemtype.nametype.split('$').array[0];
+		string typename = itemtype.nametype.split('$').array[1];
+		int colorIdx    = itemtype.nametype.split('$').array[2].to!int;
+
+		import gtk.TreePath;
+		string mypath = get_path_name_from_name(itemname, _itemnames);
+		TreeIter iter;
+		_treestore.getIterFromString(iter, mypath);
+		TreePath path = _treestore.getPath(iter);
+		string theirpath = _treestore.getStringFromIter(iter);
+		if (theirpath == mypath) {
+			_treestore.set(iter, [COLUMN_TYPE], [typename]);
+		}
+		//writeln("mypath: ", mypath , "    theirpath: ", theirpath, "\r");
+ 	}
+
 	bool is_checked(string name) {
 		auto checked = name in _checked;
 		if (checked !is null && *checked == true) {

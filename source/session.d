@@ -187,6 +187,11 @@ struct MsgRequestItemList{
 struct MsgItemList { 
 	string nametype; 
 };
+struct MsgRequestItemUpdate {
+}
+struct MsgUpdateItem { 
+	string nametype; 
+};
 
 ////////////////////////////////////////
 // call the refresh function on an item
@@ -277,16 +282,23 @@ public:
 				(MsgAddItem msg) {
 					if (_output_all_messages) { writeln("got MsgAddItem\r"); }
 					try {
-						// this is a bit bad because we have to cast away immutability (which is there just for sending)
-						// maybe it is better to send an immutable ItemFactory... yes I should try this.
 						string itemname = msg.itemname;
+
+						auto item_ptr = itemname in _items;
+						bool already_there = item_ptr !is null;
+
 						_items[itemname] = msg.item_factory.getItem();
 						if (_items[itemname].getColorIdx() < 0) {
 							_items[itemname].setColorIdx(_colorIdx_counter++);
 						}
 						if (_guiRunning) {
 							import gui;
-							_guiTid.send(MsgRefreshItemList());
+							if (already_there) {
+								import std.conv;
+								_guiTid.send(MsgUpdateItem(itemname ~ "$" ~ _items[itemname].getTypeString() ~ "$" ~ _items[itemname].getColorIdx().to!string));
+							} else {
+								_guiTid.send(MsgRefreshItemList());
+							}
 						}
 					} catch (Exception e) {
 						//requestingThread.send(e.msg);

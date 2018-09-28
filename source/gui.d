@@ -397,6 +397,15 @@ public:
 					}
 				}
 			},
+			(MsgUpdateItem updateitem) {
+				foreach(gui; guis) {
+					if (gui !is null) {
+						if (gui._control_panel !is null ) {
+							gui._control_panel.updateItemTypeInList(updateitem);
+						}
+					}
+				}
+			},
 			(MsgVisualizeItem msg, immutable(Visualizer) visualizer) {
 				import std.stdio;
 				//writeln("gui: got visualizer for item: ", msg.itemname, "\r");
