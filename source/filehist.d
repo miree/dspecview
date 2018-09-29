@@ -10,13 +10,9 @@ public:
 	import std.datetime : Clock, seconds;		
 	import std.file;
 
-	this(string filename, int colorIdx) {
-		if (attrIsFile(getAttributes(filename))) {
+	this(string filename, int colorIdx) pure {
 			_filename = filename;
 			_colorIdx = colorIdx;
-		} else {
-			throw new Exception("not a valid file: " ~ filename);
-		}
 	}
 
 	override string getTypeString() {
@@ -41,6 +37,9 @@ public:
 			//writeln("Hist1: need to reload from file: ", _filename, "\r");
 			// try to read the data from file 
 			try {
+				if (!attrIsFile(getAttributes(_filename))) {
+					throw new Exception("not a valid file: " ~ _filename);
+				}
 				auto hist = read_file(_filename);
 				// In case we have an old referenced: release it. 	
 	            // If nobody else holds a reference to this object the GC will take care
@@ -310,3 +309,16 @@ private: // private state
 	int _dim = 0;
 }
 
+immutable class FileHistFactory : ItemFactory
+{
+	this(string filename, int colorIdx = -1) pure {
+		_filename = filename;
+		_colorIdx = colorIdx;
+	}
+	override Item getItem() pure {
+		return new FileHist(_filename, _colorIdx);
+	}
+private:	
+	string    _filename;
+	int       _colorIdx;
+}

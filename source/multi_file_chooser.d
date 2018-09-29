@@ -46,14 +46,14 @@ public:
 		        								.map!(a => baseName(a.name))
 		        								.array;
 		        			foreach(filename; filenames.sort()) {
-		        				//writeln(pathname ~ '/' ~ filename,"\r");
-								sessionTid.send(MsgAddFileHist(pathname ~ '/' ~ filename), thisTid);
+								string itemname = pathname ~ '/' ~ filename;
+								import filehist;
+								sessionTid.send(MsgAddItem(itemname, new immutable(FileHistFactory)(itemname)) );
 		        			}					
 						} else if (dir_entry.isFile) {
-							//writeln(" file!\r");
 							auto filename = full_filename.chompPrefix(getcwd()~"/"); 
-							//writeln(filename,"\r");
-							sessionTid.send(MsgAddFileHist(filename), thisTid);
+							import filehist;
+							sessionTid.send(MsgAddItem(filename, new immutable(FileHistFactory)(filename)) );
 						} else {
 							writeln(" no file, no dir!?\r");
 						}

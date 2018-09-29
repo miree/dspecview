@@ -149,24 +149,10 @@ struct MsgStop {
 struct MsgRun {	
 }
 
-//////////////////////////////////////////
-//// Add a test item to the
-//// list of items under the given name
-//struct MsgAddIntValue{
-//	string name;
-//	int value;
+//struct MsgAddGuiItem{
+//	string guiname;
+//	ulong gui_idx;
 //}
-
-////////////////////////////////////////
-// Add a 1d file histogram
-struct MsgAddFileHist{
-	string filename;
-}
-struct MsgAddGuiItem{
-	string guiname;
-	ulong gui_idx;
-}
-
 
 struct MsgRemoveItem{
 	string itemname;
@@ -299,20 +285,6 @@ public:
 							} else {
 								_guiTid.send(MsgRefreshItemList());
 							}
-						}
-					} catch (Exception e) {
-						//requestingThread.send(e.msg);
-					}
-				},
-				(MsgAddFileHist msg, Tid requestingThread) {
-					if (_output_all_messages) { writeln("got MsgAddFileHist\r"); }
-					try {
-						import filehist;
-						_items[msg.filename] = new FileHist(msg.filename, _colorIdx_counter++);
-						//requestingThread.send("added filehist1: " ~ filehist1.filename);
-						if (_guiRunning) {
-							import gui;
-							_guiTid.send(MsgRefreshItemList());
 						}
 					} catch (Exception e) {
 						//requestingThread.send(e.msg);

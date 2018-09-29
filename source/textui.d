@@ -134,7 +134,32 @@ void addFileHist(immutable string[] args)
 		return;
 	}
 
-	sessionTid.send(MsgAddFileHist(args[0]), thisTid);
+
+	import std.stdio, std.file, std.string, std.path, std.algorithm;
+	string full_filename = args[0];
+	auto dir_entry = DirEntry(full_filename);
+	if (dir_entry.isDir) {
+		auto pathname = full_filename.chompPrefix(getcwd()~"/"); 
+		import std.algorithm, std.array;
+		auto filenames = std.file.dirEntries(pathname, SpanMode.shallow)
+        					.filter!(a => a.isFile)
+							.map!(a => baseName(a.name))
+							.array;
+		foreach(filename; filenames.sort()) {
+			string itemname = pathname ~ '/' ~ filename;
+			import filehist;
+			sessionTid.send(MsgAddItem(itemname, new immutable(FileHistFactory)(itemname)) );
+		}					
+	} else if (dir_entry.isFile) {
+		auto filename = full_filename.chompPrefix(getcwd()~"/"); 
+		import filehist;
+		sessionTid.send(MsgAddItem(filename, new immutable(FileHistFactory)(filename)) );
+	} else {
+		writeln(" no file, no dir!?\r");
+	}
+
+
+	//sessionTid.send(MsgAddFileHist(args[0]), thisTid);
 }
 
 void addNumber(immutable string[] args)
