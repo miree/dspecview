@@ -115,6 +115,7 @@ public:
 		immutable double alpha_value=0.3;   // alpha value of gate visualization
 										    // 0 is completely transparent, 1 is completely opaque
 		//writeln("draw() : visu_context.selcted_index=",visu_context.selcted_index,"\r");
+		double linewidth = cr.getLineWidth();
 		import logscale, primitives;
 		if (_direction == Direction.x) {
 			if (logx && (_value1 < 0 || _value2 < 0))  {
@@ -130,7 +131,6 @@ public:
 					value2 += mouse_action.x_current - mouse_action.x_start;
 				}
 			}
-			double linewidth = cr.getLineWidth();
 			if (mouse_action.relevant && (visu_context.selcted_index == 1 || visu_context.selcted_index == 3)) {
 				cr.setLineWidth(linewidth*2);
 			} else {
@@ -166,7 +166,6 @@ public:
 					value2 += mouse_action.y_current - mouse_action.y_start;
 				}
 			}
-			double linewidth = cr.getLineWidth();
 			if (mouse_action.relevant && (visu_context.selcted_index == 1 || visu_context.selcted_index == 3)) {
 				cr.setLineWidth(linewidth*2);
 			} else {
@@ -185,7 +184,6 @@ public:
 			drawFilledBox(cr, box, box.getLeft(), value1, box.getRight(), value2);
 			cr.fill();
 		} 
-		cr.stroke();
 	}
 	override bool getLeftRight(out double left, out double right, bool logy, bool logx) immutable
 	{
@@ -224,31 +222,24 @@ public:
 						visu_context.selcted_index = 1;
 						visu_context.changed = true;
 					}
-				//import std.stdio;
-				//writeln("distance() : visu_context.selcted_index=",visu_context.selcted_index,"\r");
 				} else {
 					dx = dx2;
 					if (visu_context.selcted_index != 2) {
 						visu_context.selcted_index = 2;
 						visu_context.changed = true;
 					}
-				//import std.stdio;
-				//writeln("distance() : visu_context.selcted_index=",visu_context.selcted_index,"\r");
 				}
 				if (x > value1 && x < value2){// in between both markers
 					import std.stdio;
-					//writeln("inbetween\r");
 					double dv = value2-value1;
-					if (dv > dx1 && dv > dx2) {
-						dx = dv;
+					dx = dv;
 					if (visu_context.selcted_index != 3) {
 						visu_context.selcted_index = 3;
 						visu_context.changed = true;
 					}
-				//import std.stdio;
-				//writeln("distance() : visu_context.selcted_index=",visu_context.selcted_index,"\r");
-						return true;
-					}
+					// return true to indicate "weak selection" which means that the selection has low priority
+					// over other items that are selected because of proximity
+					return true;
 				}
 			}
 		} else {
@@ -265,34 +256,27 @@ public:
 						visu_context.selcted_index = 1;
 						visu_context.changed = true;
 					}
-				//import std.stdio;
-				//writeln("distance() : visu_context.selcted_index=",visu_context.selcted_index,"\r");
 				} else {
 					dy = dy2;
 					if (visu_context.selcted_index != 2) {
 						visu_context.selcted_index = 2;
 						visu_context.changed = true;
 					}
-				//import std.stdio;
-				//writeln("distance() : visu_context.selcted_index=",visu_context.selcted_index,"\r");
 				}
 
 				if (y > value1 && y < value2){// in between both markers
 					double dv = value2-value1;
-					if (dv < dy1 && dv < dy2) {
-						dy = dv;
+					dy = dv;
 					if (visu_context.selcted_index != 3) {
 						visu_context.selcted_index = 3;
-						visu_context.changed = true;
+						visu_context.changed = true;  // set this to true whenever we want to trigger a redraw
 					}
-				//import std.stdio;
-				//writeln("distance() : visu_context.selcted_index=",visu_context.selcted_index,"\r");
-						return true;
-					}
+					// return true to indicate "weak selection" which means that the selection has low priority
+					// over other items that are selected because of proximity
+					return true;
 				}
 			}
 		}
-		import std.stdio;
 		return false;
 	}
 
@@ -365,8 +349,6 @@ public:
 		}
 		sessionTid.send(MsgRequestItemVisualizer(mouse_action.itemname, mouse_action.gui_idx), thisTid);
 		sessionTid.send(MsgEchoRedrawContent(mouse_action.gui_idx), thisTid);
-
-
 	}
 
 	override VisualizerContext createContext() {

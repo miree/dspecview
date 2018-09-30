@@ -240,8 +240,9 @@ protected:
 	{
 		// find out which visualizer is closest to the mouse pointer
 		int closest_idx_x = -1, closest_idx_y = -1;
-		int closest_item_data_x, closest_item_data_y;
 		double min_dx, min_dy;
+		int weak_closest_idx_x = -1, weak_closest_idx_y = -1;
+		double weak_min_dx, weak_min_dy;
 		enum DX_RANGE = 10;
 		enum DY_RANGE = 10;
 		foreach(idx, itemname; _itemnames) {
@@ -265,22 +266,37 @@ protected:
 						import std.math;
 						dx = abs(dx);
 						dy = abs(dy);
-						//writeln("dx=",dx, "     dy=",dy,"\r");
+						//writeln("idx=",idx,"   dx=",dx, "     dy=",dy,"\r");
 						// items that returned weak_selected = true will be considered even if their dx value 
 						// is larger then the minimum DX_RANGE. This makes sense for areal objects like polygon 
 						// gates
-						if (dx <= DX_RANGE || (weak_selected && dx !is double.init)) {
-							if (min_dx is double.init || (dx < min_dx) && !weak_selected) {
-								min_dx = dx;
-								closest_idx_x = cast(int)idx;
-								//writeln("closest_idx_x=",closest_idx_x,"\r");
+						if (weak_selected) {
+							if (dx !is double.init) {
+								if (weak_min_dx is double.init || (dx < weak_min_dx)) {
+									weak_min_dx = dx;
+									weak_closest_idx_x = cast(int)idx;
+								}
 							}
-						}
-						if (dy <= DY_RANGE || (weak_selected && dy !is double.init)) {
-							if (min_dy is double.init || (dy < min_dy) && !weak_selected) {
-								min_dy = dy;
-								closest_idx_y = cast(int)idx;
-								//writeln("closest_idx_y=",closest_idx_y,"\r");
+							if (dy !is double.init) {
+								if (weak_min_dy is double.init || (dy < weak_min_dy)) {
+									weak_min_dy = dy;
+									weak_closest_idx_y = cast(int)idx;
+								}
+							}
+						} else {
+							if (dx <= DX_RANGE && dx !is double.init) {
+								if (min_dx is double.init || (dx < min_dx)) {
+									min_dx = dx;
+									closest_idx_x = cast(int)idx;
+									//writeln("closest_idx_x=",closest_idx_x,"\r");
+								}
+							}
+							if (dy <= DY_RANGE && dy !is double.init) {
+								if (min_dy is double.init || (dy < min_dy)) {
+									min_dy = dy;
+									closest_idx_y = cast(int)idx;
+									//writeln("closest_idx_y=",closest_idx_y,"\r");
+								}
 							}
 						}
 					}
@@ -298,6 +314,21 @@ protected:
 			mouse_hover_idx = closest_idx_x;
 		} else if (closest_idx_y >= 0) {
 			mouse_hover_idx = closest_idx_y;
+		}
+		// only if we couldn't assign a closest to mouse item
+		// consider the weakly selected ones
+		if (mouse_hover_idx == -1) {
+			if (weak_closest_idx_x >= 0 && weak_closest_idx_y >= 0) {
+				if (weak_min_dx < weak_min_dy) {
+					mouse_hover_idx = weak_closest_idx_x;
+				} else {
+					mouse_hover_idx = weak_closest_idx_y;
+				}
+			} else if (weak_closest_idx_x >= 0) {
+				mouse_hover_idx = weak_closest_idx_x;
+			} else if (weak_closest_idx_y >= 0) {
+				mouse_hover_idx = weak_closest_idx_y;
+			}
 		}
 		return mouse_hover_idx;
 	}
