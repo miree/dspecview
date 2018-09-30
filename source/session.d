@@ -49,6 +49,7 @@ struct ItemMouseAction {
 // be used by the Visualizer during
 // rendering
 class VisualizerContext {
+	bool active;  // if context is active, the corresponding visualizer is skipped by plot area refresh 
 	bool changed; // Visualizer has to set this to true if it wants a redraw
 }
 ////////////////////////////////////////

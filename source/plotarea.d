@@ -173,6 +173,10 @@ public:
 		foreach(itemname, visualizer; _visualizers) {
 			//writeln("   guis[", _parentGui.getGuiIdx(),"] requests visualizer for item: ", itemname, "\r");
 
+			auto visu_context = itemname in _visualizer_contexts;
+			if (visu_context !is null && visu_context.active) {
+				continue; // skip items with active context from being refreshed
+			}
 			// send the previously used visualizer to the session 
 			// so it can decide if it would send us the
 			// exact same one and skip the update
@@ -392,6 +396,12 @@ protected:
 			mouse_hover_idx = checkItemsForMouseAction(event_motion.x, event_motion.y);
 			import std.stdio;
 			//writeln("new mouse_hover_idx=", mouse_hover_idx,"\r");
+		}
+		foreach(context;_visualizer_contexts) {
+			context.active = false;
+		}
+		if (mouse_hover_idx >= 0) {
+			_visualizer_contexts[_itemnames[mouse_hover_idx]].active = true;
 		}
 		bool send_redraw = false;
 		if (mouse_hover_idx >= 0 && mouse_hover_idx < _itemnames.length && 
