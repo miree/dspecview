@@ -17,6 +17,12 @@ public:
 		_delta2    = delta2;
 		_logscale  = logscale;
 		_direction = direction;
+		if (getValue1() > getValue2()){
+			_value1    = value2;
+			_value2    = value1;
+			_delta1    = delta2;
+			_delta2    = delta1;
+		}
 	}
 
 	immutable(Visualizer) createVisualizer() {
@@ -35,7 +41,7 @@ public:
 		_colorIdx = idx;
 	}
 
-	double getValue1() {
+	double getValue1() pure {
 		if (_delta1 !is double.init) {
 			if (_logscale) {
 				import std.math;
@@ -45,7 +51,7 @@ public:
 		}
 		return _value1;
 	}
-	double getValue2() {
+	double getValue2() pure {
 		if (_delta2 !is double.init) {
 			if (_logscale) {
 				import std.math;
