@@ -83,6 +83,7 @@ public:
 		//writeln("_itemnames.length=",_itemnames.length,"\r");
 		_visualizers[itemname].length = 0;
 		_visualizers[itemname] ~= visualizer;
+		_visualizer_contexts[itemname] = visualizer.createContext();
 		return first_time_add;
 	}
 	void remove(string removed_itemname) {
@@ -239,6 +240,7 @@ protected:
 	{
 		// find out which visualizer is closest to the mouse pointer
 		int closest_idx_x = -1, closest_idx_y = -1;
+		int closest_item_data_x, closest_item_data_y;
 		double min_dx, min_dy;
 		enum DX_RANGE = 10;
 		enum DY_RANGE = 10;
@@ -256,23 +258,29 @@ protected:
 						y > boxinfo.box.getBottom() && y < boxinfo.box.getTop()) {
 						//writeln("boxed itemname = ", itemname, "\r");
 						double dx, dy;
-						bool result = (*visualizer)[0].mouseDistance(dx, dy, x, y, boxinfo.logx, boxinfo.logy);
+						_visualizer_contexts[itemname].changed = false;
+						bool weak_selected = (*visualizer)[0].mouseDistance(dx, dy, x, y, boxinfo.logx, boxinfo.logy, _visualizer_contexts[itemname]);
 						dx *= boxinfo.box._b_x; // transform distance from box to canvas space
 						dy *= boxinfo.box._b_y; // transform distance from box to canvas space
 						import std.math;
 						dx = abs(dx);
 						dy = abs(dy);
-						//writeln("dx=",dx, "     dy=",dy);
-						if (dx < DX_RANGE) {
-							if (min_dx is double.init || dx < min_dx) {
+						//writeln("dx=",dx, "     dy=",dy,"\r");
+						// items that returned weak_selected = true will be considered even if their dx value 
+						// is larger then the minimum DX_RANGE. This makes sense for areal objects like polygon 
+						// gates
+						if (dx <= DX_RANGE || (weak_selected && dx !is double.init)) {
+							if (min_dx is double.init || (dx < min_dx) && !weak_selected) {
 								min_dx = dx;
 								closest_idx_x = cast(int)idx;
+								//writeln("closest_idx_x=",closest_idx_x,"\r");
 							}
 						}
-						if (dy < DY_RANGE) {
-							if (min_dy is double.init || dy < min_dy) {
+						if (dy <= DY_RANGE || (weak_selected && dy !is double.init)) {
+							if (min_dy is double.init || (dy < min_dy) && !weak_selected) {
 								min_dy = dy;
 								closest_idx_y = cast(int)idx;
+								//writeln("closest_idx_y=",closest_idx_y,"\r");
 							}
 						}
 					}
@@ -334,24 +342,31 @@ protected:
 			_item_mouse_action.gui_idx = _parentGui.getGuiIdx();
 			_item_mouse_action.itemname = _itemnames[mouse_hover_idx];
 			auto visualizer = _itemnames[mouse_hover_idx] in _visualizers;
-			if (visualizer !is null && visualizer.length == 1) {
+			auto visu_context = _itemnames[mouse_hover_idx] in _visualizer_contexts;
+			if (visualizer !is null && visualizer.length == 1 && visu_context !is null) {
 				auto boxinfo = _itemnames[mouse_hover_idx] in _visualizer_view_boxes;
 				if (boxinfo !is null) {
 					import logscale;
 					_item_mouse_action.x_current = boxinfo.box.transform_canvas2box_x(event_motion.x);
 					_item_mouse_action.y_current = boxinfo.box.transform_canvas2box_y(event_motion.y);
 
-					import std.stdio;
-					writeln("x = " ,_item_mouse_action.x_current, "    y = ", _item_mouse_action.y_current, "\r");
+					//import std.stdio;
+					//writeln("x = " ,_item_mouse_action.x_current, "    y = ", _item_mouse_action.y_current, "\r");
 
 				}
-				(*visualizer)[0].mouseDrag(_sessionTid, _item_mouse_action, _logscale_x, _logscale_y);
+				(*visualizer)[0].mouseDrag(_sessionTid, _item_mouse_action, _logscale_x, _logscale_y, *visu_context);
 			}
 		} else {
 			// see if there is an item in mouse range.
 			mouse_hover_idx = checkItemsForMouseAction(event_motion.x, event_motion.y);
+			import std.stdio;
+			//writeln("new mouse_hover_idx=", mouse_hover_idx,"\r");
 		}
 		bool send_redraw = false;
+		if (mouse_hover_idx >= 0 && mouse_hover_idx < _itemnames.length && 
+			_visualizer_contexts[_itemnames[mouse_hover_idx]].changed) {
+			send_redraw = true;
+		}
 		if (_item_mouse_action.idx != mouse_hover_idx ) {
 			_item_mouse_action.idx = mouse_hover_idx;
 			send_redraw = true;
@@ -403,6 +418,9 @@ protected:
 					_item_mouse_action.button_down = true;
 					_item_mouse_action.x_start = _item_mouse_action.x_current;
 					_item_mouse_action.y_start = _item_mouse_action.y_current;
+					//import std.stdio;
+					//writeln("dragging on\r");
+					_item_mouse_action.dragging = true;
 				}
 		}
 		return true;
@@ -431,7 +449,8 @@ protected:
 		if (event_button.button == 1) // item action
 		{
 			int mouse_hover_idx = _item_mouse_action.idx;
-			if (mouse_hover_idx >= 0) {
+			if (mouse_hover_idx >= 0 && _item_mouse_action.dragging) {
+				_item_mouse_action.dragging = false;
 				_item_mouse_action.gui_idx = _parentGui.getGuiIdx();
 				_item_mouse_action.itemname = _itemnames[mouse_hover_idx];
 
@@ -443,12 +462,18 @@ protected:
 				}
 
 				auto visualizer = _itemnames[mouse_hover_idx] in _visualizers;
-				if (visualizer !is null && visualizer.length == 1) {
-					(*visualizer)[0].mouseButtonUp(_sessionTid, _item_mouse_action, _logscale_x, _logscale_y);
+				auto visu_context = _itemnames[mouse_hover_idx] in _visualizer_contexts;
+				if (visualizer !is null && visualizer.length == 1 && visu_context !is null) {
+					(*visualizer)[0].mouseButtonUp(_sessionTid, _item_mouse_action, _logscale_x, _logscale_y, *visu_context);
 				}
 				_item_mouse_action.button_down = false;
 			}
 		}
+
+		// TODO : make same stuff as onMotionNotify
+		// ... create an event_motion an put it in the queue ...
+
+
 		return true;
 	}
 
@@ -784,7 +809,7 @@ protected:
 					if (_item_mouse_action.idx == idx) {
 						_item_mouse_action.relevant = true;
 					}
-					visualizer[0].draw(cr, _vbox, _logscale_y, _logscale_x, _logscale_z, _item_mouse_action);
+					visualizer[0].draw(cr, _vbox, _logscale_y, _logscale_x, _logscale_z, _item_mouse_action, _visualizer_contexts[itemname]);
 					_visualizer_view_boxes[itemname] = BoxInfo(_vbox, size.width, size.height, _logscale_x, _logscale_y);
 					cr.stroke();
 					draw_color_key |= visualizer[0].needsColorKey();
@@ -958,7 +983,7 @@ protected:
 						}
 
 						cr.setLineWidth(2);
-						visualizer[0].draw(cr, _vbox, _logscale_y, _logscale_x, _logscale_z, _item_mouse_action);
+						visualizer[0].draw(cr, _vbox, _logscale_y, _logscale_x, _logscale_z, _item_mouse_action, _visualizer_contexts[_itemnames[idx]]);
 						_visualizer_view_boxes[_itemnames[idx]] = BoxInfo(_vbox, size.width, size.height, _logscale_x, _logscale_y);
 
 						cr.stroke();
@@ -1098,6 +1123,8 @@ protected:
 
 	//string[] _visualizers;
 	immutable(Visualizer)[][string] _visualizers;
+	VisualizerContext[string] _visualizer_contexts;
+
 	struct BoxInfo {
 		ViewBox box;
 		int width, height;

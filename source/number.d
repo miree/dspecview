@@ -84,7 +84,7 @@ public:
 		_value = value;
 		_direction = direction;
 	}
-	override void draw(ref Scoped!Context cr, ViewBox box, bool logy, bool logx, bool logz, ItemMouseAction mouse_action) immutable
+	override void draw(ref Scoped!Context cr, ViewBox box, bool logy, bool logx, bool logz, ItemMouseAction mouse_action, VisualizerContext context) immutable
 	{
 		import std.stdio;
 		import logscale, primitives;
@@ -132,7 +132,7 @@ public:
 		}
 		return false;
 	}
-	override bool mouseDistance(out double dx, out double dy, double x, double y, bool logx, bool logy) immutable
+	override bool mouseDistance(out double dx, out double dy, double x, double y, bool logx, bool logy, VisualizerContext context) immutable
 	{
 		import std.math;
 		import logscale;
@@ -152,14 +152,14 @@ public:
 			}
 		}
 		import std.stdio;
-		return true;
+		return false;
 	}
 
-	override void mouseButtonDown(Tid sessionTid, ItemMouseAction mouse_action, bool logx, bool logy) immutable
+	override void mouseButtonDown(Tid sessionTid, ItemMouseAction mouse_action, bool logx, bool logy, VisualizerContext context) immutable
 	{
 		import std.stdio;
 	}
-	override void mouseDrag(Tid sessionTid, ItemMouseAction mouse_action, bool logx, bool logy) immutable
+	override void mouseDrag(Tid sessionTid, ItemMouseAction mouse_action, bool logx, bool logy, VisualizerContext context) immutable
 	{
 		double delta;
 		if (_direction == Direction.x) {
@@ -180,7 +180,7 @@ public:
 		sessionTid.send(MsgEchoRedrawContent(mouse_action.gui_idx), thisTid);
 
 	}
-	override void mouseButtonUp(Tid sessionTid, ItemMouseAction mouse_action, bool logx, bool logy) immutable
+	override void mouseButtonUp(Tid sessionTid, ItemMouseAction mouse_action, bool logx, bool logy, VisualizerContext context) immutable
 	{
 		import std.stdio, std.math;
 		import logscale;

@@ -15,6 +15,7 @@ void populate_list_of_commands()
 	list_of_commands["rm"]          = &rmItem;
 	list_of_commands["filehist"]    = &addFileHist;
 	list_of_commands["number"]      = &addNumber;
+	list_of_commands["gate1"]       = &addGate1;
 	//list_of_commands["visualizer"]  = &getItemVisualizer;
 	list_of_commands["gui"]         = &runGui;
 	list_of_commands["guistatus"]   = &showGuiStatus;
@@ -188,6 +189,41 @@ void addNumber(immutable string[] args)
 			break;
 			case 'y':
 				sessionTid.send(MsgAddItem(args[0], new immutable(NumberFactory)(args[1].to!double, double.init, false, -1, Direction.y)));
+			break;
+			default:
+				writeln("expecting x or y as third argument, found ", args[2]);
+		}
+	}
+}
+
+
+void addGate1(immutable string[] args)
+{
+	import std.stdio, std.concurrency, std.array, std.algorithm, std.conv;
+	import session, gate1;
+
+	if (args.length != 3 && args.length != 4) {
+		writeln("expecting one argument: <itemname> <value> [x|y], got ", args.length , "arguments: ", args);
+		return;
+	}
+
+	double    _value1;
+	double    _value2;
+	double    _delta;   // is needed if the modified value is used by someone else (for life update projections etc.)
+	bool      _logscale; // is needed if the delta was determined in logscale window
+	int       _colorIdx;
+	Direction _direction;
+
+	if (args.length == 3) {
+		sessionTid.send(MsgAddItem(args[0], new immutable(Gate1Factory)(args[1].to!double, args[2].to!double, double.init, double.init, false, -1, Direction.x)));
+	} 
+	if (args.length == 4) {
+		switch(args[3][0]) {
+			case 'x':
+				sessionTid.send(MsgAddItem(args[0], new immutable(Gate1Factory)(args[1].to!double, args[2].to!double, double.init, double.init, false, -1, Direction.x)));
+			break;
+			case 'y':
+				sessionTid.send(MsgAddItem(args[0], new immutable(Gate1Factory)(args[1].to!double, args[2].to!double, double.init, double.init, false, -1, Direction.y)));
 			break;
 			default:
 				writeln("expecting x or y as third argument, found ", args[2]);

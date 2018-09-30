@@ -38,8 +38,19 @@ struct ItemMouseAction {
 	bool button_down; // is true if the mouse button is down 
 	string itemname;
 	ulong gui_idx;
+	bool dragging;
 }
 
+
+////////////////////////////////////////
+// Visualizer contexts are hold together
+// with an immutable Visuzlizer to hold
+// some mutable context data that can
+// be used by the Visualizer during
+// rendering
+class VisualizerContext {
+	bool changed; // Visualizer has to set this to true if it wants a redraw
+}
 ////////////////////////////////////////
 // All objects that are created by items
 // in order to draw have to implement
@@ -57,16 +68,17 @@ public:
 	ulong getDim() immutable;
 	void print(int context) immutable;
 	bool needsColorKey() immutable;
-	void draw(ref Scoped!Context cr, ViewBox box, bool logy, bool logx, bool logz, ItemMouseAction mouse_action) immutable;
+	void draw(ref Scoped!Context cr, ViewBox box, bool logy, bool logx, bool logz, ItemMouseAction mouse_action, VisualizerContext context) immutable;
 	bool getLeftRight(out double left, out double right, bool logy, bool logx) immutable;
 	bool getBottomTopInLeftRight(out double bottom, out double top, double left, double right, bool logy, bool logx) immutable;
 	bool getZminZmaxInLeftRightBottomTop(out double mi, out double ma, 
 	                                     double left, double right, double bottom, double top, 
 	                                     bool logz, bool logy, bool logx) immutable;
-	bool mouseDistance(out double dx, out double dy, double x, double y, bool logx, bool logy) immutable;
-	void mouseButtonDown(Tid sessionTid, ItemMouseAction mouse_action, bool logx, bool logy) immutable;
-	void mouseDrag(Tid sessionTid, ItemMouseAction mouse_action, bool logx, bool logy) immutable;
-	void mouseButtonUp(Tid sessionTid, ItemMouseAction mouse_action, bool logx, bool logy) immutable;
+	bool mouseDistance(out double dx, out double dy, double x, double y, bool logx, bool logy, VisualizerContext context) immutable;
+	void mouseButtonDown(Tid sessionTid, ItemMouseAction mouse_action, bool logx, bool logy, VisualizerContext context) immutable;
+	void mouseDrag(Tid sessionTid, ItemMouseAction mouse_action, bool logx, bool logy, VisualizerContext context) immutable;
+	void mouseButtonUp(Tid sessionTid, ItemMouseAction mouse_action, bool logx, bool logy, VisualizerContext context) immutable;
+	VisualizerContext createContext() immutable;
 }
 
 
@@ -93,7 +105,7 @@ public:
 	override bool needsColorKey() immutable {
 		return false;
 	}
-	override void draw(ref Scoped!Context cr, ViewBox box, bool logy, bool logx, bool logz, ItemMouseAction mouse_action) immutable {
+	override void draw(ref Scoped!Context cr, ViewBox box, bool logy, bool logx, bool logz, ItemMouseAction mouse_action, VisualizerContext context) immutable {
 	}
 	override bool getLeftRight(out double left, out double right, bool logy, bool logx) immutable
 	{
@@ -110,19 +122,24 @@ public:
 		return false;
 	}
 
-	override bool mouseDistance(out double dx, out double dy, double x, double y, bool logx, bool logy) immutable
+	override bool mouseDistance(out double dx, out double dy, double x, double y, bool logx, bool logy, VisualizerContext context) immutable
 	{
 		return false;
 	}
-	override void mouseButtonDown(Tid sessionTid, ItemMouseAction mouse_action, bool logx, bool logy) immutable
+	override void mouseButtonDown(Tid sessionTid, ItemMouseAction mouse_action, bool logx, bool logy, VisualizerContext context) immutable
 	{
 	}
-	override void mouseDrag(Tid sessionTid, ItemMouseAction mouse_action, bool logx, bool logy) immutable
+	override void mouseDrag(Tid sessionTid, ItemMouseAction mouse_action, bool logx, bool logy, VisualizerContext context) immutable
 	{
 	}
-	override void mouseButtonUp(Tid sessionTid, ItemMouseAction mouse_action, bool logx, bool logy) immutable
+	override void mouseButtonUp(Tid sessionTid, ItemMouseAction mouse_action, bool logx, bool logy, VisualizerContext context) immutable
 	{
 	}
+	override VisualizerContext createContext() immutable
+	{
+		return new VisualizerContext();
+	}
+
 
 protected:
 	int    _colorIdx;
