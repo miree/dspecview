@@ -80,6 +80,9 @@ public:
 	void mouseDrag(Tid sessionTid, ItemMouseAction mouse_action, bool logx, bool logy, VisualizerContext context) immutable;
 	void mouseButtonUp(Tid sessionTid, ItemMouseAction mouse_action, bool logx, bool logy, VisualizerContext context) immutable;
 	VisualizerContext createContext() immutable;
+	bool isInteractive() immutable; // if this is true, a visualizer cannot be updated via refresh. 
+	                                // The implementation has to make sure that updates are send to other gui windows
+	                                // via the message gui.MsgAllButMyselfUpdateVisualizer
 }
 
 
@@ -139,6 +142,10 @@ public:
 	override VisualizerContext createContext() immutable
 	{
 		return new VisualizerContext();
+	}
+	override bool isInteractive() immutable
+	{
+		return false;
 	}
 
 

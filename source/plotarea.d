@@ -183,7 +183,9 @@ public:
 			auto old_visualizer_buffer = itemname in _visualizers;
 			if (old_visualizer_buffer !is null && old_visualizer_buffer.length > 0) {
 				auto old_visualizer = (*old_visualizer_buffer)[0];
-				_sessionTid.send(MsgRequestItemVisualizer(itemname, _parentGui.getGuiIdx(), old_visualizer), thisTid);
+				if (!old_visualizer.isInteractive()) {
+					_sessionTid.send(MsgRequestItemVisualizer(itemname, _parentGui.getGuiIdx(), old_visualizer), thisTid);
+				}
 			} else {
 				_sessionTid.send(MsgRequestItemVisualizer(itemname, _parentGui.getGuiIdx(), null), thisTid);
 			}

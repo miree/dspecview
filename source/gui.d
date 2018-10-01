@@ -434,6 +434,20 @@ public:
 					}
 				}
 			},
+			(MsgAllButMyselfUpdateVisualizer msg, immutable(Visualizer) visualizer) {
+				import std.stdio;
+				foreach(idx, gui; guis) {
+					if (idx != msg.gui_idx) {
+						if (gui !is null) {
+							if (gui._control_panel !is null ) {
+								gui._visualization.addVisualizer(msg.itemname, visualizer);
+								gui._visualization.mark_dirty();
+								gui._visualization.redraw_content();
+							}
+						}
+					}
+				}
+			},
 			(MsgRedrawContent redraw) {
 				auto gui = redraw.gui_idx in guis;
 				if (gui !is null) {
@@ -496,6 +510,10 @@ struct MsgVisualizeItem {
 	ulong gui_idx;
 }
 struct MsgRemoveVisualizedItem {
+	string itemname;
+	ulong gui_idx;
+}
+struct MsgAllButMyselfUpdateVisualizer {
 	string itemname;
 	ulong gui_idx;
 }

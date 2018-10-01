@@ -320,6 +320,29 @@ public:
 		// send an item with the temporary changes
 		sessionTid.send(MsgAddItem(mouse_action.itemname, new immutable(Gate1Factory)(_value1, _value2, delta1, delta2, logscale, _colorIdx, _direction)));
 		sessionTid.send(MsgEchoRedrawContent(mouse_action.gui_idx), thisTid);
+		double value1=_value1, value2=_value2;
+		import std.math, std.stdio;
+		if (logscale) {
+			if (delta1 !is double.init) {
+				value1 *= exp(delta1);
+			}
+			if (delta2 !is double.init) {
+				value2 *= exp(delta2);
+			}
+		} else {
+			if (delta1 !is double.init) {
+				value1 += delta1;
+			}
+			if (delta2 !is double.init) {
+				value2 += delta2;
+			}
+		}
+
+		import gui;
+		thisTid.send(MsgAllButMyselfUpdateVisualizer( 
+				mouse_action.itemname,
+				mouse_action.gui_idx),
+				cast(immutable(Visualizer)) new immutable(Gate1Visualizer)(value1, value2, _colorIdx, _direction));
 
 	}
 	override void mouseButtonUp(Tid sessionTid, ItemMouseAction mouse_action, bool logx, bool logy, VisualizerContext context) immutable
@@ -361,6 +384,10 @@ public:
 		//import std.stdio;
 		//writeln("Gate1VisualizerContext created\r");
 		return new Gate1VisualizerContext;
+	}
+
+	override bool isInteractive() {
+		return true;
 	}
 
 private:
