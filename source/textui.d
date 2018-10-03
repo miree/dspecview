@@ -16,6 +16,7 @@ void populate_list_of_commands()
 	list_of_commands["filehist"]    = &addFileHist;
 	list_of_commands["number"]      = &addNumber;
 	list_of_commands["gate1"]       = &addGate1;
+	list_of_commands["polygate"]    = &addPolyGate;
 	//list_of_commands["visualizer"]  = &getItemVisualizer;
 	list_of_commands["gui"]         = &runGui;
 	list_of_commands["guistatus"]   = &showGuiStatus;
@@ -229,6 +230,26 @@ void addGate1(immutable string[] args)
 				writeln("expecting x or y as third argument, found ", args[2]);
 		}
 	}
+}
+
+void addPolyGate(immutable string[] args)
+{
+	import std.stdio, std.concurrency, std.array, std.algorithm, std.conv;
+	import polygate, session;
+
+	if (args.length < 7) {
+		writeln("expecting : <itemname> <x1> <y1> <x2> <y2> <x3> <y3> ... , got ", args.length , "arguments: ", args);
+		return;		
+	}
+	PolyPoint[] points;
+	foreach(idx, arg; args[1..$]) {
+		if (idx % 2 == 0) { // 1 3 5 ...
+			points ~= PolyPoint(arg.to!double, 0);
+		} else {
+			points[$-1].y = arg.to!double;
+		}
+	}
+	sessionTid.send(MsgAddItem(args[0], new immutable(PolyGateFactory)(points, null, false, false, -1)));
 }
 
 void showItemInWindow(immutable string[] args) 
