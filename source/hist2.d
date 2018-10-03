@@ -20,25 +20,71 @@ public:
 		_bins_y      = 0;
 		//_mipmap_data = null;
 	}
+	//this(int colorIdx, double[] data, 
+	//	immutable(ubyte[]) rgb_data             , immutable(ubyte[]) log_rgb_data,
+	//	immutable(Pattern) image_surface_pattern, immutable(Pattern) log_image_surface_pattern,
+	//	ulong width, ulong height, 
+	//	double left, double right, double bottom, double top)
+	//{
 	import cairo.Pattern, gdk.Cairo;
 	this(int colorIdx, double[] data, 
-		immutable(ubyte[]) rgb_data             , immutable(ubyte[]) log_rgb_data,
-		immutable(Pattern) image_surface_pattern, immutable(Pattern) log_image_surface_pattern,
 		ulong width, ulong height, 
 		double left, double right, double bottom, double top)
 	{
 		super(colorIdx);
 		_bin_data = data.idup;
-		_rgb_data = rgb_data;
-		_log_rgb_data = log_rgb_data;
-		_image_surface_pattern     = image_surface_pattern;
-		_log_image_surface_pattern = log_image_surface_pattern;
 		_bins_x   = width;
 		_bins_y   = height;
 		_left     = left;
 		_right    = right;
 		_bottom   = bottom;
 		_top      = top;
+
+
+        // create surface pattern for fast drawing
+		import cairo.ImageSurface, cairo.Pattern, gdk.Cairo;
+		auto stride = ImageSurface.formatStrideForWidth(CairoFormat.RGB24, cast(int)_bins_x);
+		//writeln("stride = ", stride, "\r");
+		auto rgb_data = new ubyte[_bin_data.length*(stride/_bins_x)];
+		auto log_rgb_data = new ubyte[_bin_data.length*(stride/_bins_x)];
+
+		rgb_data[] = 255;
+		log_rgb_data[] = 255;
+		import std.algorithm;
+		double max_bin = maxElement(_bin_data);
+		if (max_bin == 0) max_bin = 1;
+		foreach(ulong y; 0.._bins_y) {
+			foreach(ulong x; 0.._bins_x) {
+				ulong idx = y*_bins_x+x;
+				ulong rgb_idx = 3*idx;
+				auto bin = _bin_data[idx];
+				if (bin == 0) {
+					continue;
+				}
+				import std.math;
+				auto rgb_data_idx = (y)*stride + 4*x;
+
+
+				get_rgb(log(1+bin)/log(max_bin+1), &log_rgb_data[rgb_data_idx]);
+				get_rgb(bin/max_bin, &rgb_data[rgb_data_idx]);
+			}
+		}
+
+		immutable(Pattern) surface_pattern(ubyte* rgb_data, int nx, int ny, int stride) {
+			auto image_surface = ImageSurface.createForData(rgb_data, CairoFormat.RGB24, nx, ny, stride);
+			auto image_surface_pattern = Pattern.createForSurface(image_surface);
+			image_surface_pattern.setFilter(CairoFilter.NEAREST);
+			return cast(immutable(Pattern))image_surface_pattern;
+		}
+
+		_rgb_data = cast(immutable ubyte[])rgb_data;
+		_log_rgb_data = cast(immutable ubyte[])log_rgb_data;
+
+		_image_surface_pattern     = surface_pattern(cast(ubyte*)(&rgb_data[0]), cast(int)_bins_x, cast(int)_bins_y, stride);
+		_log_image_surface_pattern = surface_pattern(cast(ubyte*)(&log_rgb_data[0]), cast(int)_bins_x, cast(int)_bins_y, stride);
+
+
+		// create mipmaps here
 	}
 
 	override ulong getDim() immutable
@@ -168,10 +214,10 @@ public:
 						if (logz) {
 							import std.math;
 							//get_rgb(log(value+1.0)/log(max_bin+1.0), cast(shared ubyte*)&rgb[0]);
-							get_rgb(color, cast(shared ubyte*)&rgb[0]);
+							get_rgb(color, &rgb[0]);
 						} else {
 							//get_rgb(value/max_bin, cast(shared ubyte*)&rgb[0]);
-							get_rgb(color, cast(shared ubyte*)&rgb[0]);
+							get_rgb(color, &rgb[0]);
 						}
 						cr.setSourceRgba(rgb[2]/255.0, rgb[1]/255.0, rgb[0]/255.0, 1);
 						cr.rectangle(x-0.25, y+0.25, width+0.5, height-0.5);
@@ -344,7 +390,7 @@ public:
 	}
 
 
-	static void get_rgb(double c, shared ubyte *rgb) {
+	static void get_rgb(double c, ubyte *rgb) {
 		if (c < 0) c = 0;
 		c *= 3;
 		//if (c == 0) {          rgb[2] =                     rgb[1] =                         rgb[0] = 255; return ;}

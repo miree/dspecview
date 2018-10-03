@@ -54,49 +54,9 @@ public:
 						}
 					break;
 					case 2: {
-						import cairo.ImageSurface, cairo.Pattern, gdk.Cairo;
-						auto stride = ImageSurface.formatStrideForWidth(CairoFormat.RGB24, cast(int)hist.bins_x);
-						//writeln("stride = ", stride, "\r");
-						auto rgb_data = new shared ubyte[hist.data.length*(stride/hist.bins_x)];
-						auto log_rgb_data = new shared ubyte[hist.data.length*(stride/hist.bins_x)];
-
-						rgb_data[] = 255;
-						log_rgb_data[] = 255;
-						import std.algorithm;
-						double max_bin = maxElement(hist.data);
-						if (max_bin == 0) max_bin = 1;
-						foreach(ulong y; 0..hist.bins_y) {
-							foreach(ulong x; 0..hist.bins_x) {
-								ulong idx = y*hist.bins_x+x;
-								ulong rgb_idx = 3*idx;
-								auto bin = hist.data[idx];
-								if (bin == 0) {
-									continue;
-								}
-								import std.math;
-								auto rgb_data_idx = (y)*stride + 4*x;
-
-
-								Hist2Visualizer.get_rgb(log(1+bin)/log(max_bin+1), &log_rgb_data[rgb_data_idx]);
-								Hist2Visualizer.get_rgb(bin/max_bin, &rgb_data[rgb_data_idx]);
-							}
-						}
-
-						//ImageSurface image_surface; // this contains the RGB data
-						//ImageSurface log_image_surface; // this contains the RGB data in logscale
-						auto image_surface = ImageSurface.createForData(cast(ubyte*)(&rgb_data[0]), CairoFormat.RGB24, cast(int)hist.bins_x, cast(int)hist.bins_y, stride);
-						auto image_surface_pattern = Pattern.createForSurface(image_surface);
-						image_surface_pattern.setFilter(CairoFilter.NEAREST);
-
-						auto log_image_surface = ImageSurface.createForData(cast(ubyte*)(&log_rgb_data[0]), CairoFormat.RGB24, cast(int)hist.bins_x, cast(int)hist.bins_y, stride);
-						auto log_image_surface_pattern = Pattern.createForSurface(log_image_surface);
-						log_image_surface_pattern.setFilter(CairoFilter.NEAREST);
-
 						_visualizer.length = 0; 
 						// create a Visualizer for the loaded data
 						_visualizer ~= new immutable(Hist2Visualizer)(_colorIdx, hist.data, 
-																	 cast(immutable(ubyte[]))rgb_data,              cast(immutable(ubyte[]))log_rgb_data,
-																	 cast(immutable(Pattern))image_surface_pattern, cast(immutable(Pattern))log_image_surface_pattern,
 																	 hist.bins_x, hist.bins_y, 
 																	 hist.left, hist.right, hist.bottom, hist.top);
 					}
