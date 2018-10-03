@@ -1,7 +1,5 @@
 import session;
 
-
-
 //////////////////////////////////////////////////
 // Visualizer for 2D Histograms
 immutable class Hist2Visualizer : BaseVisualizer 
@@ -64,7 +62,6 @@ public:
 				import std.math;
 				auto rgb_data_idx = (y)*stride + 4*x;
 
-
 				get_rgb(log(1+bin)/log(max_bin+1), &log_rgb_data[rgb_data_idx]);
 				get_rgb(bin/max_bin, &rgb_data[rgb_data_idx]);
 			}
@@ -82,7 +79,6 @@ public:
 
 		_image_surface_pattern     = surface_pattern(cast(ubyte*)(&rgb_data[0]), cast(int)_bins_x, cast(int)_bins_y, stride);
 		_log_image_surface_pattern = surface_pattern(cast(ubyte*)(&log_rgb_data[0]), cast(int)_bins_x, cast(int)_bins_y, stride);
-
 
 		// create mipmaps here
 	}
@@ -355,8 +351,6 @@ public:
 			}
 		}
 
-
-
 		//writeln("getZminZmaxInLeftRightBottomTop done\r");
 		if (!initialize) {
 			mi = minimum;
@@ -389,7 +383,6 @@ public:
 		return true;
 	}
 
-
 	static void get_rgb(double c, ubyte *rgb) {
 		if (c < 0) c = 0;
 		c *= 3;
@@ -400,12 +393,7 @@ public:
 
 		{rgb[2] = 255; rgb[1] = rgb[0] = 0; return ;}
 	}
-
-
 private:
-
-
-
 
 private: // state	
 	double[] _bin_data;

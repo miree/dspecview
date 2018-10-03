@@ -179,6 +179,24 @@ public:
 		sessionTid.send(MsgAddItem(mouse_action.itemname, new immutable(NumberFactory)(_value, delta, logscale, _colorIdx, _direction)));
 		sessionTid.send(MsgEchoRedrawContent(mouse_action.gui_idx), thisTid);
 
+		double value=_value;
+		import std.math, std.stdio;
+		if (logscale) {
+			if (delta !is double.init) {
+				value *= exp(delta);
+			}
+		} else {
+			if (delta !is double.init) {
+				value += delta;
+			}
+		}
+
+		import gui;
+		thisTid.send(MsgAllButMyselfUpdateVisualizer( 
+				mouse_action.itemname,
+				mouse_action.gui_idx),
+				cast(immutable(Visualizer)) new immutable(NumberVisualizer)(value, _colorIdx, _direction));
+
 	}
 	override void mouseButtonUp(Tid sessionTid, ItemMouseAction mouse_action, bool logx, bool logy, VisualizerContext context) immutable
 	{
@@ -204,6 +222,10 @@ public:
 		sessionTid.send(MsgEchoRedrawContent(mouse_action.gui_idx), thisTid);
 
 
+	}
+
+	override bool isInteractive() {
+		return true;
 	}
 
 private:

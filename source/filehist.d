@@ -260,7 +260,7 @@ private: // some private functions
 	}
 
 private: // private state
-	// make this an array to ba able discard the 
+	// make this an array to be able discard the 
 	// reference by assigning length = 0;
 	immutable(Visualizer)[] _visualizer;
 	string _filename;
