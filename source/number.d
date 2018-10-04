@@ -132,7 +132,7 @@ public:
 		}
 		return false;
 	}
-	override bool mouseDistance(out double dx, out double dy, double x, double y, bool logx, bool logy, VisualizerContext context) immutable
+	override bool mouseDistance(ViewBox box, out double dx, out double dy, out double dr, double x, double y, bool logx, bool logy, VisualizerContext context) immutable
 	{
 		import std.math;
 		import logscale;
@@ -141,14 +141,14 @@ public:
 			if (value is double.init) {
 				return false;
 			} else {
-				dx = x-value;
+				dx = (x-value) * box._b_x;
 			}
 		} else {
 			double value = log_y_value_of(_value, logy, double.init);
 			if (value is double.init) {
 				return false;
 			} else {
-				dy = y-value;
+				dy = (y-value) * box._b_y;
 			}
 		}
 		import std.stdio;

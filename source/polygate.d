@@ -101,20 +101,76 @@ public:
 		}
 		cr.lineTo(x0_canvas, y0_canvas);
 		cr.stroke();
+
+		if (mouse_action.relevant) {
+			auto pixel_width = box.get_pixel_width();
+			auto pixel_height = box.get_pixel_height();
+			drawFilledBox(cr, box, 
+				log_x_value_of(_points[visu_context.selcted_index].x, logx)-pixel_width*5, 
+				log_y_value_of(_points[visu_context.selcted_index].y, logy)-pixel_height*5, 
+				log_x_value_of(_points[visu_context.selcted_index].x, logx)+pixel_width*5, 
+				log_y_value_of(_points[visu_context.selcted_index].y, logy)+pixel_height*5);
+			cr.fill();
+		}
 	}
 	override bool getLeftRight(out double left, out double right, bool logy, bool logx) immutable
 	{
-		return false;
+		double xmin, xmax;
+		foreach(point; _points) {
+			double x = log_x_value_of(point.x, logx);
+			if (xmin is double.init || x < xmin) {
+				xmin = x;
+			}
+			if (xmax is double.init || x > xmax) {
+				xmax = x;
+			}
+		}
+		left  = xmin;
+		right = xmax;
+		return true;
 	}
 	override bool getBottomTopInLeftRight(out double bottom, out double top, double left, double right, bool logy, bool logx) immutable
 	{
-		return false;
+		double ymin, ymax;
+		foreach(point; _points) {
+			double y = log_y_value_of(point.y, logy);
+			if (ymin is double.init || y < ymin) {
+				ymin = y;
+			}
+			if (ymax is double.init || y > ymax) {
+				ymax = y;
+			}
+		}
+		bottom = ymin;
+		top    = ymax;
+		return true;
 	}
-	override bool mouseDistance(out double dx, out double dy, double x, double y, bool logx, bool logy, VisualizerContext context) immutable
+	override bool mouseDistance(ViewBox box, out double dx, out double dy, out double dr, double x, double y, bool logx, bool logy, VisualizerContext context) immutable
 	{
 		auto visu_context = cast(PolyGateVisualizerContext)context;
 		import std.math, std.algorithm;
 		import logscale;
+		int min_idx = -1;
+		double min_dist;
+
+		foreach(idx, point; _points) {
+			double px = log_x_value_of(point.x, logx);
+			double py = log_y_value_of(point.y, logy);
+			double deltax = (x-px) * box._b_x;
+			double deltay = (y-py) * box._b_y;
+			double dist = sqrt(deltax*deltax + deltay*deltay);
+			if (min_dist is double.init || dist < min_dist) {
+				min_dist = dist;
+				min_idx  = cast(int)idx;
+			}
+		}
+		if (min_dist !is double.init) {
+			dr = min_dist;
+			if (visu_context.selcted_index != min_idx) {
+				visu_context.changed = true;
+			}
+			visu_context.selcted_index = min_idx;
+		}
 		return false;
 	}
 
@@ -141,6 +197,20 @@ public:
 		return true;
 	}
 
+	bool inside(double x, double y) {
+		bool is_inside = false;
+		PolyPoint p1 = _points[$-1];
+		foreach(p2; _points) {
+			if ( ((p2.y > y) != (p1.y > y)) &&
+			     (x < (p1.x - p2.x) * (y - p2.y) / (p1.y - p2.y) + p2.x) ) {
+			    is_inside = !is_inside;
+			}
+			p1 = p2;
+		}
+		return is_inside;
+	}
+
 private:
 	PolyPoint[] _points;
 }
+

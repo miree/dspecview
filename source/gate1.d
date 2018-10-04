@@ -209,7 +209,7 @@ public:
 		}
 		return false;
 	}
-	override bool mouseDistance(out double dx, out double dy, double x, double y, bool logx, bool logy, VisualizerContext context) immutable
+	override bool mouseDistance(ViewBox box, out double dx, out double dy, out double dr, double x, double y, bool logx, bool logy, VisualizerContext context) immutable
 	{
 		auto visu_context = cast(Gate1VisualizerContext)context;
 		import std.math, std.algorithm;
@@ -220,8 +220,8 @@ public:
 			if (value1 is double.init || value2 is double.init) {
 				return false;
 			} else {
-				double dx1 = x-value1;
-				double dx2 = x-value2;
+				double dx1 = (x-value1) * box._b_x;
+				double dx2 = (x-value2) * box._b_x;
 				if (abs(dx1) < abs(dx2)) {
 					dx = dx1;
 					if (visu_context.selcted_index != 1) {
@@ -254,8 +254,8 @@ public:
 			if (value1 is double.init || value2 is double.init) {
 				return false;
 			} else {
-				double dy1 = y-value1;
-				double dy2 = y-value2;
+				double dy1 = (y-value1) * box._b_y;
+				double dy2 = (y-value2) * box._b_y;
 				if (abs(dy1) < abs(dy2)) {
 					dy = dy1;
 					if (visu_context.selcted_index != 1) {
