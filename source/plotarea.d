@@ -167,7 +167,7 @@ public:
 		//else          { _vbox.setHeightMinMax(1e-3,1e10);}
 	}
 
-	void refresh() {
+	void refresh(bool force_active_items = true) {
 		import std.stdio;
 		//writeln(" plotarea.refresh()\r");
 		foreach(itemname, visualizer; _visualizers) {
@@ -175,7 +175,9 @@ public:
 
 			auto visu_context = itemname in _visualizer_contexts;
 			if (visu_context !is null && visu_context.active) {
-				continue; // skip items with active context from being refreshed
+				if (!force_active_items) {
+					continue; // skip items with active context from being refreshed
+				}
 			}
 			// send the previously used visualizer to the session 
 			// so it can decide if it would send us the

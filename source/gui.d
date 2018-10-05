@@ -362,7 +362,8 @@ public:
 		foreach (gui; guis) {
 			if (gui._visualization !is null) {
 				if (gui._visualization.autoRefresh()) {
-					gui._visualization.refresh();
+					bool force_refresh_on_active_items = false;
+					gui._visualization.refresh(force_refresh_on_active_items);
 				}
 			}
 		}

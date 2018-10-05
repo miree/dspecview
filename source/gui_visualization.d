@@ -339,14 +339,14 @@ public:
 		_plot_area.remove(itemname);
 	}
 
-	void refresh() {
+	void refresh(bool force_active_items = true) {
 		if (!_refresh_in_flight) {
 			_refresh_in_flight = true;
 			// do this only if we are not _dirty to prevent redraw message flooding
 			// in case the drawing is slower then the redraw request rate
 			//import std.stdio;
 			//writeln("refresh()\r");
-			_plot_area.refresh();
+			_plot_area.refresh(force_active_items);
 		}
 	}
 	bool autoRefresh() {

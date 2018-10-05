@@ -89,8 +89,19 @@ public:
 		foreach(idx, point; _points) {
 			double x = log_x_value_of(point.x, logx);
 			double y = log_y_value_of(point.y, logy);
+
+			//writeln("mouse_action.relevant=",mouse_action.relevant,"\r");
+			//writeln("mouse_action.button_down=", mouse_action.button_down,"\r");
+			//writeln("visu_context.selcted_index=", visu_context.selcted_index,"\r");
+			if (mouse_action.relevant && mouse_action.button_down) {
+				if (visu_context.selcted_index == idx) {
+					x += mouse_action.x_current - mouse_action.x_start;
+					y += mouse_action.y_current - mouse_action.y_start;
+				}
+			}
 			double x_canvas = box.transform_box2canvas_x(x);
 			double y_canvas = box.transform_box2canvas_y(y);
+
 			if (idx == 0) {
 				x0_canvas = x_canvas;
 				y0_canvas = y_canvas;
@@ -105,11 +116,17 @@ public:
 		if (mouse_action.relevant) {
 			auto pixel_width = box.get_pixel_width();
 			auto pixel_height = box.get_pixel_height();
+			double x = log_x_value_of(_points[visu_context.selcted_index].x, logx);
+			double y = log_y_value_of(_points[visu_context.selcted_index].y, logy);
+			if (mouse_action.relevant && mouse_action.button_down) {
+				x += mouse_action.x_current - mouse_action.x_start;
+				y += mouse_action.y_current - mouse_action.y_start;
+			}			
 			drawFilledBox(cr, box, 
-				log_x_value_of(_points[visu_context.selcted_index].x, logx)-pixel_width*5, 
-				log_y_value_of(_points[visu_context.selcted_index].y, logy)-pixel_height*5, 
-				log_x_value_of(_points[visu_context.selcted_index].x, logx)+pixel_width*5, 
-				log_y_value_of(_points[visu_context.selcted_index].y, logy)+pixel_height*5);
+							x-pixel_width*5, 
+							y-pixel_height*5, 
+							x+pixel_width*5, 
+							y+pixel_height*5);
 			cr.fill();
 		}
 	}
