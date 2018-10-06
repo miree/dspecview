@@ -21,7 +21,12 @@ public:
 	}
 
 	override string getTypeString() {
-		return "Polygate ";
+		import std.conv;
+		string result = "Polygate ";
+		foreach(point; _points) {
+			result ~= point.x.to!string ~ "," ~ point.y.to!string ~ " ";
+		}
+		return result;
 	}
 
 	override int getColorIdx() {
@@ -197,11 +202,65 @@ public:
 	}
 	override void mouseDrag(Tid sessionTid, ItemMouseAction mouse_action, bool logx, bool logy, VisualizerContext context) immutable
 	{
+		import std.math;
 		auto visu_context = cast(PolyGateVisualizerContext)context;
+
+		PolyPoint[] new_points;
+		foreach(idx, point; _points) {
+			double x = point.x;
+			double y = point.y;
+			if (visu_context.selcted_index == idx) {
+				if (logx) {
+					x *= exp(mouse_action.x_current - mouse_action.x_start);
+				} else {
+					x += mouse_action.x_current - mouse_action.x_start;
+				}
+				if (logy) {
+					y *= exp(mouse_action.y_current - mouse_action.y_start);
+				} else {
+					y += mouse_action.y_current - mouse_action.y_start;
+				}
+			}
+			new_points ~= PolyPoint(x,y);
+		}
+
+		import gui;
+		thisTid.send(MsgAllButMyselfUpdateVisualizer( 
+				mouse_action.itemname,
+				mouse_action.gui_idx),
+				cast(immutable(Visualizer)) new immutable(PolyGateVisualizer)(new_points, _colorIdx));
 	}
 	override void mouseButtonUp(Tid sessionTid, ItemMouseAction mouse_action, bool logx, bool logy, VisualizerContext context) immutable
 	{
+		import std.math;
 		auto visu_context = cast(PolyGateVisualizerContext)context;
+
+		PolyPoint[] new_points;
+		PolyPoint[] new_deltas;
+		foreach(idx, point; _points) {
+			double x = point.x;
+			double y = point.y;
+			if (visu_context.selcted_index == idx) {
+				if (logx) {
+					x *= exp(mouse_action.x_current - mouse_action.x_start);
+				} else {
+					x += mouse_action.x_current - mouse_action.x_start;
+				}
+				if (logy) {
+					y *= exp(mouse_action.y_current - mouse_action.y_start);
+				} else {
+					y += mouse_action.y_current - mouse_action.y_start;
+				}
+			}
+			new_points ~= PolyPoint(x,y);
+			new_deltas ~= PolyPoint(0,0);
+		}
+
+		sessionTid.send(MsgAddItem(mouse_action.itemname, 
+									new immutable(PolyGateFactory)(new_points, new_deltas, logx, logy, _colorIdx)));
+
+		sessionTid.send(MsgRequestItemVisualizer(mouse_action.itemname, mouse_action.gui_idx), thisTid);
+		sessionTid.send(MsgEchoRedrawContent(mouse_action.gui_idx), thisTid);
 	}
 
 	override VisualizerContext createContext() {
