@@ -118,24 +118,23 @@ public:
 		cr.lineTo(x0_canvas, y0_canvas);
 		cr.stroke();
 
+		// draw inactive points
+		auto mean = PolyPoint(0,0);
+		int n = 0;
 		foreach(idx, point; _points) {
 			double x = log_x_value_of(point.x, logx);
 			double y = log_y_value_of(point.y, logy);
 			auto pixel_width = box.get_pixel_width();
 			auto pixel_height = box.get_pixel_height();
-
-			//writeln("mouse_action.relevant=",mouse_action.relevant,"\r");
-			//writeln("mouse_action.button_down=", mouse_action.button_down,"\r");
-			//writeln("visu_context.selcted_index=", visu_context.selcted_index,"\r");
 			if (mouse_action.relevant && mouse_action.button_down) {
 				if (visu_context.selcted_index == idx) {
 					x += mouse_action.x_current - mouse_action.x_start;
 					y += mouse_action.y_current - mouse_action.y_start;
 				}
 			}
-			double x_canvas = box.transform_box2canvas_x(x);
-			double y_canvas = box.transform_box2canvas_y(y);
-
+			mean.x += x;
+			mean.y += y;
+			++n;
 			drawFilledBox(cr, box, 
 							x-pixel_width*3, 
 							y-pixel_height*3, 
@@ -143,9 +142,10 @@ public:
 							y+pixel_height*3);
 			cr.fill();
 		}
+		mean.x /= n;
+		mean.y /= n;
 
-
-
+		// draw active point
 		if (mouse_action.relevant && visu_context.selcted_index >= 0 && visu_context.selcted_index < _points.length) {
 			auto pixel_width = box.get_pixel_width();
 			auto pixel_height = box.get_pixel_height();
@@ -290,7 +290,34 @@ public:
 		sessionTid.send(MsgRequestItemVisualizer(mouse_action.itemname, mouse_action.gui_idx), thisTid);
 		sessionTid.send(MsgEchoRedrawContent(mouse_action.gui_idx), thisTid);
 	}
+	override void deleteKeyPressed(Tid sessionTid, ItemMouseAction mouse_action, VisualizerContext context) immutable
+	{
+		auto visu_context = cast(PolyGateVisualizerContext)context;
+		if (mouse_action.relevant && visu_context.selcted_index >= 0) {
+			import std.stdio;
+			writeln("polygate delete on index ", visu_context.selcted_index, "\r");
 
+			PolyPoint[] new_points;
+			PolyPoint[] new_deltas;
+			foreach(idx, point; _points) {
+				double x = point.x;
+				double y = point.y;
+				if (idx != visu_context.selcted_index) {
+					new_points ~= PolyPoint(x,y);
+					new_deltas ~= PolyPoint(0,0);
+				}
+			}
+
+
+			if (new_points.length >= 3) {
+				sessionTid.send(MsgAddItem(mouse_action.itemname, 
+											new immutable(PolyGateFactory)(new_points, new_deltas, false, false, _colorIdx)));
+
+				sessionTid.send(MsgRequestItemVisualizer(mouse_action.itemname, mouse_action.gui_idx), thisTid);
+				sessionTid.send(MsgEchoRedrawContent(mouse_action.gui_idx), thisTid);
+			}
+		}		
+	}
 	override VisualizerContext createContext() {
 		//import std.stdio;
 		//writeln("Gate1VisualizerContext created\r");

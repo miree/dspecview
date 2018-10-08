@@ -79,6 +79,7 @@ public:
 	void mouseButtonDown(Tid sessionTid, ItemMouseAction mouse_action, bool logx, bool logy, VisualizerContext context) immutable;
 	void mouseDrag(Tid sessionTid, ItemMouseAction mouse_action, bool logx, bool logy, VisualizerContext context) immutable;
 	void mouseButtonUp(Tid sessionTid, ItemMouseAction mouse_action, bool logx, bool logy, VisualizerContext context) immutable;
+	void deleteKeyPressed(Tid sessionTid, ItemMouseAction mouse_action, VisualizerContext context) immutable;
 	VisualizerContext createContext() immutable;
 	bool isInteractive() immutable; // if this is true, a visualizer cannot be updated via refresh. 
 	                                // The implementation has to make sure that updates are send to other gui windows
@@ -137,6 +138,9 @@ public:
 	{
 	}
 	override void mouseButtonUp(Tid sessionTid, ItemMouseAction mouse_action, bool logx, bool logy, VisualizerContext context) immutable
+	{
+	}
+	override void deleteKeyPressed(Tid sessionTid, ItemMouseAction mouse_action, VisualizerContext context) immutable
 	{
 	}
 	override VisualizerContext createContext() immutable
@@ -306,6 +310,7 @@ public:
 							import gui;
 							if (already_there) {
 								import std.conv;
+								writeln("already_there\r");
 								_guiTid.send(MsgUpdateItem(itemname ~ "$" ~ _items[itemname].getTypeString() ~ "$" ~ _items[itemname].getColorIdx().to!string));
 							} else {
 								_guiTid.send(MsgRefreshItemList());

@@ -234,6 +234,19 @@ public:
 		//_drawables.length = 0;
 	}
 
+	void delete_key_pressed() 
+	{
+		if (_item_mouse_action.idx >= 0) {
+			import std.stdio;
+			writeln("delete index ", _item_mouse_action.idx, " " , _item_mouse_action.itemname, "\r");
+			auto visualizer = _visualizers[_itemnames[_item_mouse_action.idx]];
+			auto visu_context = _visualizer_contexts[_itemnames[_item_mouse_action.idx]];
+			_item_mouse_action.itemname = _itemnames[_item_mouse_action.idx];
+			if (visualizer.length == 1) {
+				visualizer[0].deleteKeyPressed(_sessionTid, _item_mouse_action, visu_context);
+			}
+		}
+	}
 	//@property bool isEmpty() {
 	//	if (_visualizers is null) {
 	//		return true;
@@ -448,7 +461,7 @@ protected:
 	{
 		GtkAllocation size;
 		getAllocation(size);
-		//writeln("PlotArea button pressed ", event_button.x, " ", event_button.y, " ", event_button.button);
+		writeln("PlotArea button pressed ", event_button.x, " ", event_button.y, " ", event_button.button, " ", event_button.state, "\r");
 		if (event_button.button == 2) // starte Translation
 		{
 			_vbox.translate_start(event_button.x, event_button.y);
@@ -523,6 +536,7 @@ protected:
 
 		return true;
 	}
+
 
 	bool onScrollEvent(GdkEventScroll *event_scroll, Widget w)
 	{

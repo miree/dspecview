@@ -257,7 +257,12 @@ public:
 									case 'x': _visualization.toggle_autoscale_x(); break;
 									case 'l': _visualization.toggle_logscale();    break;
 									case 'o': _visualization.toggle_overlay();     break;
-									default:
+									// delete or backspace key
+									case 65288: 
+									case 65535: 
+										_visualization.delete_key_pressed(); 
+									break;
+									default: writeln("gui key press e.keyval=",e.keyval,"\r");
 								}
 							}
 							if (_control_panel !is null) {

@@ -353,6 +353,10 @@ public:
 		return _check_auto_refresh.getActive();
 	}
 
+	void delete_key_pressed() {
+		_plot_area.delete_key_pressed();
+	}
+
 private:
 	import std.concurrency;
 	Tid _sessionTid;
