@@ -238,7 +238,7 @@ public:
 	{
 		if (_item_mouse_action.idx >= 0) {
 			import std.stdio;
-			writeln("delete index ", _item_mouse_action.idx, " " , _item_mouse_action.itemname, "\r");
+			//writeln("delete index ", _item_mouse_action.idx, " " , _item_mouse_action.itemname, "\r");
 			auto visualizer = _visualizers[_itemnames[_item_mouse_action.idx]];
 			auto visu_context = _visualizer_contexts[_itemnames[_item_mouse_action.idx]];
 			_item_mouse_action.itemname = _itemnames[_item_mouse_action.idx];
@@ -461,7 +461,7 @@ protected:
 	{
 		GtkAllocation size;
 		getAllocation(size);
-		writeln("PlotArea button pressed ", event_button.x, " ", event_button.y, " ", event_button.button, " ", event_button.state, "\r");
+		//writeln("PlotArea button pressed ", event_button.x, " ", event_button.y, " ", event_button.button, " ", event_button.state, "\r");
 		if (event_button.button == 2) // starte Translation
 		{
 			_vbox.translate_start(event_button.x, event_button.y);

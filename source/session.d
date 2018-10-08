@@ -310,7 +310,7 @@ public:
 							import gui;
 							if (already_there) {
 								import std.conv;
-								writeln("already_there\r");
+								//writeln("already_there\r");
 								_guiTid.send(MsgUpdateItem(itemname ~ "$" ~ _items[itemname].getTypeString() ~ "$" ~ _items[itemname].getColorIdx().to!string));
 							} else {
 								_guiTid.send(MsgRefreshItemList());

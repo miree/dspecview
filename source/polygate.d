@@ -295,7 +295,7 @@ public:
 		auto visu_context = cast(PolyGateVisualizerContext)context;
 		if (mouse_action.relevant && visu_context.selcted_index >= 0) {
 			import std.stdio;
-			writeln("polygate delete on index ", visu_context.selcted_index, "\r");
+			//writeln("polygate delete on index ", visu_context.selcted_index, "\r");
 
 			PolyPoint[] new_points;
 			PolyPoint[] new_deltas;
@@ -307,7 +307,6 @@ public:
 					new_deltas ~= PolyPoint(0,0);
 				}
 			}
-
 
 			if (new_points.length >= 3) {
 				sessionTid.send(MsgAddItem(mouse_action.itemname, 
