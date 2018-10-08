@@ -66,7 +66,7 @@ private:
 
 class PolyGateVisualizerContext : VisualizerContext
 {
-	int selcted_index;
+	int selcted_index = -1;
 }
 
 immutable class PolyGateVisualizer : BaseVisualizer 
@@ -118,7 +118,35 @@ public:
 		cr.lineTo(x0_canvas, y0_canvas);
 		cr.stroke();
 
-		if (mouse_action.relevant) {
+		foreach(idx, point; _points) {
+			double x = log_x_value_of(point.x, logx);
+			double y = log_y_value_of(point.y, logy);
+			auto pixel_width = box.get_pixel_width();
+			auto pixel_height = box.get_pixel_height();
+
+			//writeln("mouse_action.relevant=",mouse_action.relevant,"\r");
+			//writeln("mouse_action.button_down=", mouse_action.button_down,"\r");
+			//writeln("visu_context.selcted_index=", visu_context.selcted_index,"\r");
+			if (mouse_action.relevant && mouse_action.button_down) {
+				if (visu_context.selcted_index == idx) {
+					x += mouse_action.x_current - mouse_action.x_start;
+					y += mouse_action.y_current - mouse_action.y_start;
+				}
+			}
+			double x_canvas = box.transform_box2canvas_x(x);
+			double y_canvas = box.transform_box2canvas_y(y);
+
+			drawFilledBox(cr, box, 
+							x-pixel_width*3, 
+							y-pixel_height*3, 
+							x+pixel_width*3, 
+							y+pixel_height*3);
+			cr.fill();
+		}
+
+
+
+		if (mouse_action.relevant && visu_context.selcted_index >= 0 && visu_context.selcted_index < _points.length) {
 			auto pixel_width = box.get_pixel_width();
 			auto pixel_height = box.get_pixel_height();
 			double x = log_x_value_of(_points[visu_context.selcted_index].x, logx);
