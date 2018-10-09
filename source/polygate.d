@@ -90,6 +90,12 @@ public:
 		double linewidth = cr.getLineWidth();
 		import logscale, primitives;
 
+		if (mouse_action.relevant && visu_context.selcted_index == _points.length*2) {
+			cr.setLineWidth(linewidth*2);
+		} else {
+			cr.setLineWidth(linewidth);
+		}
+
 		double x0_canvas, y0_canvas;
 		foreach(idx, point; _points) {
 			double x = log_x_value_of(point.x, logx);
@@ -99,7 +105,7 @@ public:
 			//writeln("mouse_action.button_down=", mouse_action.button_down,"\r");
 			//writeln("visu_context.selcted_index=", visu_context.selcted_index,"\r");
 			if (mouse_action.relevant && mouse_action.button_down) {
-				if (visu_context.selcted_index == idx) {
+				if (visu_context.selcted_index == idx || visu_context.selcted_index == _points.length*2) {
 					x += mouse_action.x_current - mouse_action.x_start;
 					y += mouse_action.y_current - mouse_action.y_start;
 				}
@@ -127,7 +133,7 @@ public:
 			auto pixel_width = box.get_pixel_width();
 			auto pixel_height = box.get_pixel_height();
 			if (mouse_action.relevant && mouse_action.button_down) {
-				if (visu_context.selcted_index == idx) {
+				if (visu_context.selcted_index == idx ||  visu_context.selcted_index == _points.length*2) {
 					x += mouse_action.x_current - mouse_action.x_start;
 					y += mouse_action.y_current - mouse_action.y_start;
 				}
@@ -162,6 +168,71 @@ public:
 							y+pixel_height*5);
 			cr.fill();
 		}
+
+		// draw add-a-point option
+		foreach(idx, point; _points) {
+			auto pixel_width = box.get_pixel_width();
+			auto pixel_height = box.get_pixel_height();
+			ulong previous_idx = idx;
+			if (previous_idx == 0) {
+				previous_idx = _points.length-1; 
+			} else {
+				previous_idx -= 1;
+			}
+			PolyPoint previous_point = _points[previous_idx];
+			double x1 = log_x_value_of(point.x         , logx);
+			double y1 = log_y_value_of(point.y         , logy);
+			double x2 = log_x_value_of(previous_point.x, logx);
+			double y2 = log_y_value_of(previous_point.y, logy);
+			if (mouse_action.relevant && mouse_action.button_down) {
+				if ( visu_context.selcted_index == idx || visu_context.selcted_index == _points.length*2) {
+					x1 += mouse_action.x_current - mouse_action.x_start;
+					y1 += mouse_action.y_current - mouse_action.y_start;
+				}
+				if ( visu_context.selcted_index == previous_idx || visu_context.selcted_index == _points.length*2) {
+					x2 += mouse_action.x_current - mouse_action.x_start;
+					y2 += mouse_action.y_current - mouse_action.y_start;
+				}
+			}
+			double x = 0.5*(x1+x2);
+			double y = 0.5*(y1+y2);
+			double size = 3;
+			//writeln("selcted_index=",visu_context.selcted_index, "   idx+_points.length=", idx+_points.length,"\r");
+			if (mouse_action.relevant && visu_context.selcted_index == idx+_points.length) {
+				size = 5;
+			}
+
+
+			drawVerticalLine  (cr, box, x, y-pixel_height*size, y+pixel_height*size);
+			drawHorizontalLine(cr, box, y, x-pixel_width*size, x+pixel_width*size);
+			cr.stroke();
+		}
+
+		// draw filled polygon
+		foreach(idx, point; _points) {
+			double x = log_x_value_of(point.x, logx);
+			double y = log_y_value_of(point.y, logy);
+
+			if (mouse_action.relevant && mouse_action.button_down) {
+				if (visu_context.selcted_index == idx ||  visu_context.selcted_index == _points.length*2) {
+					x += mouse_action.x_current - mouse_action.x_start;
+					y += mouse_action.y_current - mouse_action.y_start;
+				}
+			}
+			double x_canvas = box.transform_box2canvas_x(x);
+			double y_canvas = box.transform_box2canvas_y(y);
+
+			if (idx == 0) {
+				x0_canvas = x_canvas;
+				y0_canvas = y_canvas;
+				cr.moveTo(x_canvas, y_canvas);			
+			} else {
+				cr.lineTo(x_canvas, y_canvas);
+			}
+		}
+		cr.lineTo(x0_canvas, y0_canvas);
+		cr.setSourceRgba(1,1,1, alpha_value);
+		cr.fill();
 	}
 	override bool getLeftRight(out double left, out double right, bool logy, bool logx) immutable
 	{
@@ -202,6 +273,8 @@ public:
 		import logscale;
 		int min_idx = -1;
 		double min_dist;
+		double min_x, max_x;
+		double min_y, max_y;
 
 		foreach(idx, point; _points) {
 			double px = log_x_value_of(point.x, logx);
@@ -213,19 +286,104 @@ public:
 				min_dist = dist;
 				min_idx  = cast(int)idx;
 			}
+			if (min_x is double.init || min_x > px) {min_x = px;}
+			if (max_x is double.init || min_x < px) {min_x = px;}
+			if (min_y is double.init || min_y > py) {min_y = py;}
+			if (max_y is double.init || max_y > py) {max_y = py;}
 		}
+
+		PolyPoint previous_point = _points[$-1];
+		foreach(idx, point; _points) {
+			double p1x = log_x_value_of(point.x, logx);
+			double p1y = log_y_value_of(point.y, logy);
+			double p2x = log_x_value_of(previous_point.x, logx);
+			double p2y = log_y_value_of(previous_point.y, logy);
+			double px = 0.5*(p1x+p2x);
+			double py = 0.5*(p1y+p2y);
+
+			double deltax = (x-px) * box._b_x;
+			double deltay = (y-py) * box._b_y;
+			double dist = sqrt(deltax*deltax + deltay*deltay);
+			if (min_dist is double.init || dist < min_dist) {
+				min_dist = dist;
+				min_idx  = cast(int)(idx+_points.length);
+			}
+			previous_point = point;
+		}
+
 		if (min_dist !is double.init) {
 			dr = min_dist;
 			if (visu_context.selcted_index != min_idx) {
+				// set this to true to initiate a redraw;
 				visu_context.changed = true;
 			}
 			visu_context.selcted_index = min_idx;
 		}
+
+		import std.stdio;
+		//writeln("min_idx=",visu_context.selcted_index,"\r");
+
+		if (dr > 10 && inside(x,y, logx, logy)) {
+			//writeln("inside\r");
+			visu_context.selcted_index = cast(int)(_points.length*2);
+			if (visu_context.selcted_index != min_idx) {
+				// set this to true to initiate a redraw;
+				visu_context.changed = true;
+			}
+			dx = max_x - min_x;
+			dy = max_y - min_y;
+
+			return true;
+		}
+
 		return false;
 	}
-
+	override ulong getDim() immutable {
+		return 2; // means undecided (can live with 1d or 2d)
+	}
 	override void mouseButtonDown(Tid sessionTid, ItemMouseAction mouse_action, bool logx, bool logy, VisualizerContext context) immutable
 	{
+		auto visu_context = cast(PolyGateVisualizerContext)context;
+		import std.stdio;
+		import std.stdio;
+		writeln("polygate mouseButtonDown ", visu_context.selcted_index, " " , mouse_action.itemname, "\r");
+		//writeln("mouseButtonDown selcted_index=",visu_context.selcted_index,"\r");
+		if (visu_context.selcted_index >= _points.length && visu_context.selcted_index < 2*_points.length) {
+			PolyPoint[] new_points;
+			PolyPoint[] new_deltas;
+			PolyPoint previous_point = _points[$-1];
+			foreach(idx, point; _points) {
+				double x = point.x;
+				double y = point.y;
+				if (idx+_points.length == visu_context.selcted_index) {
+					new_points ~= PolyPoint(0.5*(x+previous_point.x), 0.5*(y+previous_point.y));
+					new_deltas ~= PolyPoint(0,0);
+				}
+				new_points ~= PolyPoint(x,y);
+				new_deltas ~= PolyPoint(0,0);
+				previous_point = point;
+			}
+
+			if (new_points.length >= 3) {
+				if (mouse_action.itemname is null ) {
+					import std.stdio;
+					writeln ("mouseButtonDown itemname is null\r");
+				}
+				// update all other gui windows
+				import gui;
+				thisTid.send(MsgAllButMyselfUpdateVisualizer( 
+						mouse_action.itemname,
+						mouse_action.gui_idx),
+						cast(immutable(Visualizer)) new immutable(PolyGateVisualizer)(new_points, _colorIdx));
+
+				// update session
+				sessionTid.send(MsgAddItem(mouse_action.itemname, 
+											new immutable(PolyGateFactory)(new_points, new_deltas, false, false, _colorIdx)));
+
+				sessionTid.send(MsgRequestItemVisualizer(mouse_action.itemname, mouse_action.gui_idx), thisTid);
+				sessionTid.send(MsgEchoRedrawContent(mouse_action.gui_idx), thisTid);
+			}
+		}
 		import std.stdio;
 	}
 	override void mouseDrag(Tid sessionTid, ItemMouseAction mouse_action, bool logx, bool logy, VisualizerContext context) immutable
@@ -237,7 +395,7 @@ public:
 		foreach(idx, point; _points) {
 			double x = point.x;
 			double y = point.y;
-			if (visu_context.selcted_index == idx) {
+			if (visu_context.selcted_index == idx || visu_context.selcted_index == _points.length*2) {
 				if (logx) {
 					x *= exp(mouse_action.x_current - mouse_action.x_start);
 				} else {
@@ -252,6 +410,10 @@ public:
 			new_points ~= PolyPoint(x,y);
 		}
 
+		if (mouse_action.itemname is null ) {
+					import std.stdio;
+			writeln ("mouseDrag itemname is null\r");
+		}
 		import gui;
 		thisTid.send(MsgAllButMyselfUpdateVisualizer( 
 				mouse_action.itemname,
@@ -268,7 +430,7 @@ public:
 		foreach(idx, point; _points) {
 			double x = point.x;
 			double y = point.y;
-			if (visu_context.selcted_index == idx) {
+			if (visu_context.selcted_index == idx || visu_context.selcted_index == _points.length*2) {
 				if (logx) {
 					x *= exp(mouse_action.x_current - mouse_action.x_start);
 				} else {
@@ -284,6 +446,11 @@ public:
 			new_deltas ~= PolyPoint(0,0);
 		}
 
+		if (mouse_action.itemname is null ) {
+					import std.stdio;
+			writeln ("mouseButtonUp itemname is null\r");
+		}
+
 		sessionTid.send(MsgAddItem(mouse_action.itemname, 
 									new immutable(PolyGateFactory)(new_points, new_deltas, logx, logy, _colorIdx)));
 
@@ -293,9 +460,9 @@ public:
 	override void deleteKeyPressed(Tid sessionTid, ItemMouseAction mouse_action, VisualizerContext context) immutable
 	{
 		auto visu_context = cast(PolyGateVisualizerContext)context;
+		import std.stdio;
+		writeln("polygate delete on index ", visu_context.selcted_index, " " , mouse_action.itemname, "\r");
 		if (mouse_action.relevant && visu_context.selcted_index >= 0) {
-			import std.stdio;
-			//writeln("polygate delete on index ", visu_context.selcted_index, "\r");
 
 			PolyPoint[] new_points;
 			PolyPoint[] new_deltas;
@@ -309,13 +476,26 @@ public:
 			}
 
 			if (new_points.length >= 3) {
+				if (mouse_action.itemname is null ) {
+					import std.stdio;
+					writeln ("deleteKeyPressed itemname is null\r");
+				}
+				// update all other gui windows
+				import gui;
+				thisTid.send(MsgAllButMyselfUpdateVisualizer( 
+						mouse_action.itemname,
+						mouse_action.gui_idx),
+						cast(immutable(Visualizer)) new immutable(PolyGateVisualizer)(new_points, _colorIdx));
+
+				// update session
 				sessionTid.send(MsgAddItem(mouse_action.itemname, 
 											new immutable(PolyGateFactory)(new_points, new_deltas, false, false, _colorIdx)));
+
 
 				sessionTid.send(MsgRequestItemVisualizer(mouse_action.itemname, mouse_action.gui_idx), thisTid);
 				sessionTid.send(MsgEchoRedrawContent(mouse_action.gui_idx), thisTid);
 			}
-		}		
+		}
 	}
 	override VisualizerContext createContext() {
 		//import std.stdio;
@@ -327,10 +507,15 @@ public:
 		return true;
 	}
 
-	bool inside(double x, double y) {
+	bool inside(double x, double y, bool logx, bool logy) {
 		bool is_inside = false;
 		PolyPoint p1 = _points[$-1];
-		foreach(p2; _points) {
+		p1.x = log_x_value_of(p1.x, logx);
+		p1.y = log_y_value_of(p1.y, logy);
+		foreach(p; _points) {
+			PolyPoint p2;
+			p2.x = log_x_value_of(p.x, logx);
+			p2.y = log_y_value_of(p.y, logy);
 			if ( ((p2.y > y) != (p1.y > y)) &&
 			     (x < (p1.x - p2.x) * (y - p2.y) / (p1.y - p2.y) + p2.x) ) {
 			    is_inside = !is_inside;

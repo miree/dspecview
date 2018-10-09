@@ -238,11 +238,12 @@ public:
 	{
 		if (_item_mouse_action.idx >= 0) {
 			import std.stdio;
-			//writeln("delete index ", _item_mouse_action.idx, " " , _item_mouse_action.itemname, "\r");
-			auto visualizer = _visualizers[_itemnames[_item_mouse_action.idx]];
-			auto visu_context = _visualizer_contexts[_itemnames[_item_mouse_action.idx]];
 			_item_mouse_action.itemname = _itemnames[_item_mouse_action.idx];
+			auto visualizer   = _visualizers[_item_mouse_action.itemname];
+			auto visu_context = _visualizer_contexts[_item_mouse_action.itemname];
+			writeln("delete index ", _item_mouse_action.idx, " " , _item_mouse_action.itemname, "\r");
 			if (visualizer.length == 1) {
+				writeln("calling item function deleteKeyPressed()\r");
 				visualizer[0].deleteKeyPressed(_sessionTid, _item_mouse_action, visu_context);
 			}
 		}
@@ -475,13 +476,22 @@ protected:
 		{
 			int mouse_hover_idx = _item_mouse_action.idx;
 			if (mouse_hover_idx >= 0) {
-					_item_mouse_action.button_down = true;
-					_item_mouse_action.x_start = _item_mouse_action.x_current;
-					_item_mouse_action.y_start = _item_mouse_action.y_current;
-					//import std.stdio;
-					//writeln("dragging on\r");
-					_item_mouse_action.dragging = true;
-				}
+				_item_mouse_action.button_down = true;
+				_item_mouse_action.x_start = _item_mouse_action.x_current;
+				_item_mouse_action.y_start = _item_mouse_action.y_current;
+				//import std.stdio;
+				//writeln("dragging on\r");
+				_item_mouse_action.dragging = true;
+			}
+			if (_item_mouse_action.relevant) {
+//					override void mouseButtonDown(Tid sessionTid, ItemMouseAction mouse_action, 
+//                              bool logx, bool logy, VisualizerContext context) immutable
+
+				_visualizers[_itemnames[_item_mouse_action.idx]][0].mouseButtonDown(_sessionTid, 
+																	_item_mouse_action, 
+																	_logscale_x, _logscale_y, 
+																	_visualizer_contexts[_itemnames[_item_mouse_action.idx]]);
+			}
 		}
 		return true;
 	}
