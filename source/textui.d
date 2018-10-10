@@ -425,7 +425,7 @@ int run(immutable string[] args, Tid sesTid)
 
 	// linenoise main loop, line is created by malloc and has to be freed with free() 
 	while((line = linenoise("dspecview> ")) !is null) {
-		import std.array, core.stdc.string, core.stdc.stdlib;
+		import std.array, core.stdc.string, core.stdc.stdlib, std.string;
 		string sline;
 		for(int i = 0; line[i] != '\0'; ++i) sline ~= line[i];
 		// Do something with the string. 
@@ -433,7 +433,7 @@ int run(immutable string[] args, Tid sesTid)
 			linenoiseHistoryAdd(line); // Add to the history. 
 			linenoiseHistorySave("history.txt"); // Save the history on disk. 
 			auto dline = cstring2string(line);
-			auto tokens = dline.split(' ');
+			auto tokens = dline.strip.split(' ');
 			if (tokens.length > 0) {
 				// tokens[0]    is the command name
 				// tokens[1..$] are the optional args
