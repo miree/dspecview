@@ -242,7 +242,7 @@ public:
 			auto visualizer   = _visualizers[_item_mouse_action.itemname];
 			auto visu_context = _visualizer_contexts[_item_mouse_action.itemname];
 			writeln("delete index ", _item_mouse_action.idx, " " , _item_mouse_action.itemname, "\r");
-			if (visualizer.length == 1) {
+			if (visualizer !is null && visualizer.length > 0) {
 				writeln("calling item function deleteKeyPressed()\r");
 				visualizer[0].deleteKeyPressed(_sessionTid, _item_mouse_action, visu_context);
 			}
@@ -483,10 +483,7 @@ protected:
 				//writeln("dragging on\r");
 				_item_mouse_action.dragging = true;
 			}
-			if (_item_mouse_action.relevant) {
-//					override void mouseButtonDown(Tid sessionTid, ItemMouseAction mouse_action, 
-//                              bool logx, bool logy, VisualizerContext context) immutable
-
+			if (_item_mouse_action.idx > 0) {
 				_visualizers[_itemnames[_item_mouse_action.idx]][0].mouseButtonDown(_sessionTid, 
 																	_item_mouse_action, 
 																	_logscale_x, _logscale_y, 

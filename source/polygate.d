@@ -289,7 +289,7 @@ public:
 			if (min_x is double.init || min_x > px) {min_x = px;}
 			if (max_x is double.init || min_x < px) {min_x = px;}
 			if (min_y is double.init || min_y > py) {min_y = py;}
-			if (max_y is double.init || max_y > py) {max_y = py;}
+			if (max_y is double.init || max_y < py) {max_y = py;}
 		}
 
 		PolyPoint previous_point = _points[$-1];
@@ -343,48 +343,48 @@ public:
 	}
 	override void mouseButtonDown(Tid sessionTid, ItemMouseAction mouse_action, bool logx, bool logy, VisualizerContext context) immutable
 	{
-		auto visu_context = cast(PolyGateVisualizerContext)context;
-		import std.stdio;
-		import std.stdio;
-		writeln("polygate mouseButtonDown ", visu_context.selcted_index, " " , mouse_action.itemname, "\r");
-		//writeln("mouseButtonDown selcted_index=",visu_context.selcted_index,"\r");
-		if (visu_context.selcted_index >= _points.length && visu_context.selcted_index < 2*_points.length) {
-			PolyPoint[] new_points;
-			PolyPoint[] new_deltas;
-			PolyPoint previous_point = _points[$-1];
-			foreach(idx, point; _points) {
-				double x = point.x;
-				double y = point.y;
-				if (idx+_points.length == visu_context.selcted_index) {
-					new_points ~= PolyPoint(0.5*(x+previous_point.x), 0.5*(y+previous_point.y));
-					new_deltas ~= PolyPoint(0,0);
-				}
-				new_points ~= PolyPoint(x,y);
-				new_deltas ~= PolyPoint(0,0);
-				previous_point = point;
-			}
+		//auto visu_context = cast(PolyGateVisualizerContext)context;
+		//import std.stdio;
+		//import std.stdio;
+		//writeln("polygate mouseButtonDown ", visu_context.selcted_index, " " , mouse_action.itemname, "\r");
+		////writeln("mouseButtonDown selcted_index=",visu_context.selcted_index,"\r");
+		//if (visu_context.selcted_index >= _points.length && visu_context.selcted_index < 2*_points.length) {
+		//	PolyPoint[] new_points;
+		//	PolyPoint[] new_deltas;
+		//	PolyPoint previous_point = _points[$-1];
+		//	foreach(idx, point; _points) {
+		//		double x = point.x;
+		//		double y = point.y;
+		//		if (idx+_points.length == visu_context.selcted_index) {
+		//			new_points ~= PolyPoint(0.5*(x+previous_point.x), 0.5*(y+previous_point.y));
+		//			new_deltas ~= PolyPoint(0,0);
+		//		}
+		//		new_points ~= PolyPoint(x,y);
+		//		new_deltas ~= PolyPoint(0,0);
+		//		previous_point = point;
+		//	}
 
-			if (new_points.length >= 3) {
-				if (mouse_action.itemname is null ) {
-					import std.stdio;
-					writeln ("mouseButtonDown itemname is null\r");
-				}
-				// update all other gui windows
-				import gui;
-				thisTid.send(MsgAllButMyselfUpdateVisualizer( 
-						mouse_action.itemname,
-						mouse_action.gui_idx),
-						cast(immutable(Visualizer)) new immutable(PolyGateVisualizer)(new_points, _colorIdx));
+		//	if (new_points.length >= 3) {
+		//		if (mouse_action.itemname is null ) {
+		//			import std.stdio;
+		//			writeln ("mouseButtonDown itemname is null\r");
+		//		}
+		//		// update all other gui windows
+		//		import gui;
+		//		thisTid.send(MsgAllButMyselfUpdateVisualizer( 
+		//				mouse_action.itemname,
+		//				mouse_action.gui_idx),
+		//				cast(immutable(Visualizer)) new immutable(PolyGateVisualizer)(new_points, _colorIdx));
 
-				// update session
-				sessionTid.send(MsgAddItem(mouse_action.itemname, 
-											new immutable(PolyGateFactory)(new_points, new_deltas, false, false, _colorIdx)));
+		//		// update session
+		//		sessionTid.send(MsgAddItem(mouse_action.itemname, 
+		//									new immutable(PolyGateFactory)(new_points, new_deltas, false, false, _colorIdx)));
 
-				sessionTid.send(MsgRequestItemVisualizer(mouse_action.itemname, mouse_action.gui_idx), thisTid);
-				sessionTid.send(MsgEchoRedrawContent(mouse_action.gui_idx), thisTid);
-			}
-		}
-		import std.stdio;
+		//		sessionTid.send(MsgRequestItemVisualizer(mouse_action.itemname, mouse_action.gui_idx), thisTid);
+		//		sessionTid.send(MsgEchoRedrawContent(mouse_action.gui_idx), thisTid);
+		//	}
+		//}
+		//import std.stdio;
 	}
 	override void mouseDrag(Tid sessionTid, ItemMouseAction mouse_action, bool logx, bool logy, VisualizerContext context) immutable
 	{
@@ -427,43 +427,69 @@ public:
 
 		PolyPoint[] new_points;
 		PolyPoint[] new_deltas;
-		foreach(idx, point; _points) {
-			double x = point.x;
-			double y = point.y;
-			if (visu_context.selcted_index == idx || visu_context.selcted_index == _points.length*2) {
-				if (logx) {
-					x *= exp(mouse_action.x_current - mouse_action.x_start);
-				} else {
-					x += mouse_action.x_current - mouse_action.x_start;
+		if (visu_context.selcted_index >= 0 && visu_context.selcted_index < _points.length || visu_context.selcted_index == _points.length*2) {
+			foreach(idx, point; _points) {
+				double x = point.x;
+				double y = point.y;
+				if (visu_context.selcted_index == idx || visu_context.selcted_index == _points.length*2) {
+					if (logx) {
+						x *= exp(mouse_action.x_current - mouse_action.x_start);
+					} else {
+						x += mouse_action.x_current - mouse_action.x_start;
+					}
+					if (logy) {
+						y *= exp(mouse_action.y_current - mouse_action.y_start);
+					} else {
+						y += mouse_action.y_current - mouse_action.y_start;
+					}
 				}
-				if (logy) {
-					y *= exp(mouse_action.y_current - mouse_action.y_start);
-				} else {
-					y += mouse_action.y_current - mouse_action.y_start;
-				}
+				new_points ~= PolyPoint(x,y);
+				new_deltas ~= PolyPoint(0,0);
 			}
-			new_points ~= PolyPoint(x,y);
-			new_deltas ~= PolyPoint(0,0);
+
+			if (mouse_action.itemname is null ) {
+						import std.stdio;
+				writeln ("mouseButtonUp itemname is null\r");
+			}
+			sessionTid.send(MsgAddItem(mouse_action.itemname, 
+										new immutable(PolyGateFactory)(new_points, new_deltas, logx, logy, _colorIdx)));
+
+			sessionTid.send(MsgRequestItemVisualizer(mouse_action.itemname, mouse_action.gui_idx), thisTid);
+			sessionTid.send(MsgEchoRedrawContent(mouse_action.gui_idx), thisTid);
+		} else if (visu_context.selcted_index >= _points.length && visu_context.selcted_index < 2*_points.length) {
+			PolyPoint previous_point = _points[$-1];
+			foreach(idx, point; _points) {
+				double x = point.x;
+				double y = point.y;
+				if (idx+_points.length == visu_context.selcted_index) {
+					new_points ~= PolyPoint(0.5*(x+previous_point.x), 0.5*(y+previous_point.y));
+					new_deltas ~= PolyPoint(0,0);
+				}
+				new_points ~= PolyPoint(x,y);
+				new_deltas ~= PolyPoint(0,0);
+				previous_point = point;
+			}
+			sessionTid.send(MsgAddItem(mouse_action.itemname, 
+										new immutable(PolyGateFactory)(new_points, new_deltas, logx, logy, _colorIdx)));
+
+			sessionTid.send(MsgRequestItemVisualizer(mouse_action.itemname, mouse_action.gui_idx), thisTid);
+			sessionTid.send(MsgEchoRedrawContent(mouse_action.gui_idx), thisTid);
+
+			import gui;
+			thisTid.send(MsgAllButMyselfUpdateVisualizer( 
+					mouse_action.itemname,
+					mouse_action.gui_idx),
+					cast(immutable(Visualizer)) new immutable(PolyGateVisualizer)(new_points, _colorIdx));
 		}
 
-		if (mouse_action.itemname is null ) {
-					import std.stdio;
-			writeln ("mouseButtonUp itemname is null\r");
-		}
-
-		sessionTid.send(MsgAddItem(mouse_action.itemname, 
-									new immutable(PolyGateFactory)(new_points, new_deltas, logx, logy, _colorIdx)));
-
-		sessionTid.send(MsgRequestItemVisualizer(mouse_action.itemname, mouse_action.gui_idx), thisTid);
-		sessionTid.send(MsgEchoRedrawContent(mouse_action.gui_idx), thisTid);
 	}
 	override void deleteKeyPressed(Tid sessionTid, ItemMouseAction mouse_action, VisualizerContext context) immutable
 	{
 		auto visu_context = cast(PolyGateVisualizerContext)context;
 		import std.stdio;
 		writeln("polygate delete on index ", visu_context.selcted_index, " " , mouse_action.itemname, "\r");
-		if (mouse_action.relevant && visu_context.selcted_index >= 0) {
-
+		if (visu_context.selcted_index >= 0 && visu_context.selcted_index < _points.length) {
+			writeln("making new set of points\r");
 			PolyPoint[] new_points;
 			PolyPoint[] new_deltas;
 			foreach(idx, point; _points) {
@@ -478,7 +504,7 @@ public:
 			if (new_points.length >= 3) {
 				if (mouse_action.itemname is null ) {
 					import std.stdio;
-					writeln ("deleteKeyPressed itemname is null\r");
+					writeln ("++++++deleteKeyPressed itemname is null\r");
 				}
 				// update all other gui windows
 				import gui;
