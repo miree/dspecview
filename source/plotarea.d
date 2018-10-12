@@ -564,10 +564,10 @@ protected:
 		{
 			import gdk.Event;
 			case GdkScrollDirection.DOWN: 
-				_vbox.scale_one_step(event_scroll.x, event_scroll.y, size.width, size.height, delta, delta);
+				_vbox.scale_one_step(event_scroll.x, event_scroll.y, size.width, size.height, -delta, -delta);
 			break;
 			case GdkScrollDirection.UP:	
-				_vbox.scale_one_step(event_scroll.x, event_scroll.y, size.width, size.height, -delta, -delta);
+				_vbox.scale_one_step(event_scroll.x, event_scroll.y, size.width, size.height, delta, delta);
 			break;
 			case GdkScrollDirection.LEFT: 
 				_vbox.translate_one_step(event_scroll.x, event_scroll.y, delta, 0);

@@ -392,6 +392,7 @@ public:
 		auto visu_context = cast(PolyGateVisualizerContext)context;
 
 		PolyPoint[] new_points;
+		PolyPoint[] new_deltas;
 		foreach(idx, point; _points) {
 			double x = point.x;
 			double y = point.y;
@@ -408,7 +409,11 @@ public:
 				}
 			}
 			new_points ~= PolyPoint(x,y);
+			new_deltas ~= PolyPoint(0,0);
 		}
+		// send an item with the temporary changes
+		sessionTid.send(MsgAddItem(mouse_action.itemname, new immutable(PolyGateFactory)(new_points, new_deltas, logx, logy, _colorIdx)));
+		sessionTid.send(MsgEchoRedrawContent(mouse_action.gui_idx), thisTid);
 
 		if (mouse_action.itemname is null ) {
 					import std.stdio;
