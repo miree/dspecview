@@ -446,7 +446,7 @@ public:
 					if (idx != msg.gui_idx) {
 						if (gui !is null) {
 							if (gui._control_panel !is null ) {
-								gui._visualization.addVisualizer(msg.itemname, visualizer);
+								gui._visualization.updateVisualizer(msg.itemname, visualizer);
 								gui._visualization.mark_dirty();
 								gui._visualization.redraw_content();
 							}

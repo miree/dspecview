@@ -86,6 +86,16 @@ public:
 		_visualizer_contexts[itemname] = visualizer.createContext();
 		return first_time_add;
 	}
+	bool updateVisualizer(string itemname, immutable(Visualizer) visualizer) 
+	{
+		import std.stdio;
+		auto visu = itemname in _visualizers;
+		if (visu is null) { // we don't have that visualizer displayed
+			return true;
+		}
+		// we have that and it needs to be updated
+		return add(itemname,visualizer);
+	}
 	void remove(string removed_itemname) {
 		import std.algorithm;
 		string[] new_itemnames;
