@@ -166,6 +166,7 @@ public:
 		}
 		drawVerticalLine(cr, box, left, bottom, top);
 		cr.stroke();
+
 		if (mouse_action.relevant && (visu_context.selcted_index == 2 || visu_context.selcted_index == 5)) {
 			cr.setLineWidth(linewidth*2);
 		} else {
@@ -173,6 +174,7 @@ public:
 		}
 		drawVerticalLine(cr, box, right, bottom, top);
 		cr.stroke();
+
 		if (mouse_action.relevant && (visu_context.selcted_index == 3 || visu_context.selcted_index == 5)) {
 			cr.setLineWidth(linewidth*2);
 		} else {
@@ -180,6 +182,7 @@ public:
 		}
 		drawHorizontalLine(cr, box, bottom, left, right);
 		cr.stroke();
+
 		if (mouse_action.relevant && (visu_context.selcted_index == 4 || visu_context.selcted_index == 5)) {
 			cr.setLineWidth(linewidth*2);
 		} else {
@@ -187,62 +190,86 @@ public:
 		}
 		drawHorizontalLine(cr, box, top, left, right);
 		cr.stroke();
+
 		cr.setSourceRgba(1,1,1, alpha_value);
 		drawFilledBox(cr, box, left, bottom, right, top);
 		cr.fill();
 	}
 	override bool getLeftRight(out double left, out double right, bool logy, bool logx) immutable
 	{
-		left  = _lrbt[0];
-		right = _lrbt[1];
+		left  = log_x_value_of(_lrbt[0], logx);
+		right = log_x_value_of(_lrbt[1], logx);
 		return true;
 	}
 	override bool getBottomTopInLeftRight(out double bottom, out double top, double left, double right, bool logy, bool logx) immutable
 	{
-		bottom = _lrbt[2];
-		top    = _lrbt[3];
+		bottom = log_y_value_of(_lrbt[2], logy);
+		top    = log_y_value_of(_lrbt[3], logy);
 		return true;
 	}
 	override bool mouseDistance(ViewBox box, out double dx, out double dy, out double dr, double x, double y, bool logx, bool logy, VisualizerContext context) immutable
 	{
-		//auto visu_context = cast(Gate1VisualizerContext)context;
-		//import std.math, std.algorithm;
-		//import logscale;
-		//if (_direction == Direction.x) {
-		//	double value1 = log_x_value_of(_value1, logx, double.init);
-		//	double value2 = log_x_value_of(_value2, logx, double.init);
-		//	if (value1 is double.init || value2 is double.init) {
-		//		return false;
-		//	} else {
-		//		double dx1 = (x-value1) * box._b_x;
-		//		double dx2 = (x-value2) * box._b_x;
-		//		if (abs(dx1) < abs(dx2)) {
-		//			dx = dx1;
-		//			if (visu_context.selcted_index != 1) {
-		//				visu_context.selcted_index = 1;
-		//				visu_context.changed = true;
-		//			}
-		//		} else {
-		//			dx = dx2;
-		//			if (visu_context.selcted_index != 2) {
-		//				visu_context.selcted_index = 2;
-		//				visu_context.changed = true;
-		//			}
-		//		}
-		//		if (x > value1 && x < value2){// in between both markers
-		//			import std.stdio;
-		//			double dv = value2-value1;
-		//			dx = dv;
-		//			if (visu_context.selcted_index != 3) {
-		//				visu_context.selcted_index = 3;
-		//				visu_context.changed = true;
-		//			}
-		//			// return true to indicate "weak selection" which means that the selection has low priority
-		//			// over other items that are selected because of proximity
-		//			return true;
-		//		}
-		//	}
-		//} 
+		auto visu_context = cast(Gate2VisualizerContext)context;
+		import std.math, std.algorithm;
+		import logscale;
+		double left   = log_x_value_of(_lrbt[0], logx, double.init);
+		double right  = log_x_value_of(_lrbt[1], logx, double.init);
+		double bottom = log_y_value_of(_lrbt[2], logy, double.init);
+		double top    = log_y_value_of(_lrbt[3], logy, double.init);
+		if (left is double.init || right is double.init ||
+			bottom is double.init || top is double.init) {
+			return false;
+		} else {
+			double dx_left  = (x-left)  * box._b_x;
+			double dx_right = (x-right) * box._b_x;
+			double dy_bottom = (y-bottom) * box._b_y;
+			double dy_top    = (y-top)    * box._b_y;
+			import std.stdio;
+			if (abs(dx_left) < abs(dx_right) &&
+				abs(dx_left) < abs(dy_bottom) &&
+				abs(dx_left) < abs(dy_top)) {
+				dx = dx_left;
+				if (visu_context.selcted_index != 1) {
+					visu_context.selcted_index = 1;
+					visu_context.changed = true;
+				}
+			} else if (abs(dx_right) < abs(dy_bottom) &&
+					   abs(dx_right) < abs(dy_top)) {
+				dx = dx_right;
+				if (visu_context.selcted_index != 2) {
+					visu_context.selcted_index = 2;
+					visu_context.changed = true;
+				}
+			} else if (abs(dy_bottom) < abs(dy_top)) {
+				dy = dy_bottom;
+				if (visu_context.selcted_index != 3) {
+					visu_context.selcted_index = 3;
+					visu_context.changed = true;
+				}
+			} else {
+				dy = dy_top;
+				if (visu_context.selcted_index != 4) {
+					visu_context.selcted_index = 4;
+					visu_context.changed = true;
+				}
+			}
+
+			if (x > left && x < right &&
+			    y > bottom && y < top ){// inside 
+				import std.stdio;
+				double dvx = right - left;
+				double dvy = top - bottom;
+				dx = min(dvx,dvy);
+				dy = min(dvx,dvy);
+				if (visu_context.selcted_index != 5) {
+					visu_context.selcted_index = 5;
+					visu_context.changed = true;
+				}
+				// return true to indicate "weak selection" which means that the selection has low priority
+				// over other items that are selected because of proximity
+				return true;
+			}
+		}
 		return false;
 	}
 
@@ -302,28 +329,41 @@ public:
 	{
 		auto visu_context = cast(Gate2VisualizerContext)context;
 		import std.stdio, std.math;
-		//import logscale;
-		//double delta1 = 0, delta2 = 0;
-		//if (_direction == Direction.x) {
-		//	if (visu_context.selcted_index == 1 || visu_context.selcted_index == 3) {
-		//		delta1 = mouse_action.x_current - mouse_action.x_start;
-		//	}
-		//	if (visu_context.selcted_index == 2 || visu_context.selcted_index == 3) {
-		//		delta2 = mouse_action.x_current - mouse_action.x_start;
-		//	}
-		//} 
-
-		//if (logx && _direction == Direction.x ||
-		//	logy && _direction == Direction.y) {
-		//	// send an item with the permanent changes
-		//	sessionTid.send(MsgAddItem(mouse_action.itemname, 
-		//								new immutable(Gate1Factory)(_value1*exp(delta1), _value2*exp(delta2), double.init, double.init, true, _colorIdx, _direction)));
-		//} else {
-		//	sessionTid.send(MsgAddItem(mouse_action.itemname, 
-		//								new immutable(Gate1Factory)(_value1+delta1, _value2+delta2, double.init, double.init, false, _colorIdx, _direction)));
+		import logscale;
+		double deltax = 0, deltay = 0;
+		deltax = mouse_action.x_current - mouse_action.x_start;
+		deltay = mouse_action.y_current - mouse_action.y_start;
+		//if (visu_context.selcted_index == 2 || visu_context.selcted_index == 5) {
+		//	delta2 = mouse_action.x_current - mouse_action.x_start;
 		//}
-		//sessionTid.send(MsgRequestItemVisualizer(mouse_action.itemname, mouse_action.gui_idx), thisTid);
-		//sessionTid.send(MsgEchoRedrawContent(mouse_action.gui_idx), thisTid);
+		double[] rlbt_new;
+		double[] delta_new;
+		foreach(idx, value; _lrbt) {
+			if (visu_context.selcted_index == idx+1 || visu_context.selcted_index == 5) {
+				if (idx == 0 || idx == 1) {
+					if (logx) {
+						rlbt_new ~= value * exp(deltax);
+					} else {
+						rlbt_new ~= value + deltax;
+					}
+				} 
+				else if (idx == 2 || idx == 3) {
+					if (logy) {
+						rlbt_new ~= value * exp(deltay);
+					} else {
+						rlbt_new ~= value + deltay;
+					}
+				}
+			} else {
+				rlbt_new ~= value;
+			}
+			delta_new ~= 0;
+		}
+
+		sessionTid.send(MsgAddItem(mouse_action.itemname, 
+									new immutable(Gate2Factory)(rlbt_new, delta_new, false, false, _colorIdx)));
+		sessionTid.send(MsgRequestItemVisualizer(mouse_action.itemname, mouse_action.gui_idx), thisTid);
+		sessionTid.send(MsgEchoRedrawContent(mouse_action.gui_idx), thisTid);
 	}
 
 	override VisualizerContext createContext() {

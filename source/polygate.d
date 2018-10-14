@@ -343,48 +343,6 @@ public:
 	}
 	override void mouseButtonDown(Tid sessionTid, ItemMouseAction mouse_action, bool logx, bool logy, VisualizerContext context) immutable
 	{
-		//auto visu_context = cast(PolyGateVisualizerContext)context;
-		//import std.stdio;
-		//import std.stdio;
-		//writeln("polygate mouseButtonDown ", visu_context.selcted_index, " " , mouse_action.itemname, "\r");
-		////writeln("mouseButtonDown selcted_index=",visu_context.selcted_index,"\r");
-		//if (visu_context.selcted_index >= _points.length && visu_context.selcted_index < 2*_points.length) {
-		//	PolyPoint[] new_points;
-		//	PolyPoint[] new_deltas;
-		//	PolyPoint previous_point = _points[$-1];
-		//	foreach(idx, point; _points) {
-		//		double x = point.x;
-		//		double y = point.y;
-		//		if (idx+_points.length == visu_context.selcted_index) {
-		//			new_points ~= PolyPoint(0.5*(x+previous_point.x), 0.5*(y+previous_point.y));
-		//			new_deltas ~= PolyPoint(0,0);
-		//		}
-		//		new_points ~= PolyPoint(x,y);
-		//		new_deltas ~= PolyPoint(0,0);
-		//		previous_point = point;
-		//	}
-
-		//	if (new_points.length >= 3) {
-		//		if (mouse_action.itemname is null ) {
-		//			import std.stdio;
-		//			writeln ("mouseButtonDown itemname is null\r");
-		//		}
-		//		// update all other gui windows
-		//		import gui;
-		//		thisTid.send(MsgAllButMyselfUpdateVisualizer( 
-		//				mouse_action.itemname,
-		//				mouse_action.gui_idx),
-		//				cast(immutable(Visualizer)) new immutable(PolyGateVisualizer)(new_points, _colorIdx));
-
-		//		// update session
-		//		sessionTid.send(MsgAddItem(mouse_action.itemname, 
-		//									new immutable(PolyGateFactory)(new_points, new_deltas, false, false, _colorIdx)));
-
-		//		sessionTid.send(MsgRequestItemVisualizer(mouse_action.itemname, mouse_action.gui_idx), thisTid);
-		//		sessionTid.send(MsgEchoRedrawContent(mouse_action.gui_idx), thisTid);
-		//	}
-		//}
-		//import std.stdio;
 	}
 	override void mouseDrag(Tid sessionTid, ItemMouseAction mouse_action, bool logx, bool logy, VisualizerContext context) immutable
 	{

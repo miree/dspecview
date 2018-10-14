@@ -16,6 +16,7 @@ void populate_list_of_commands()
 	list_of_commands["filehist"]    = &addFileHist;
 	list_of_commands["number"]      = &addNumber;
 	list_of_commands["gate1"]       = &addGate1;
+	list_of_commands["gate2"]       = &addGate2;
 	list_of_commands["polygate"]    = &addPolyGate;
 	//list_of_commands["visualizer"]  = &getItemVisualizer;
 	list_of_commands["gui"]         = &runGui;
@@ -204,7 +205,7 @@ void addGate1(immutable string[] args)
 	import session, gate1;
 
 	if (args.length != 3 && args.length != 4) {
-		writeln("expecting one argument: <itemname> <value> [x|y], got ", args.length , "arguments: ", args);
+		writeln("expecting arguments: <itemname> <value> [x|y], got ", args.length , "arguments: ", args);
 		return;
 	}
 
@@ -230,6 +231,26 @@ void addGate1(immutable string[] args)
 				writeln("expecting x or y as third argument, found ", args[2]);
 		}
 	}
+}
+
+void addGate2(immutable string[] args)
+{
+	import std.stdio, std.concurrency, std.array, std.algorithm, std.conv;
+	import session, gate2;
+
+	if (args.length != 5) {
+		writeln("expecting arguments: <itemname> <left> <right> <bottom> <top>, got ", args.length , "arguments: ", args);
+		return;
+	}
+
+	double[] lrbt;
+	double[] delta_lrbt;
+	foreach(arg; args[1..$]) {
+		lrbt ~= arg.to!double;
+		delta_lrbt ~= 0;
+	}
+
+	sessionTid.send(MsgAddItem(args[0], new immutable(Gate2Factory)(lrbt, delta_lrbt, false, false, -1)));
 }
 
 void addPolyGate(immutable string[] args)
