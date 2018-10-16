@@ -228,29 +228,37 @@ public:
 			if (abs(dx_left) < abs(dx_right) &&
 				abs(dx_left) < abs(dy_bottom) &&
 				abs(dx_left) < abs(dy_top)) {
-				dx = dx_left;
-				if (visu_context.selcted_index != 1) {
-					visu_context.selcted_index = 1;
-					visu_context.changed = true;
+				if (y > bottom && y < top) {
+					dx = dx_left;
+					if (visu_context.selcted_index != 1) {
+						visu_context.selcted_index = 1;
+						visu_context.changed = true;
+					}
 				}
 			} else if (abs(dx_right) < abs(dy_bottom) &&
 					   abs(dx_right) < abs(dy_top)) {
-				dx = dx_right;
-				if (visu_context.selcted_index != 2) {
-					visu_context.selcted_index = 2;
-					visu_context.changed = true;
+				if (y > bottom && y < top) {
+					dx = dx_right;
+					if (visu_context.selcted_index != 2) {
+						visu_context.selcted_index = 2;
+						visu_context.changed = true;
+					}
 				}
 			} else if (abs(dy_bottom) < abs(dy_top)) {
-				dy = dy_bottom;
-				if (visu_context.selcted_index != 3) {
-					visu_context.selcted_index = 3;
-					visu_context.changed = true;
+				if (x > left && x < right) {
+					dy = dy_bottom;
+					if (visu_context.selcted_index != 3) {
+						visu_context.selcted_index = 3;
+						visu_context.changed = true;
+					}
 				}
 			} else {
-				dy = dy_top;
-				if (visu_context.selcted_index != 4) {
-					visu_context.selcted_index = 4;
-					visu_context.changed = true;
+				if (x > left && x < right) {
+					dy = dy_top;
+					if (visu_context.selcted_index != 4) {
+						visu_context.selcted_index = 4;
+						visu_context.changed = true;
+					}
 				}
 			}
 
