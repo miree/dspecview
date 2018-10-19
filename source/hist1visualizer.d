@@ -38,7 +38,7 @@ public:
 		import primitives;
 		//void drawHistogram(T)(ref Scoped!Context cr, ViewBox box, double min, double max, T[] bins, bool logy = true, bool logx = false)
 		import std.stdio;
-		//writeln("drawHistram(,,",_left,",",_right,")\r");
+		//writeln("drawHistogram(,,",_left,",",_right,")\r");
 		if (_bin_data is null) {
 			return;
 		}

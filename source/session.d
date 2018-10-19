@@ -201,12 +201,20 @@ struct MsgRequestItemList{
 // response to the above request
 struct MsgItemList { 
 	string nametype; 
-};
+}
 struct MsgRequestItemUpdate {
 }
 struct MsgUpdateItem { 
 	string nametype; 
-};
+}
+
+////////////////////////////////////////
+// Histogram operations
+struct MsgFillHist1 {
+	string itemname;
+	double pos;
+	double amount;
+}
 
 ////////////////////////////////////////
 // call the refresh function on an item
@@ -391,6 +399,23 @@ public:
 					(MsgIsGuiRunning msg, Tid requestingThread) {
 						if (_output_all_messages) { writeln("got MsgIsGuiRunning\r"); }
 						requestingThread.send(MsgGuiRunningStatus(_guiRunning));
+					},
+					(MsgFillHist1 msg) {
+						//if (_output_all_messages)
+						 { writeln("got MsgFillHist1\r"); }
+						import hist1;
+						auto item = msg.itemname in _items;
+						if (item !is null) {
+							//if (typeid(*item) is typeid(Hist1)) {
+								writeln("filling\r");
+								auto hist = cast(Hist1)(*item);
+								hist.fill(msg.pos, msg.amount);
+							//} else {
+							//	writeln("typeid incorrect ", typeof(*item), " ", typeid(Hist1)," \r");
+							//}
+						} else {
+							writeln("not filling\r");
+						}
 					}
 				); // receive
 	 		}  

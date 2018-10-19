@@ -14,6 +14,8 @@ void populate_list_of_commands()
 	list_of_commands["ls"]          = &listItems;
 	list_of_commands["rm"]          = &rmItem;
 	list_of_commands["filehist"]    = &addFileHist;
+	list_of_commands["hist1"]       = &addHist1;
+	list_of_commands["fill1"]       = &fillHist1;
 	list_of_commands["number"]      = &addNumber;
 	list_of_commands["gate1"]       = &addGate1;
 	list_of_commands["gate2"]       = &addGate2;
@@ -163,6 +165,46 @@ void addFileHist(immutable string[] args)
 
 
 	//sessionTid.send(MsgAddFileHist(args[0]), thisTid);
+}
+
+void addHist1(immutable string[] args)
+{
+	import std.stdio, std.concurrency, std.array, std.algorithm, std.conv;
+	import session, hist1;
+
+	if (args.length != 2 && args.length != 4) {
+		writeln("expecting arguments: <itemname> <bins> [<left> <right>], got ", args.length , "arguments: ", args);
+		return;
+	}
+
+	ulong bins = args[1].to!ulong;
+	double left = 0;
+	double right = bins;
+	if (args.length == 4) {
+		left = args[2].to!double;
+		right = args[3].to!double;
+	}
+
+	sessionTid.send(MsgAddItem(args[0], new immutable(Hist1Factory)(bins, left, right, -1)));
+}
+
+void fillHist1(immutable string[] args)
+{
+	import std.stdio, std.concurrency, std.array, std.algorithm, std.conv;
+	import session, hist1;
+
+	if (args.length != 2 && args.length != 3) {
+		writeln("expecting arguments: <itemname> <pos> [<amount>], got ", args.length , "arguments: ", args);
+		return;
+	}
+
+	double pos = args[1].to!double;
+	double amount = 1;
+	if (args.length == 3) {
+		amount = args[2].to!double;
+	}
+
+	sessionTid.send(MsgFillHist1(args[0], pos, amount));
 }
 
 void addNumber(immutable string[] args)
