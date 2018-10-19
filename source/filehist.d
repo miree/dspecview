@@ -1,4 +1,4 @@
-import session, hist1, hist2;
+import session, hist1visualizer, hist2visualizer;
 
 //////////////////////////////////////////////////
 // A histogram that is read from file and updated

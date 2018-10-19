@@ -248,161 +248,160 @@ public:
 	bool run()
 	{
 		try {
-		_running = true;
+			_running = true;
 
-		////////////////////////////////////////
-		// The main event loop. 
-		// Messages send to this thread control 
-		// the entire session.
-		import std.concurrency;
-		import std.variant : Variant;
-		import std.datetime;
-		import std.stdio;
-
-		while (_running) {
+			////////////////////////////////////////
+			// The main event loop. 
+			// Messages send to this thread control 
+			// the entire session.
+			import std.concurrency;
+			import std.variant : Variant;
+			import std.datetime;
 			import std.stdio;
-			//writeln("session: tick\r");
-			//receiveTimeout(dur!"usecs"(500_000), // 500 ms
-			receive(
-				(MsgSayHi msg, Tid requestingThread) { 
-					if (_output_all_messages) { writeln("got MsgSayHi\r"); }
-					requestingThread.send("message to session was: " ~ msg.text);
-				},
-				(MsgStop stop, Tid requestingThread) {
-					if (_output_all_messages) { writeln("got MsgStop\r"); }
-					_running = false;
-					requestingThread.send("session stopped");
-				},
-				(MsgRun run, Tid requestingThread) {
-					if (_output_all_messages) { writeln("got MsgRun\r"); }
-					requestingThread.send("session is already running");
-				},
-				(MsgRemoveItem msg, Tid requestingThread) {
-					if (_output_all_messages) { writeln("got MsgRemoveItem\r"); }
-					Item item = _items[msg.itemname];
-					auto result = _items.remove(msg.itemname);
-					if (result) {
-						import std.stdio;
-						//writeln("item ",msg.itemname," removed\r");
-						if (_guiRunning) {
-							import gui;
-							_guiTid.send(MsgRefreshItemList());
-							_guiTid.send(MsgRemoveVisualizedItem(msg.itemname));
-						}
-					} else {
-						import std.stdio;
-						//writeln("item ",msg.itemname," not found\r");
-					}
-				},
-				(MsgAddItem msg) {
-					if (_output_all_messages) { writeln("got MsgAddItem\r"); }
-					try {
-						string itemname = msg.itemname;
 
-						auto item_ptr = itemname in _items;
-						bool already_there = item_ptr !is null;
-
-						_items[itemname] = msg.item_factory.getItem();
-						if (_items[itemname].getColorIdx() < 0) {
-							_items[itemname].setColorIdx(_colorIdx_counter++);
-						}
-						if (_guiRunning) {
-							import gui;
-							if (already_there) {
-								import std.conv;
-								//writeln("already_there\r");
-								_guiTid.send(MsgUpdateItem(itemname ~ "$" ~ _items[itemname].getTypeString() ~ "$" ~ _items[itemname].getColorIdx().to!string));
-							} else {
+			while (_running) {
+				import std.stdio;
+				//writeln("session: tick\r");
+				//receiveTimeout(dur!"usecs"(500_000), // 500 ms
+				receive(
+					(MsgSayHi msg, Tid requestingThread) { 
+						if (_output_all_messages) { writeln("got MsgSayHi\r"); }
+						requestingThread.send("message to session was: " ~ msg.text);
+					},
+					(MsgStop stop, Tid requestingThread) {
+						if (_output_all_messages) { writeln("got MsgStop\r"); }
+						_running = false;
+						requestingThread.send("session stopped");
+					},
+					(MsgRun run, Tid requestingThread) {
+						if (_output_all_messages) { writeln("got MsgRun\r"); }
+						requestingThread.send("session is already running");
+					},
+					(MsgRemoveItem msg, Tid requestingThread) {
+						if (_output_all_messages) { writeln("got MsgRemoveItem\r"); }
+						Item item = _items[msg.itemname];
+						auto result = _items.remove(msg.itemname);
+						if (result) {
+							import std.stdio;
+							//writeln("item ",msg.itemname," removed\r");
+							if (_guiRunning) {
+								import gui;
 								_guiTid.send(MsgRefreshItemList());
+								_guiTid.send(MsgRemoveVisualizedItem(msg.itemname));
 							}
+						} else {
+							import std.stdio;
+							//writeln("item ",msg.itemname," not found\r");
 						}
-					} catch (Exception e) {
-						//requestingThread.send(e.msg);
-					}
-				},
-				(MsgRequestItemList msg, Tid requestingThread) {
-					if (_output_all_messages) { writeln("got MsgRequestItemList\r"); }
-					import textui;
-					import std.stdio;
-					//writeln("got request to send itemlist");
-					if (_items.length == 0) {
-						requestingThread.send(MsgItemList());
-					} else {
-						string itemlist; // will contains items separated by spaces (' ')
-						foreach(itemname, item; _items) {
-							import std.conv;
-							itemlist ~= itemname ~ '$' ~ item.getTypeString() ~ '$' ~ item.getColorIdx().to!string ~ '|';
-						}
-						itemlist = itemlist[0..$-1]; // remove last ' '
-
-						// send the resoponse
-						requestingThread.send(MsgItemList(itemlist));
-					}
-				},
-				(MsgRequestItemVisualizer msg, Tid requestingThread) {
-					if (_output_all_messages) { writeln("got MsgRequestItemVisualizer\r"); }
-					import std.stdio;
-					auto item = msg.itemname in _items;
-					if (item is null) {
-						writeln("session: unknown item: ", msg.itemname, "\r");
-						requestingThread.send("unknown item: " ~ msg.itemname);
-					} else {
-						import gui;
-						//writeln("session: sending visualizer for: ", msg.itemname, "\r");
+					},
+					(MsgAddItem msg) {
+						if (_output_all_messages) { writeln("got MsgAddItem\r"); }
 						try {
-							auto visualizer = item.createVisualizer();
-							// only send an updated visualizer if we have something to send
-							// and if the sent visualizer is different from the previous one
-							if (visualizer !is null && visualizer !is msg.old_visualizer) {
-								//writeln("visualizer created\r");
-								requestingThread.send(MsgVisualizeItem(msg.itemname, msg.gui_idx), visualizer);
+							string itemname = msg.itemname;
+
+							auto item_ptr = itemname in _items;
+							bool already_there = item_ptr !is null;
+
+							_items[itemname] = msg.item_factory.getItem();
+							if (_items[itemname].getColorIdx() < 0) {
+								_items[itemname].setColorIdx(_colorIdx_counter++);
 							}
-							//writeln("message sent\r");
+							if (_guiRunning) {
+								import gui;
+								if (already_there) {
+									import std.conv;
+									//writeln("already_there\r");
+									_guiTid.send(MsgUpdateItem(itemname ~ "$" ~ _items[itemname].getTypeString() ~ "$" ~ _items[itemname].getColorIdx().to!string));
+								} else {
+									_guiTid.send(MsgRefreshItemList());
+								}
+							}
 						} catch (Exception e) {
-							writeln("Exception while creating visualizer " ~ e.msg,"\r");
+							//requestingThread.send(e.msg);
 						}
-						//writeln("session: sending visualizer done \r");
+					},
+					(MsgRequestItemList msg, Tid requestingThread) {
+						if (_output_all_messages) { writeln("got MsgRequestItemList\r"); }
+						import textui;
+						import std.stdio;
+						//writeln("got request to send itemlist");
+						if (_items.length == 0) {
+							requestingThread.send(MsgItemList());
+						} else {
+							string itemlist; // will contains items separated by spaces (' ')
+							foreach(itemname, item; _items) {
+								import std.conv;
+								itemlist ~= itemname ~ '$' ~ item.getTypeString() ~ '$' ~ item.getColorIdx().to!string ~ '|';
+							}
+							itemlist = itemlist[0..$-1]; // remove last ' '
+
+							// send the resoponse
+							requestingThread.send(MsgItemList(itemlist));
+						}
+					},
+					(MsgRequestItemVisualizer msg, Tid requestingThread) {
+						if (_output_all_messages) { writeln("got MsgRequestItemVisualizer\r"); }
+						import std.stdio;
+						auto item = msg.itemname in _items;
+						if (item is null) {
+							writeln("session: unknown item: ", msg.itemname, "\r");
+							requestingThread.send("unknown item: " ~ msg.itemname);
+						} else {
+							import gui;
+							//writeln("session: sending visualizer for: ", msg.itemname, "\r");
+							try {
+								auto visualizer = item.createVisualizer();
+								// only send an updated visualizer if we have something to send
+								// and if the sent visualizer is different from the previous one
+								if (visualizer !is null && visualizer !is msg.old_visualizer) {
+									//writeln("visualizer created\r");
+									requestingThread.send(MsgVisualizeItem(msg.itemname, msg.gui_idx), visualizer);
+								}
+								//writeln("message sent\r");
+							} catch (Exception e) {
+								writeln("Exception while creating visualizer " ~ e.msg,"\r");
+							}
+							//writeln("session: sending visualizer done \r");
+						}
+					},
+					(MsgEchoRedrawContent msg, Tid requestingThread) {
+						if (_output_all_messages) { writeln("got MsgEchoRedrawContent\r"); }
+						// this one is sent from the Gui to indicate 
+						// that all requests were sent
+						import gui;
+						requestingThread.send(MsgRedrawContent(msg.gui_idx));
+					},
+					(MsgEchoFitContent msg, Tid requestingThread) {
+						if (_output_all_messages) { writeln("got MsgEchoFitContent\r"); }
+						// this one is sent from the Gui to indicate 
+						// that all requests were sent
+						import gui;
+						requestingThread.send(MsgFitContent(msg.gui_idx));
+					},
+					(MsgGuiStarted msg, Tid guiTid) {
+						if (_output_all_messages) { writeln("got MsgGuiStarted\r"); }
+						_guiRunning = true;
+						_guiTid = guiTid;
+					},
+					(MsgGuiQuit msg) {
+						if (_output_all_messages) { writeln("got MsgGuiQuit\r"); }
+						import std.stdio;
+						_guiRunning = false;
+					},
+					(MsgIsGuiRunning msg, Tid requestingThread) {
+						if (_output_all_messages) { writeln("got MsgIsGuiRunning\r"); }
+						requestingThread.send(MsgGuiRunningStatus(_guiRunning));
 					}
-				},
-				(MsgEchoRedrawContent msg, Tid requestingThread) {
-					if (_output_all_messages) { writeln("got MsgEchoRedrawContent\r"); }
-					// this one is sent from the Gui to indicate 
-					// that all requests were sent
-					import gui;
-					requestingThread.send(MsgRedrawContent(msg.gui_idx));
-				},
-				(MsgEchoFitContent msg, Tid requestingThread) {
-					if (_output_all_messages) { writeln("got MsgEchoFitContent\r"); }
-					// this one is sent from the Gui to indicate 
-					// that all requests were sent
-					import gui;
-					requestingThread.send(MsgFitContent(msg.gui_idx));
-				},
-				(MsgGuiStarted msg, Tid guiTid) {
-					if (_output_all_messages) { writeln("got MsgGuiStarted\r"); }
-					_guiRunning = true;
-					_guiTid = guiTid;
-				},
-				(MsgGuiQuit msg) {
-					if (_output_all_messages) { writeln("got MsgGuiQuit\r"); }
-					import std.stdio;
-					_guiRunning = false;
-				},
-				(MsgIsGuiRunning msg, Tid requestingThread) {
-					if (_output_all_messages) { writeln("got MsgIsGuiRunning\r"); }
-					requestingThread.send(MsgGuiRunningStatus(_guiRunning));
-				}
-			); // receive
- 		}  
-		import std.stdio;
-		writeln("sesson loop ended...\r");
-	} catch (Exception t) {
+				); // receive
+	 		}  
+			import std.stdio;
+			writeln("sesson loop ended...\r");
+		} catch (Exception t) {
 			import std.stdio;
 			writeln("Exception in session loop: ", t.msg);
 			return false;
-	}
+		}
 		return true;
-
 	}
 
 private:

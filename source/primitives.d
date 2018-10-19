@@ -527,7 +527,7 @@ void drawColorKey(ref Scoped!Context cr, ViewBox box, int canvas_width,  int can
 	if (logz)
 	{
 		foreach(i; 0..color_steps) {
-			import hist2;
+			import hist2visualizer;
 			Hist2Visualizer.get_rgb(1.0*(i+1)/(color_steps+1), &rgb[0]);
 			cr.setSourceRgba(rgb[2]/255.0, rgb[1]/255.0, rgb[0]/255.0, 1);
 			// the following (multiplication "color_steps*2") is needed to paint the colored rectangles with a bit of overlap
@@ -592,7 +592,7 @@ void drawColorKey(ref Scoped!Context cr, ViewBox box, int canvas_width,  int can
 	else // lin z
 	{
 		foreach(i; 0..color_steps) {
-			import hist2;
+			import hist2visualizer;
 			//double epsilon = 1e-6; // to avoid putting the 0-color into the colorkey
 			Hist2Visualizer.get_rgb(1.0*i/color_steps, &rgb[0]);
 			cr.setSourceRgba(rgb[2]/255.0, rgb[1]/255.0, rgb[0]/255.0, 1);
