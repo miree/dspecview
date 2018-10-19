@@ -407,12 +407,13 @@ public:
 						auto item = msg.itemname in _items;
 						if (item !is null) {
 							//if (typeid(*item) is typeid(Hist1)) {
+							auto hist = cast(Hist1)(*item);
+							if (hist !is null) {	
 								writeln("filling\r");
-								auto hist = cast(Hist1)(*item);
 								hist.fill(msg.pos, msg.amount);
-							//} else {
-							//	writeln("typeid incorrect ", typeof(*item), " ", typeid(Hist1)," \r");
-							//}
+							} else {
+								writeln("Item ", msg.itemname, " does not implement Hist1Interface \r");
+							}
 						} else {
 							writeln("not filling\r");
 						}
