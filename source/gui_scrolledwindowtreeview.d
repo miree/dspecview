@@ -157,7 +157,7 @@ public:
 					foreach(iter; iters) {
 						foreach(itemname; _itemnames.sort) {
 							auto selected_name = get_full_name(iter);
-							if (itemname.startsWith(selected_name)) {
+							if (itemname.startsWith(selected_name ~ "/") || (itemname == selected_name)) {
 								// request a Visualizer for that item
 								_sessionTid.send(MsgRequestItemVisualizer(itemname, _parentGui.getGuiIdx()), thisTid);
 								_checked[itemname] = true;
@@ -186,7 +186,7 @@ public:
 					foreach(iter; iters) {
 						foreach(itemname; _itemnames.sort) {
 							auto selected_name = get_full_name(iter);
-							if (itemname.startsWith(selected_name)) {
+							if (itemname.startsWith(selected_name ~ "/") || (itemname == selected_name)) {
 								// request a Visualizer for that item
 								_sessionTid.send(MsgRequestItemVisualizer(itemname, gui.getGuiIdx()), thisTid);
 							}
