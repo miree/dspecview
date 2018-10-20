@@ -85,7 +85,7 @@ public:
 		import std.math;
 		import std.stdio;
 		int bin = cast(int)floor((pos - _a)/_b);
-		writeln("bin = ", bin, "\r");
+		//writeln("bin = ", bin, "\r");
 		if (bin >= 0 && bin < _bin_data.length) {
 			_bin_data[bin] += amount;
 			_is_dirty = true;

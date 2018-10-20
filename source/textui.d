@@ -20,6 +20,9 @@ void populate_list_of_commands()
 	list_of_commands["gate1"]       = &addGate1;
 	list_of_commands["gate2"]       = &addGate2;
 	list_of_commands["polygate"]    = &addPolyGate;
+	list_of_commands["analysis"]    = &addAnalysis;
+	list_of_commands["start_anl"]   = &startAnalysis;
+	list_of_commands["stop_anl"]    = &stopAnalysis;
 	//list_of_commands["visualizer"]  = &getItemVisualizer;
 	list_of_commands["gui"]         = &runGui;
 	list_of_commands["guistatus"]   = &showGuiStatus;
@@ -314,6 +317,55 @@ void addPolyGate(immutable string[] args)
 	}
 	sessionTid.send(MsgAddItem(args[0], new immutable(PolyGateFactory)(points, null, false, false, -1)));
 }
+
+
+void addAnalysis(immutable string[] args)
+{
+	import std.stdio, std.concurrency, std.array, std.algorithm, std.conv;
+
+	if (args.length != 1) {
+		writeln("expecting arguments: <itemname>, got ", args.length , "arguments: ", args);
+		return;
+	}
+
+	import session;
+	import analysis;
+	sessionTid.send(MsgAddItem(args[0], new immutable(AnalysisFactory)("analysis.config", -1)));
+}
+
+void startAnalysis(immutable string[] args)
+{
+	import std.stdio, std.concurrency, std.array, std.algorithm, std.conv;
+
+	if (args.length != 1 && args.length != 2) {
+		writeln("expecting arguments: <itemname> [<steps>], got ", args.length , "arguments: ", args);
+		return;
+	}
+
+	import session;
+	import analysis;
+	long count = -1;
+	if (args.length == 2) {
+		count = args[1].to!long;
+	}
+	sessionTid.send(MsgStartAnalysis(args[0], count));
+}
+
+void stopAnalysis(immutable string[] args)
+{
+	import std.stdio, std.concurrency, std.array, std.algorithm, std.conv;
+
+	if (args.length != 1) {
+		writeln("expecting arguments: <itemname>, got ", args.length , "arguments: ", args);
+		return;
+	}
+
+	import session;
+	import analysis;
+	long count = 0;
+	sessionTid.send(MsgStartAnalysis(args[0], count));
+}
+
 
 void showItemInWindow(immutable string[] args) 
 {

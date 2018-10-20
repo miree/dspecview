@@ -250,6 +250,20 @@ struct MsgGuiRunningStatus {
 	bool running;
 }
 
+
+///////////////////////////////
+// Messages for data ananlysis
+// stepping
+struct MsgStartAnalysis {
+	string itemname;
+	long   count = -1; // -1 means infinite number of steps
+}
+struct MsgAnalysisStep {
+	import analysis;
+	immutable(Analysis) anl;
+	bool stop = false;
+}
+
 class Session
 {
 public:
@@ -401,21 +415,41 @@ public:
 						requestingThread.send(MsgGuiRunningStatus(_guiRunning));
 					},
 					(MsgFillHist1 msg) {
-						//if (_output_all_messages)
-						 { writeln("got MsgFillHist1\r"); }
+						if (_output_all_messages) { writeln("got MsgFillHist1\r"); }
 						import hist1;
 						auto item = msg.itemname in _items;
 						if (item !is null) {
 							//if (typeid(*item) is typeid(Hist1)) {
-							auto hist = cast(Hist1)(*item);
+							auto hist = cast(Hist1Interface)(*item);
 							if (hist !is null) {	
-								writeln("filling\r");
+								//writeln("filling\r");
 								hist.fill(msg.pos, msg.amount);
 							} else {
 								writeln("Item ", msg.itemname, " does not implement Hist1Interface \r");
 							}
 						} else {
 							writeln("not filling\r");
+						}
+					},
+					(MsgStartAnalysis msg) {
+						if (_output_all_messages) { writeln("got MsgStartAnalysis\r"); }
+						auto item = msg.itemname in _items;
+						if (item !is null) {
+							import analysis;
+							auto anl_item = cast(AnalysisInterface)(*item);
+							if (anl_item !is null) {
+								//writeln("start analysis with ", msg.count, " steps\r");
+								anl_item.start(msg.count);
+							}
+						}
+					},
+					(MsgAnalysisStep msg) {
+						if (_output_all_messages) { writeln("got MsgAnalysisStep\r"); }
+						if (msg.anl !is null) {
+							//writeln("    not null\r");
+							import analysis;
+							auto anl = cast(Analysis)msg.anl;
+							anl.step();
 						}
 					}
 				); // receive
