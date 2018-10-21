@@ -352,6 +352,10 @@ public:
 							string itemname = msg.itemname;
 
 							_items[itemname] = cast(Item)msg.item;
+							if (_guiRunning) {
+								import gui;
+								_guiTid.send(MsgRefreshItemList());
+							}
 						} catch (Exception e) {
 							//requestingThread.send(e.msg);
 						}

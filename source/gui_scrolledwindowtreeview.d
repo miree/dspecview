@@ -30,6 +30,7 @@ public:
 
 		import gtk.TreeViewColumn, gtk.CellRendererText, gtk.CellRendererToggle;
 		auto toggle_renderer = new CellRendererToggle;
+		// add check-boxes in front of the itmes in the list
 		toggle_renderer.addOnToggled( delegate void(string p, CellRendererToggle crt){
 			import gtk.TreePath, gtk.TreeIter;
 			import std.stdio;
@@ -47,7 +48,7 @@ public:
 			if (is_checked(name)) {
 				import std.algorithm;
 				foreach(itemname; _itemnames.sort) {
-					if (itemname.startsWith(name)) {
+					if (itemname.startsWith(name ~ "/") || itemname == name) {
 						_sessionTid.send(MsgRequestItemVisualizer(itemname, _parentGui.getGuiIdx()), thisTid);
 						auto check_path = new TreePath(get_path_name_from_name(itemname, _itemnames));
 						auto check_it = new TreeIter(_treestore, check_path);
@@ -62,7 +63,7 @@ public:
 			} else {
 				import std.algorithm;
 				foreach(itemname; _itemnames.sort) {
-					if (itemname.startsWith(name)) {
+					if (itemname.startsWith(name ~ "/") || itemname == name) {
 						thisTid.send(MsgRemoveVisualizedItem(itemname, _parentGui.getGuiIdx()));
 						auto uncheck_path = new TreePath(get_path_name_from_name(itemname, _itemnames));
 						auto uncheck_it = new TreeIter(_treestore, uncheck_path);

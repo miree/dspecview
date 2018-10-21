@@ -228,6 +228,7 @@ public:
 
 
 		_main_box = new Paned(GtkOrientation.HORIZONTAL);
+		_main_box.setPosition(200);
 
 		import gdk.Event;
 		import gtk.Widget;
@@ -292,7 +293,7 @@ public:
 		_hbar.setSubtitle (baseTitle);
 		newTitle(title);
 
-		setDefaultSize( 300, 300 );
+		setDefaultSize( 1000, 500 );
 
 		_vbox.add(_hbar);
 		_vbox.add(_main_box);
