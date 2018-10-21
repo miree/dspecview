@@ -3,11 +3,11 @@ import session, hist1visualizer;
 interface Hist1Interface
 {
 public:
-	ulong getBins();
+	ulong  getBins();
 	double getLeft();
 	double getRight();
-	void fill(double pos, double amount = 1);
-	void setBinContent(ulong idx, double value);
+	void   fill(double pos, double amount = 1);
+	void   setBinContent(ulong idx, double value);
 	double getBinContent(ulong idx);
 }
 
@@ -24,6 +24,7 @@ public:
 		_visualizer = null;
 		_bin_data = new double[bins];
 		_bin_data[] = 0.0;
+		_is_dirty = true;
 
 		// pos = _a + _b * bin
 		// left = _a              \
@@ -37,7 +38,7 @@ public:
 	{
 		if (_is_dirty) { // need to reload from file
 			import std.stdio;
-			writeln("Hist1: need to generate new visuzlizer: \r");
+			//writeln("Hist1: need to generate new visuzlizer: \r");
 			// try to read the data from file 
 			try {
 				_visualizer.length = 0; 
@@ -45,7 +46,7 @@ public:
 				_is_dirty = false;
 			} catch (Exception e) {
 				import std.stdio;
-				writeln("unable to create visuzlizer for hist1\r");
+				writeln("cannot create visuzlizer for hist1\r");
 			}
 		}
 		import std.stdio;
@@ -54,6 +55,7 @@ public:
 		}
 		return _visualizer[0];
 	}	
+
 	string getTypeString() {
 		import std.conv;
 		return "Hist 1D " ~ _bin_data.length.to!string 

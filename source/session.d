@@ -192,6 +192,10 @@ struct MsgAddItem{
 	immutable ItemFactory item_factory;
 }
 
+struct MsgInsertItem {
+	string itemname;
+	immutable(Item) item;
+}
 
 
 ////////////////////////////////////////
@@ -338,6 +342,16 @@ public:
 									_guiTid.send(MsgRefreshItemList());
 								}
 							}
+						} catch (Exception e) {
+							//requestingThread.send(e.msg);
+						}
+					},
+					(MsgInsertItem msg) {
+						if (_output_all_messages) { writeln("got MsgInsertItem\r"); }
+						try {
+							string itemname = msg.itemname;
+
+							_items[itemname] = cast(Item)msg.item;
 						} catch (Exception e) {
 							//requestingThread.send(e.msg);
 						}

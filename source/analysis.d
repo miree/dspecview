@@ -55,7 +55,44 @@ public:
 		import std.concurrency;
 		import std.stdio;
 		// do whatever has to be done ...
-			writeln("analysis step ", _steps_left, "\r");
+	
+			//writeln("analysis step ", _steps_left, "\r");
+			static bool init = true;
+			import hist1;
+			import hist2;
+			static Hist1 h1 = null;
+			static Hist1 h2 = null;
+			static Hist2 h12 = null;
+			if (init) {
+				h1 = new Hist1(1, 100, -20, 20);
+				h2 = new Hist1(2, 100, -10, 10);
+				h12 = new Hist2(3, 1000, 1000, -20, 20, -20, 20);
+				thisTid.send(MsgInsertItem("h1", cast(immutable(Item))h1));
+				thisTid.send(MsgInsertItem("h2", cast(immutable(Item))h2));
+				thisTid.send(MsgInsertItem("h12", cast(immutable(Item))h12));
+				init = false;
+			}
+			import std.random;
+			static auto rnd = Random(42);
+			double value1 = uniform(-1.,1.,rnd)
+				        +   uniform(-1.,1.,rnd)
+				        +   uniform(-1.,1.,rnd)
+				        +   uniform(-1.,1.,rnd)
+				        +   uniform(-1.,1.,rnd)
+				        +   uniform(-1.,1.,rnd)
+				        +   uniform(-1.,1.,rnd);
+			double value2 = uniform(-1.,1.,rnd)
+				        +   uniform(-1.,1.,rnd)
+				        +   uniform(-1.,1.,rnd)
+				        +   uniform(-1.,1.,rnd)
+				        +   uniform(-1.,1.,rnd)
+				        +   uniform(-1.,1.,rnd)
+				        +   uniform(-1.,1.,rnd);
+
+
+			h1.fill(value1);
+			h2.fill(value2);
+			h12.fill(value1, value2);
 
 			// load event data
 			// process event

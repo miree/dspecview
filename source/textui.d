@@ -16,6 +16,7 @@ void populate_list_of_commands()
 	list_of_commands["filehist"]    = &addFileHist;
 	list_of_commands["hist1"]       = &addHist1;
 	list_of_commands["fill1"]       = &fillHist1;
+	list_of_commands["hist2"]       = &addHist2;
 	list_of_commands["number"]      = &addNumber;
 	list_of_commands["gate1"]       = &addGate1;
 	list_of_commands["gate2"]       = &addGate2;
@@ -190,7 +191,31 @@ void addHist1(immutable string[] args)
 
 	sessionTid.send(MsgAddItem(args[0], new immutable(Hist1Factory)(bins, left, right, -1)));
 }
+void addHist2(immutable string[] args)
+{
+	import std.stdio, std.concurrency, std.array, std.algorithm, std.conv;
+	import session, hist2;
 
+	if (args.length != 3 && args.length != 7) {
+		writeln("expecting arguments: <itemname> <bins_x> <bins_y> [<left> <right> <bottom> <top>], got ", args.length , "arguments: ", args);
+		return;
+	}
+
+	ulong bins_x = args[1].to!ulong;
+	ulong bins_y = args[2].to!ulong;
+	double left = 0;
+	double right = bins_x;
+	double bottom = 0;
+	double top = bins_y;
+	if (args.length == 4) {
+		left = args[3].to!double;
+		right = args[4].to!double;
+		bottom = args[5].to!double;
+		top = args[6].to!double;
+	}
+
+	sessionTid.send(MsgAddItem(args[0], new immutable(Hist2Factory)(bins_x, bins_y, left, right, bottom, top, -1)));
+}
 void fillHist1(immutable string[] args)
 {
 	import std.stdio, std.concurrency, std.array, std.algorithm, std.conv;
