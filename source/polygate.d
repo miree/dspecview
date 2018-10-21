@@ -371,7 +371,7 @@ public:
 		}
 		// send an item with the temporary changes
 		sessionTid.send(MsgAddItem(mouse_action.itemname, new immutable(PolyGateFactory)(new_points, new_deltas, logx, logy, _colorIdx)));
-		sessionTid.send(MsgEchoRedrawContent(mouse_action.gui_idx), thisTid);
+		sessionTid.send(MsgEchoRedrawContent(mouse_action.gui_name), thisTid);
 
 		if (mouse_action.itemname is null ) {
 					import std.stdio;
@@ -380,7 +380,7 @@ public:
 		import gui;
 		thisTid.send(MsgAllButMyselfUpdateVisualizer( 
 				mouse_action.itemname,
-				mouse_action.gui_idx),
+				mouse_action.gui_name),
 				cast(immutable(Visualizer)) new immutable(PolyGateVisualizer)(new_points, _colorIdx));
 	}
 	override void mouseButtonUp(Tid sessionTid, ItemMouseAction mouse_action, bool logx, bool logy, VisualizerContext context) immutable
@@ -417,8 +417,8 @@ public:
 			sessionTid.send(MsgAddItem(mouse_action.itemname, 
 										new immutable(PolyGateFactory)(new_points, new_deltas, logx, logy, _colorIdx)));
 
-			sessionTid.send(MsgRequestItemVisualizer(mouse_action.itemname, mouse_action.gui_idx), thisTid);
-			sessionTid.send(MsgEchoRedrawContent(mouse_action.gui_idx), thisTid);
+			sessionTid.send(MsgRequestItemVisualizer(mouse_action.itemname, mouse_action.gui_name), thisTid);
+			sessionTid.send(MsgEchoRedrawContent(mouse_action.gui_name), thisTid);
 		} else if (visu_context.selcted_index >= _points.length && visu_context.selcted_index < 2*_points.length) {
 			PolyPoint previous_point = _points[$-1];
 			foreach(idx, point; _points) {
@@ -435,13 +435,13 @@ public:
 			sessionTid.send(MsgAddItem(mouse_action.itemname, 
 										new immutable(PolyGateFactory)(new_points, new_deltas, logx, logy, _colorIdx)));
 
-			sessionTid.send(MsgRequestItemVisualizer(mouse_action.itemname, mouse_action.gui_idx), thisTid);
-			sessionTid.send(MsgEchoRedrawContent(mouse_action.gui_idx), thisTid);
+			sessionTid.send(MsgRequestItemVisualizer(mouse_action.itemname, mouse_action.gui_name), thisTid);
+			sessionTid.send(MsgEchoRedrawContent(mouse_action.gui_name), thisTid);
 
 			import gui;
 			thisTid.send(MsgAllButMyselfUpdateVisualizer( 
 					mouse_action.itemname,
-					mouse_action.gui_idx),
+					mouse_action.gui_name),
 					cast(immutable(Visualizer)) new immutable(PolyGateVisualizer)(new_points, _colorIdx));
 		}
 
@@ -473,7 +473,7 @@ public:
 				import gui;
 				thisTid.send(MsgAllButMyselfUpdateVisualizer( 
 						mouse_action.itemname,
-						mouse_action.gui_idx),
+						mouse_action.gui_name),
 						cast(immutable(Visualizer)) new immutable(PolyGateVisualizer)(new_points, _colorIdx));
 
 				// update session
@@ -481,8 +481,8 @@ public:
 											new immutable(PolyGateFactory)(new_points, new_deltas, false, false, _colorIdx)));
 
 
-				sessionTid.send(MsgRequestItemVisualizer(mouse_action.itemname, mouse_action.gui_idx), thisTid);
-				sessionTid.send(MsgEchoRedrawContent(mouse_action.gui_idx), thisTid);
+				sessionTid.send(MsgRequestItemVisualizer(mouse_action.itemname, mouse_action.gui_name), thisTid);
+				sessionTid.send(MsgEchoRedrawContent(mouse_action.gui_name), thisTid);
 			}
 		}
 	}

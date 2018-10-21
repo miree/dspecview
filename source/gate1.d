@@ -319,7 +319,7 @@ public:
 		} 
 		// send an item with the temporary changes
 		sessionTid.send(MsgAddItem(mouse_action.itemname, new immutable(Gate1Factory)(_value1, _value2, delta1, delta2, logscale, _colorIdx, _direction)));
-		sessionTid.send(MsgEchoRedrawContent(mouse_action.gui_idx), thisTid);
+		sessionTid.send(MsgEchoRedrawContent(mouse_action.gui_name), thisTid);
 		double value1=_value1, value2=_value2;
 		import std.math, std.stdio;
 		if (logscale) {
@@ -341,7 +341,7 @@ public:
 		import gui;
 		thisTid.send(MsgAllButMyselfUpdateVisualizer( 
 				mouse_action.itemname,
-				mouse_action.gui_idx),
+				mouse_action.gui_name),
 				cast(immutable(Visualizer)) new immutable(Gate1Visualizer)(value1, value2, _colorIdx, _direction));
 
 	}
@@ -376,8 +376,8 @@ public:
 			sessionTid.send(MsgAddItem(mouse_action.itemname, 
 										new immutable(Gate1Factory)(_value1+delta1, _value2+delta2, double.init, double.init, false, _colorIdx, _direction)));
 		}
-		sessionTid.send(MsgRequestItemVisualizer(mouse_action.itemname, mouse_action.gui_idx), thisTid);
-		sessionTid.send(MsgEchoRedrawContent(mouse_action.gui_idx), thisTid);
+		sessionTid.send(MsgRequestItemVisualizer(mouse_action.itemname, mouse_action.gui_name), thisTid);
+		sessionTid.send(MsgEchoRedrawContent(mouse_action.gui_name), thisTid);
 	}
 
 	override VisualizerContext createContext() {

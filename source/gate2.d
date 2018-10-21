@@ -370,8 +370,8 @@ public:
 
 		sessionTid.send(MsgAddItem(mouse_action.itemname, 
 									new immutable(Gate2Factory)(rlbt_new, delta_new, false, false, _colorIdx)));
-		sessionTid.send(MsgRequestItemVisualizer(mouse_action.itemname, mouse_action.gui_idx), thisTid);
-		sessionTid.send(MsgEchoRedrawContent(mouse_action.gui_idx), thisTid);
+		sessionTid.send(MsgRequestItemVisualizer(mouse_action.itemname, mouse_action.gui_name), thisTid);
+		sessionTid.send(MsgEchoRedrawContent(mouse_action.gui_name), thisTid);
 	}
 
 	override VisualizerContext createContext() {

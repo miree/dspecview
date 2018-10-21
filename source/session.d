@@ -37,7 +37,7 @@ struct ItemMouseAction {
 	double x_start,y_start;
 	bool button_down; // is true if the mouse button is down 
 	string itemname;
-	ulong gui_idx;
+	string gui_name;
 	bool dragging;
 }
 
@@ -224,7 +224,7 @@ struct MsgFillHist1 {
 // call the refresh function on an item
 struct MsgRequestItemVisualizer {
 	string itemname;
-	ulong gui_idx;
+	string gui_name;
 	immutable(Visualizer) old_visualizer = null;
 }
 
@@ -238,10 +238,10 @@ struct MsgRequestItemVisualizer {
 // can be used to indicate the last 
 // request was handled.
 struct MsgEchoRedrawContent {
-	ulong gui_idx;
+	string gui_name;
 }
 struct MsgEchoFitContent {
-	ulong gui_idx;
+	string gui_name;
 }
 
 struct MsgGuiStarted {
@@ -394,8 +394,8 @@ public:
 								// only send an updated visualizer if we have something to send
 								// and if the sent visualizer is different from the previous one
 								if (visualizer !is null && visualizer !is msg.old_visualizer) {
-									//writeln("visualizer created\r");
-									requestingThread.send(MsgVisualizeItem(msg.itemname, msg.gui_idx), visualizer);
+									//writeln("visualizer ", msg.itemname , "sent to ", msg.gui_name, "\r");
+									requestingThread.send(MsgVisualizeItem(msg.itemname, msg.gui_name), visualizer);
 								}
 								//writeln("message sent\r");
 							} catch (Exception e) {
@@ -409,14 +409,14 @@ public:
 						// this one is sent from the Gui to indicate 
 						// that all requests were sent
 						import gui;
-						requestingThread.send(MsgRedrawContent(msg.gui_idx));
+						requestingThread.send(MsgRedrawContent(msg.gui_name));
 					},
 					(MsgEchoFitContent msg, Tid requestingThread) {
 						if (_output_all_messages) { writeln("got MsgEchoFitContent\r"); }
 						// this one is sent from the Gui to indicate 
 						// that all requests were sent
 						import gui;
-						requestingThread.send(MsgFitContent(msg.gui_idx));
+						requestingThread.send(MsgFitContent(msg.gui_name));
 					},
 					(MsgGuiStarted msg, Tid guiTid) {
 						if (_output_all_messages) { writeln("got MsgGuiStarted\r"); }

@@ -177,7 +177,7 @@ public:
 		} 
 		// send an item with the temporary changes
 		sessionTid.send(MsgAddItem(mouse_action.itemname, new immutable(NumberFactory)(_value, delta, logscale, _colorIdx, _direction)));
-		sessionTid.send(MsgEchoRedrawContent(mouse_action.gui_idx), thisTid);
+		sessionTid.send(MsgEchoRedrawContent(mouse_action.gui_name), thisTid);
 
 		double value=_value;
 		import std.math, std.stdio;
@@ -194,7 +194,7 @@ public:
 		import gui;
 		thisTid.send(MsgAllButMyselfUpdateVisualizer( 
 				mouse_action.itemname,
-				mouse_action.gui_idx),
+				mouse_action.gui_name),
 				cast(immutable(Visualizer)) new immutable(NumberVisualizer)(value, _colorIdx, _direction));
 
 	}
@@ -218,8 +218,8 @@ public:
 			sessionTid.send(MsgAddItem(mouse_action.itemname, 
 										new immutable(NumberFactory)(_value+delta, double.init, false, _colorIdx, _direction)));
 		}
-		sessionTid.send(MsgRequestItemVisualizer(mouse_action.itemname, mouse_action.gui_idx), thisTid);
-		sessionTid.send(MsgEchoRedrawContent(mouse_action.gui_idx), thisTid);
+		sessionTid.send(MsgRequestItemVisualizer(mouse_action.itemname, mouse_action.gui_name), thisTid);
+		sessionTid.send(MsgEchoRedrawContent(mouse_action.gui_name), thisTid);
 
 
 	}

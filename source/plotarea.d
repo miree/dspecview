@@ -196,13 +196,13 @@ public:
 			if (old_visualizer_buffer !is null && old_visualizer_buffer.length > 0) {
 				auto old_visualizer = (*old_visualizer_buffer)[0];
 				if (!old_visualizer.isInteractive()) {
-					_sessionTid.send(MsgRequestItemVisualizer(itemname, _parentGui.getGuiIdx(), old_visualizer), thisTid);
+					_sessionTid.send(MsgRequestItemVisualizer(itemname, _parentGui.getGuiName(), old_visualizer), thisTid);
 				}
 			} else {
-				_sessionTid.send(MsgRequestItemVisualizer(itemname, _parentGui.getGuiIdx(), null), thisTid);
+				_sessionTid.send(MsgRequestItemVisualizer(itemname, _parentGui.getGuiName(), null), thisTid);
 			}
 		}
-		_sessionTid.send(MsgEchoRedrawContent(_parentGui.getGuiIdx()), thisTid);
+		_sessionTid.send(MsgEchoRedrawContent(_parentGui.getGuiName()), thisTid);
 
 	}
 
@@ -404,7 +404,7 @@ protected:
 		if (_item_mouse_action.idx >= 0 && _item_mouse_action.button_down) {
 			// if there is already one item index active and the button is down
 			mouse_hover_idx = _item_mouse_action.idx;
-			_item_mouse_action.gui_idx = _parentGui.getGuiIdx();
+			_item_mouse_action.gui_name = _parentGui.getGuiName();
 			_item_mouse_action.itemname = _itemnames[mouse_hover_idx];
 			auto visualizer = _itemnames[mouse_hover_idx] in _visualizers;
 			auto visu_context = _itemnames[mouse_hover_idx] in _visualizer_contexts;
@@ -528,7 +528,7 @@ protected:
 			int mouse_hover_idx = _item_mouse_action.idx;
 			if (mouse_hover_idx >= 0 && _item_mouse_action.dragging) {
 				_item_mouse_action.dragging = false;
-				_item_mouse_action.gui_idx = _parentGui.getGuiIdx();
+				_item_mouse_action.gui_name = _parentGui.getGuiName();
 				_item_mouse_action.itemname = _itemnames[mouse_hover_idx];
 
 				auto boxinfo = _itemnames[mouse_hover_idx] in _visualizer_view_boxes;

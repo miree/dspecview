@@ -403,13 +403,13 @@ void showItemInWindow(immutable string[] args)
 			return;
 		}
 
-		string windowname = args[0];
+		//string windowname = args[0];
 		string itemname = args[1];
-		string window_gui_idx = windowname.chompPrefix(guiNamePrefix~"window"); 
-		ulong gui_idx = window_gui_idx.to!ulong;
+		//string window_gui_idx = windowname.chompPrefix(guiNamePrefix~"window"); 
+		string gui_name = args[0];
 
-		sessionTid.send(MsgRequestItemVisualizer(itemname, gui_idx), guiTid);
-		sessionTid.send(MsgEchoFitContent(gui_idx), guiTid);
+		sessionTid.send(MsgRequestItemVisualizer(itemname, gui_name), guiTid);
+		sessionTid.send(MsgEchoFitContent(gui_name), guiTid);
 		guiTid.send(MsgRefreshItemList());
 		
 	}

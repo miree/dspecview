@@ -38,8 +38,8 @@ int run(immutable string[] args, Tid sessionTid, string window_title, bool in_ot
 public immutable string guiNamePrefix = "GUIwindows/";
 immutable string baseTitle = "GtkD Spectrum Viewer";
 
-Gui[ulong] guis;
-ulong[] deleted_guis;
+Gui[string] guis;
+string[] deleted_guis;
 bool application_running = false;
 ulong gui_counter = 0;
 extern(C) nothrow static int threadIdleProcess(void* data) {
@@ -153,8 +153,16 @@ public:
 		_mode2d = mode2d;
 
 
-		_gui_idx = gui_counter++;
-		guis[_gui_idx] = this;
+		//_gui_idx = gui_counter++;
+		import std.conv;
+		if (title is null)  {
+			_gui_name = "window"~(gui_counter++).to!string;
+		} else {
+			_gui_name = title;
+		}
+
+		//guis[_gui_idx] = this;
+		guis[_gui_name] = this;
 
 		import std.stdio;
 		//writeln("new Gui with _gui_idx=", _gui_idx,"\r");
@@ -234,12 +242,7 @@ public:
 		import gtk.Widget;
 		_main_box.addOnDestroy(delegate( Widget w) { 
 				import std.stdio;
-				//guis.remove(_gui_idx);
-				deleted_guis ~= _gui_idx;
-
-				// part of the "gui windows as items" idea (I don't like this anymore)
-				//import session;
-				//_sessionTid.send(MsgRemoveItem(guiName), thisTid);
+				deleted_guis ~= _gui_name;
 			});
 
 		_control_panel = new ControlPanel(sessionTid, this);
@@ -263,7 +266,8 @@ public:
 									case 65535: 
 										_visualization.delete_key_pressed(); 
 									break;
-									default: writeln("gui key press e.keyval=",e.keyval,"\r");
+									default: 
+										//writeln("gui key press e.keyval=",e.keyval,"\r");
 								}
 							}
 							if (_control_panel !is null) {
@@ -286,7 +290,8 @@ public:
 
 		import std.conv;
 		if (title is null)  {
-			title = "window" ~ _gui_idx.to!string;
+			//title = "window" ~ _gui_idx.to!string;
+			title = _gui_name;
 		}
 
 		_hbar.setTitle (title);
@@ -320,10 +325,10 @@ public:
 		setTitle(baseTitle ~ " -- " ~ title);
 	}
 
-	string guiName() {
-		import std.conv;
-		return guiNamePrefix ~ "window" ~ _gui_idx.to!string;
-	}
+	//string guiName() {
+	//	import std.conv;
+	//	return guiNamePrefix ~ "window" ~ _gui_idx.to!string;
+	//}
 
 	//void toggleVisualizer() {
 	//	if (_visualization !is null) {
@@ -340,8 +345,9 @@ public:
 	//	}
 	//}
 
-	ulong getGuiIdx() {
-		return _gui_idx;
+	//ulong getGuiIdx() {
+	string getGuiName() {
+		return _gui_name;
 	}
 
 	bool getInOtherThread() {
@@ -420,20 +426,24 @@ public:
 				import std.stdio;
 				//writeln("gui: got visualizer for item: ", msg.itemname, "\r");
 				if (visualizer !is null) {
-					//writeln("gui[",msg.gui_idx,"]: add visualizer \r");
-					auto gui = msg.gui_idx in guis;
+					//writeln("visualizer !is null\r");
+					//auto gui = msg.gui_idx in guis;
+					auto gui = msg.gui_name in guis;
+					//writeln("guis = ", guis, "\r");
 					if (gui !is null) {
+						//writeln("gui !is null\r");
 						if (gui._visualization !is null ) {
-							guis[msg.gui_idx]._visualization.addVisualizer(msg.itemname, visualizer);
-							if (guis[msg.gui_idx]._control_panel !is null) {
-								guis[msg.gui_idx]._control_panel.check_itemname(msg.itemname);
+							//writeln("gui[",msg.gui_name,"]: add visualizer \r");
+							guis[msg.gui_name]._visualization.addVisualizer(msg.itemname, visualizer);
+							if (guis[msg.gui_name]._control_panel !is null) {
+								guis[msg.gui_name]._control_panel.check_itemname(msg.itemname);
 							}
 						}
 					}
 				}
 			},
 			(MsgRemoveVisualizedItem msg) {
-				auto gui = msg.gui_idx in guis;
+				auto gui = msg.gui_name in guis;
 				if (gui !is null) {
 					if (gui._visualization !is null ) {
 						gui._visualization.remove(msg.itemname);
@@ -443,8 +453,8 @@ public:
 			},
 			(MsgAllButMyselfUpdateVisualizer msg, immutable(Visualizer) visualizer) {
 				import std.stdio;
-				foreach(idx, gui; guis) {
-					if (idx != msg.gui_idx) {
+				foreach(name, gui; guis) {
+					if (name != msg.gui_name) {
 						if (gui !is null) {
 							if (gui._control_panel !is null ) {
 								gui._visualization.updateVisualizer(msg.itemname, visualizer);
@@ -456,7 +466,7 @@ public:
 				}
 			},
 			(MsgRedrawContent redraw) {
-				auto gui = redraw.gui_idx in guis;
+				auto gui = redraw.gui_name in guis;
 				if (gui !is null) {
 					if (gui._visualization !is null) {
 						gui._visualization.redraw_content();
@@ -464,7 +474,7 @@ public:
 				}
 			},
 			(MsgFitContent fit) {
-				auto gui = fit.gui_idx in guis;
+				auto gui = fit.gui_name in guis;
 				if (gui !is null) {
 					if (gui._visualization !is null) {
 						gui._visualization.setFit();
@@ -472,10 +482,10 @@ public:
 				}
 			},
 			(MsgCloseWindow close) {
-				auto gui = close.gui_idx in guis;
+				auto gui = close.gui_name in guis;
 				if (gui !is null) {
-					if (guis[close.gui_idx] !is null) {
-						guis[close.gui_idx].destroy();
+					if (guis[close.gui_name] !is null) {
+						guis[close.gui_name].destroy();
 					}
 				}
 			},
@@ -506,34 +516,34 @@ private:
 	ControlPanel _control_panel;
 	Visualization _visualization;
 
-	bool _in_other_thread;
-	ulong _gui_idx;
+	bool   _in_other_thread;
+	string _gui_name;
 }
 
 
 // messages for the gui
 struct MsgVisualizeItem {
 	string itemname;
-	ulong gui_idx;
+	string gui_name;
 }
 struct MsgRemoveVisualizedItem {
 	string itemname;
-	ulong gui_idx;
+	string gui_name;
 }
 struct MsgAllButMyselfUpdateVisualizer {
 	string itemname;
-	ulong gui_idx;
+	string gui_name;
 }
 struct MsgRefreshItemList {
 }
 struct MsgRedrawContent {
-	ulong gui_idx;
+	string gui_name;
 }
 struct MsgFitContent {
-	ulong gui_idx;
+	string gui_name;
 }
 struct MsgCloseWindow {
-	ulong gui_idx;
+	string gui_name;
 }
 struct MsgNewWindow {
 	string title;
@@ -548,84 +558,4 @@ struct MsgVisuWindowSettings {
 	bool row_major;
 	uint columns_or_rows;
 }
-
-
-/////////////////////////////////////////////////////////////////
-//// make an item that represents a Gui window
-//import session;
-//class GuiItem : Item 
-//{
-//public:
-//	this(string name, ulong gui_idx) {
-//		_name = name;
-//		_gui_idx = gui_idx;
-//	}
-
-//	string getTypeString() {
-//		return "GUI window";
-//	}
-//	int getColorIdx() {
-//		return 0;
-//	}
-
-//	ulong guiIdx() {
-//		return _gui_idx;
-//	}
-
-
-//	override immutable(GuiVisualizer) createVisualizer() 
-//	{
-//		import std.conv;
-//		return new immutable(GuiVisualizer)(_name);
-//	}
-//private:
-//	string _name;
-//	ulong _gui_idx;
-//}
-
-//immutable class GuiVisualizer : Visualizer 
-//{
-//	import cairo.Context, cairo.Surface;
-//	import view;
-//	this(string name) {
-//		_name = name;
-//	}
-//	override string getItemName() immutable {
-//		return _name;
-//	}
-//	override ulong getDim() immutable {
-//		return 1;
-//	}
-//	override int getColorIdx() immutable
-//	{
-//		return 0;
-//	}
-//	override void print(int context) immutable {
-//		import std.stdio;
-//		writeln(_name,"\r");
-//	}
-//	override bool needsColorKey() immutable {
-//		return false;
-//	}
-//	override void draw(ref Scoped!Context cr, ViewBox box, bool logy, bool logx, bool logz) immutable {
-//		return;
-//	}
-//	override bool getLeftRight(out double left, out double right, bool logy, bool logx) immutable {
-//		return false;
-//	}
-//	override bool getBottomTopInLeftRight(out double bottom, out double top, double left, double right, bool logy, bool logx) immutable 
-//	{
-//		return false;
-//	}
-//	override bool getZminZmaxInLeftRightBottomTop(out double mi, out double ma, 
-//	                                     double left, double right, double bottom, double top, 
-//	                                     bool logz, bool logy, bool logx) immutable
-//	{
-//		return false;
-//	}
-
-//private:
-//	string _name;
-//}
-
 

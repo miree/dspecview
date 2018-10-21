@@ -49,7 +49,7 @@ public:
 				import std.algorithm;
 				foreach(itemname; _itemnames.sort) {
 					if (itemname.startsWith(name ~ "/") || itemname == name) {
-						_sessionTid.send(MsgRequestItemVisualizer(itemname, _parentGui.getGuiIdx()), thisTid);
+						_sessionTid.send(MsgRequestItemVisualizer(itemname, _parentGui.getGuiName()), thisTid);
 						auto check_path = new TreePath(get_path_name_from_name(itemname, _itemnames));
 						auto check_it = new TreeIter(_treestore, check_path);
 						_treestore.setValue(check_it, COLUMN_BOOL, 1);
@@ -57,20 +57,20 @@ public:
 					}
 				}
 				// ask the session to send us a "FitContent message"
-				_sessionTid.send(MsgEchoFitContent(_parentGui.getGuiIdx()), thisTid); 
+				_sessionTid.send(MsgEchoFitContent(_parentGui.getGuiName()), thisTid); 
 				// ask the session to send us a "RedrawContent message"
-				_sessionTid.send(MsgEchoRedrawContent(_parentGui.getGuiIdx()), thisTid);
+				_sessionTid.send(MsgEchoRedrawContent(_parentGui.getGuiName()), thisTid);
 			} else {
 				import std.algorithm;
 				foreach(itemname; _itemnames.sort) {
 					if (itemname.startsWith(name ~ "/") || itemname == name) {
-						thisTid.send(MsgRemoveVisualizedItem(itemname, _parentGui.getGuiIdx()));
+						thisTid.send(MsgRemoveVisualizedItem(itemname, _parentGui.getGuiName()));
 						auto uncheck_path = new TreePath(get_path_name_from_name(itemname, _itemnames));
 						auto uncheck_it = new TreeIter(_treestore, uncheck_path);
 						_treestore.setValue(uncheck_it, COLUMN_BOOL, 0);
 						_checked[itemname] = false;
 
-						//_sessionTid.send(MsgRequestItemVisualizer(itemname, _parentGui.getGuiIdx()), thisTid);
+						//_sessionTid.send(MsgRequestItemVisualizer(itemname, _parentGui.getGuiName()), thisTid);
 					}
 				}
 			}
@@ -130,15 +130,15 @@ public:
 		//			//		auto selected_name = get_full_name(iter);
 		//			//		if (itemname.startsWith(selected_name)) {
 		//			//			// request a Visualizer for that item
-		//			//			_sessionTid.send(MsgRequestItemVisualizer(itemname, _parentGui.getGuiIdx()), thisTid);
+		//			//			_sessionTid.send(MsgRequestItemVisualizer(itemname, _parentGui.getGuiName()), thisTid);
 		//			//			break outerfor;
 		//			//		}
 		//			//	}					
 		//			//}
 		//			//// ask the session to send us a "FitContent message"
-		//			//_sessionTid.send(MsgEchoFitContent(_parentGui.getGuiIdx()), thisTid); 
+		//			//_sessionTid.send(MsgEchoFitContent(_parentGui.getGuiName()), thisTid); 
 		//			//// ask the session to send us a "RedrawContent message"
-		//			//_sessionTid.send(MsgEchoRedrawContent(_parentGui.getGuiIdx()), thisTid);
+		//			//_sessionTid.send(MsgEchoRedrawContent(_parentGui.getGuiName()), thisTid);
 		//		}
 		//	);
 
@@ -160,15 +160,15 @@ public:
 							auto selected_name = get_full_name(iter);
 							if (itemname.startsWith(selected_name ~ "/") || (itemname == selected_name)) {
 								// request a Visualizer for that item
-								_sessionTid.send(MsgRequestItemVisualizer(itemname, _parentGui.getGuiIdx()), thisTid);
+								_sessionTid.send(MsgRequestItemVisualizer(itemname, _parentGui.getGuiName()), thisTid);
 								_checked[itemname] = true;
 							}
 						}					
 					}
 					// ask the session to send us a "FitContent message"
-					_sessionTid.send(MsgEchoFitContent(_parentGui.getGuiIdx()), thisTid); 
+					_sessionTid.send(MsgEchoFitContent(_parentGui.getGuiName()), thisTid); 
 					// ask the session to send us a "RedrawContent message"
-					_sessionTid.send(MsgEchoRedrawContent(_parentGui.getGuiIdx()), thisTid);
+					_sessionTid.send(MsgEchoRedrawContent(_parentGui.getGuiName()), thisTid);
 
 					thisTid.send(MsgRefreshItemList());
 				},
@@ -189,14 +189,14 @@ public:
 							auto selected_name = get_full_name(iter);
 							if (itemname.startsWith(selected_name ~ "/") || (itemname == selected_name)) {
 								// request a Visualizer for that item
-								_sessionTid.send(MsgRequestItemVisualizer(itemname, gui.getGuiIdx()), thisTid);
+								_sessionTid.send(MsgRequestItemVisualizer(itemname, gui.getGuiName()), thisTid);
 							}
 						}					
 					}
 					// ask the session to send us a "FitContent message"
-					_sessionTid.send(MsgEchoFitContent(gui.getGuiIdx()), thisTid); 
+					_sessionTid.send(MsgEchoFitContent(gui.getGuiName()), thisTid); 
 					// ask the session to send us a "RedrawContent message"
-					_sessionTid.send(MsgEchoRedrawContent(gui.getGuiIdx()), thisTid);
+					_sessionTid.send(MsgEchoRedrawContent(gui.getGuiName()), thisTid);
 				},
 				"show in new window", // menu entry label
 				"show seleted items and all items in selected folders in a new window"// description
