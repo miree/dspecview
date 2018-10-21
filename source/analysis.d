@@ -31,7 +31,10 @@ public:
 	}	
 	string getTypeString() {
 		import std.conv;
-		return "Analysis " ~ (_steps_left != 0)?("running"):("stopped");
+		if (_steps_left == 0) {
+			return "Analysis stopped";//(_steps_left>0 || _steps_left == -1)?("running"):("stopped");
+		}
+		return "Analysis running";
 	}
 	int getColorIdx() {
 		return _colorIdx;
@@ -58,6 +61,9 @@ public:
 // Methods for AnalysisInterface
 	void step() {
 		if (_steps_left == 0) {
+			import session;
+			import std.concurrency;
+			thisTid.send(MsgRequestRefreshItemList());
 			return;
 		}
 		import std.stdio;
@@ -93,6 +99,11 @@ public:
 		// check if we should continue
 		if (_steps_left > 0) {
 			--_steps_left;
+			if (_steps_left == 0) {
+				import gui;
+				import std.concurrency;
+				thisTid.send(MsgRequestRefreshItemList());
+			}
 		}
 		import session;
 		if (_steps_left > 0 || _steps_left == -1) {

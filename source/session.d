@@ -206,6 +206,8 @@ struct MsgRequestItemList{
 struct MsgItemList { 
 	string nametype; 
 }
+struct MsgRequestRefreshItemList {
+}
 struct MsgRequestItemUpdate {
 }
 struct MsgUpdateItem { 
@@ -358,6 +360,12 @@ public:
 							}
 						} catch (Exception e) {
 							//requestingThread.send(e.msg);
+						}
+					},
+					(MsgRequestRefreshItemList msg) {
+						if (_guiRunning) {
+							import gui;
+							_guiTid.send(MsgRefreshItemList());
 						}
 					},
 					(MsgRequestItemList msg, Tid requestingThread) {
