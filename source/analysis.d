@@ -19,10 +19,12 @@ public:
 		_colorIdx = colorIdx;
 		_filename = filename; // analysis configuration file
 		_steps_left  = 0;
+		_step_counter = 0; // counts all steps since creation of object
 
 		h1 = new Hist1(1, 100, -20, 20);
 		h2 = new Hist1(2, 100, -10, 10);
-		h12 = new Hist2(3, 1000, 1000, -20, 20, -20, 20);
+		h12 = new Hist2(3, 4096/4, 4096/4, -20, 20, -20, 20);
+
 	}
 
 	immutable(Visualizer) createVisualizer()
@@ -31,10 +33,8 @@ public:
 	}	
 	string getTypeString() {
 		import std.conv;
-		if (_steps_left == 0) {
-			return "Analysis stopped";//(_steps_left>0 || _steps_left == -1)?("running"):("stopped");
-		}
-		return "Analysis running";
+		string typestring = "Analysis " ~ _step_counter.to!string ~ " steps - ";
+		return typestring ~ ((_steps_left == 0)?"stopped":"running");
 	}
 	int getColorIdx() {
 		return _colorIdx;
@@ -44,15 +44,19 @@ public:
 	}
 
 	void start(long steps = -1) {
+		if (_steps_left == 0) {
+			import std.concurrency;
+			import session;
+			thisTid.send(MsgInsertItem("h1", cast(immutable(Item))h1));
+			thisTid.send(MsgInsertItem("h2", cast(immutable(Item))h2));
+			thisTid.send(MsgInsertItem("h12", cast(immutable(Item))h12));
 
-		import std.concurrency;
-		import session;
-		thisTid.send(MsgInsertItem("h1", cast(immutable(Item))h1));
-		thisTid.send(MsgInsertItem("h2", cast(immutable(Item))h2));
-		thisTid.send(MsgInsertItem("h12", cast(immutable(Item))h12));
-
-		_steps_left = steps;
-		step();
+			_steps_left = steps;
+			step();
+		} else {
+			import std.stdio;
+			writeln("analysis already running\r");
+		}
 	}
 	void stop() {
 		_steps_left = 0;
@@ -97,6 +101,8 @@ public:
 			h12.fill(value1, value2);
 
 		// check if we should continue
+		++ _step_counter;
+
 		if (_steps_left > 0) {
 			--_steps_left;
 			if (_steps_left == 0) {
@@ -124,6 +130,8 @@ private:
 	string   _filename;
 	long     _steps_left; // number of steps to be done
 	                   // -1 for unlimited number of steps
+
+	long     _step_counter;
 
 	import hist1;
 	import hist2;
