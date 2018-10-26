@@ -270,6 +270,16 @@ struct MsgAnalysisStep {
 	bool stop = false;
 }
 
+struct MsgStartSoundScope {
+	string itemname;
+	long   count = -1; // -1 means infinite number of steps
+}
+struct MsgSoundScopeStep {
+	import soundscope;
+	immutable(SoundScope) anl;
+	bool stop = false;
+}
+
 class Session
 {
 public:
@@ -465,7 +475,11 @@ public:
 							auto anl_item = cast(AnalysisInterface)(*item);
 							if (anl_item !is null) {
 								//writeln("start analysis with ", msg.count, " steps\r");
-								anl_item.start(msg.count);
+								if (msg.count != 0) {
+									anl_item.start(msg.count);
+								} else {
+									anl_item.stop();
+								}
 							}
 						}
 					},
@@ -475,6 +489,31 @@ public:
 							//writeln("    not null\r");
 							import analysis;
 							auto anl = cast(Analysis)msg.anl;
+							anl.step();
+						}
+					},
+					(MsgStartSoundScope msg) {
+						if (_output_all_messages) { writeln("got MsgStartSoundScope\r"); }
+						auto item = msg.itemname in _items;
+						if (item !is null) {
+							import soundscope;
+							auto anl_item = cast(SoundScopeInterface)(*item);
+							if (anl_item !is null) {
+								//writeln("start SoundScope with ", msg.count, " steps\r");
+								if (msg.count != 0) {
+									anl_item.start(msg.count);
+								} else {
+									anl_item.stop();
+								}
+							}
+						}
+					},
+					(MsgSoundScopeStep msg) {
+						if (_output_all_messages) { writeln("got MsgSoundScopeStep\r"); }
+						if (msg.anl !is null) {
+							//writeln("    not null\r");
+							import soundscope;
+							auto anl = cast(SoundScope)msg.anl;
 							anl.step();
 						}
 					}

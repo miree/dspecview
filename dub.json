@@ -9,5 +9,8 @@
 	"preBuildCommands" : ["./prebuild.sh"],
 	"importPaths": ["GtkD/generated/gtkd", "linenoise"],
 	"lflags-posix": ["-LGtkD"],
-	"libs": ["gtkd-3", "linenoise"]
+	"libs": ["gtkd-3", "linenoise"],
+	"dependencies": {
+		"alsa-lib": "~>1.0.1+1.0.27.2"
+	}
 }
