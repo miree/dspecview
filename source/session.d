@@ -16,6 +16,12 @@ public:
 	// the tree view column "type"
 	string getTypeString();
 
+	////////////////////////////////////////
+	// Notification that an item changed 
+	// or was newly created. 
+	// give name and reference to it
+	void notifyItemChanged(string itemname, Item item);
+
 	int getColorIdx();
 	void setColorIdx(int idx);	
 }
@@ -280,6 +286,14 @@ struct MsgSoundScopeStep {
 	bool stop = false;
 }
 
+///////////////////////////////
+// Messages for notification 
+// mechanism
+struct MsgNotifyMeOnItemChange {
+	string me;
+	string name_of_changed_item;
+}
+
 class Session
 {
 public:
@@ -354,6 +368,7 @@ public:
 									_guiTid.send(MsgRefreshItemList());
 								}
 							}
+							notify_all(itemname);
 						} catch (Exception e) {
 							//requestingThread.send(e.msg);
 						}
@@ -368,6 +383,7 @@ public:
 								import gui;
 								_guiTid.send(MsgRefreshItemList());
 							}
+							notify_all(itemname);
 						} catch (Exception e) {
 							//requestingThread.send(e.msg);
 						}
@@ -516,6 +532,12 @@ public:
 							auto anl = cast(SoundScope)msg.anl;
 							anl.step();
 						}
+					},
+					(MsgNotifyMeOnItemChange msg) {
+						if (_output_all_messages) { writeln("got MsgNotifyMeOnItemChange\r"); }
+						if (msg.name_of_changed_item !is null && msg.me !is null) {
+							_notification_matrix[msg.name_of_changed_item] ~= msg.me;
+						}
 					}
 				); // receive
 	 		}  
@@ -529,11 +551,29 @@ public:
 		return true;
 	}
 
+	void notify_all(string itemname_of_changed_item) {
+		// see if the item is actually a thing
+		auto changed_item_ptr = itemname_of_changed_item in _items;
+		if (changed_item_ptr !is null) {
+			// notify all other items as specified by the _notification_matrix
+			auto list_of_itemnames_to_notify = itemname_of_changed_item in _notification_matrix;
+			if (list_of_itemnames_to_notify !is null) {
+				foreach(itemname_to_notify; *list_of_itemnames_to_notify) {
+					auto notified_item_ptr = itemname_to_notify in _items;
+					if (notified_item_ptr !is null) {
+						(*notified_item_ptr).notifyItemChanged(itemname_of_changed_item, *changed_item_ptr);
+					}
+				}
+			}
+		}
+	}
+
 private:
 	bool _running;
 	bool _output_all_messages = false;
 
 	Item[string] _items;
+	string[][string] _notification_matrix; // 
 
 	import std.concurrency;
 	bool _guiRunning = false;

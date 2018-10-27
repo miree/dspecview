@@ -14,21 +14,25 @@ public:
 class SoundScope : Item , SoundScopeInterface
 {
 public:
-	this(int colorIdx, string filename) pure
+	this(string itemname, int colorIdx, string filename) pure
 	{
+		_itemname = itemname;
 		_colorIdx = colorIdx;
 		_filename = filename; // SoundScope configuration file
 		_steps_left  = 0;
 		_step_counter = 0; // counts all steps since creation of object
 
-		int leftcoloridx = 4;
+		int leftcoloridx = 0;
 		int rightcoloridx = 5;
 
-		_channel_left  = new Hist1(leftcoloridx,  tracelen, 0, tracelen);
-		_channel_right = new Hist1(rightcoloridx, tracelen, 0, tracelen);
+		_channel_left  = new Hist1(leftcoloridx,  tracelen, 1.0-tracelen/2, 1.0*tracelen-tracelen/2);
+		_channel_right = new Hist1(rightcoloridx, tracelen, 1.0-tracelen/2, 1.0*tracelen-tracelen/2);
 
-		_left_trigger_level  = new Number(0, 0, false, leftcoloridx, Direction.y);
-		_right_trigger_level = new Number(0, 0, false, rightcoloridx, Direction.y);
+		_left_trigger_level  = new Number(5000, 0, false, leftcoloridx, Direction.y);
+		_right_trigger_level = new Number(-5000, 0, false, rightcoloridx, Direction.y);
+
+		_left_offset  = new Number(5000, 0, false, leftcoloridx+1, Direction.y);
+		_right_offset = new Number(-5000, 0, false, rightcoloridx+1, Direction.y);
 
 		//_left_top = new Number( 10000, 0, false, leftcoloridx, Direction.y);
 		//_left_bot = new Number(-10000, 0, false, leftcoloridx, Direction.y);
@@ -56,6 +60,26 @@ public:
 	}
 	void setColorIdx(int idx) {
 		_colorIdx = idx;
+	}
+
+	void notifyItemChanged(string itemname, Item item) {
+		import std.stdio;
+		writeln("item ", itemname, " changed\r");
+		Number number = cast(Number)item;
+		if (number !is null) {
+			if (itemname == _itemname ~ "/left/triggerlevel") {
+				_left_trigger_level = number;
+			}
+			if (itemname == _itemname ~ "/left/offset") {
+				_left_offset = number;
+			}
+			if (itemname == _itemname ~ "/right/triggerlevel") {
+				_right_trigger_level = number;
+			}
+			if (itemname == _itemname ~ "/right/offset") {
+				_right_offset = number;
+			}
+		}
 	}
 
 	void start(long steps = -1) {
@@ -94,15 +118,21 @@ public:
 		if (_steps_left == 0) {
 			import std.concurrency;
 			import session;
-			thisTid.send(MsgInsertItem("left/signal", cast(immutable(Item))_channel_left));
-			thisTid.send(MsgInsertItem("left/triggerlevel", cast(immutable(Item))_left_trigger_level));
+			thisTid.send(MsgInsertItem(_itemname ~ "/left/signal", cast(immutable(Item))_channel_left));
+			thisTid.send(MsgInsertItem(_itemname ~ "/left/triggerlevel", cast(immutable(Item))_left_trigger_level));
+			thisTid.send(MsgInsertItem(_itemname ~ "/left/offset", cast(immutable(Item))_left_offset));
+			thisTid.send(MsgNotifyMeOnItemChange(_itemname, _itemname ~ "/left/triggerlevel"));
+			thisTid.send(MsgNotifyMeOnItemChange(_itemname, _itemname ~ "/left/offset"));
 
 			//thisTid.send(MsgInsertItem("left/top", cast(immutable(Item))_left_top));
 			//thisTid.send(MsgInsertItem("left/bot", cast(immutable(Item))_left_bot));
 
 
-			thisTid.send(MsgInsertItem("right/signal", cast(immutable(Item))_channel_right));
-			thisTid.send(MsgInsertItem("right/triggerlevel", cast(immutable(Item))_right_trigger_level));
+			thisTid.send(MsgInsertItem(_itemname ~ "/right/signal", cast(immutable(Item))_channel_right));
+			thisTid.send(MsgInsertItem(_itemname ~ "/right/triggerlevel", cast(immutable(Item))_right_trigger_level));
+			thisTid.send(MsgInsertItem(_itemname ~ "/right/offset", cast(immutable(Item))_right_offset));
+			thisTid.send(MsgNotifyMeOnItemChange(_itemname, _itemname ~ "/right/triggerlevel"));
+			thisTid.send(MsgNotifyMeOnItemChange(_itemname, _itemname ~ "/right/offset"));
 			//thisTid.send(MsgInsertItem("right/top", cast(immutable(Item))_right_top));
 			//thisTid.send(MsgInsertItem("right/bot", cast(immutable(Item))_right_bot));
 
@@ -136,52 +166,55 @@ public:
 		long sr = snd_pcm_readi(handle, cast(char*)(buffer), period_length);
 		if (sr < 0)
 		{
+			writeln("sr < 0\r");
 			sr = snd_pcm_recover(handle, rc, 0);
 			if (sr < 0)
 			{
 				writeln("cannot recover\r");
 				return;
 			}
-		}
+		} else {
+			for (int p = 0; p < period_length; ++p)
+			{
+				int leftvalue = buffer[2*p]>>16;
+				double lefttriggerlevel = _left_trigger_level.getValue()-_left_offset.getValue();
+				if (leftvalue > lefttriggerlevel && lefttrace[_left_bin_counter] <= lefttriggerlevel) {
+					lefttrigger = true;
+				}
+				lefttrace[_left_bin_counter]  = leftvalue;
 
-		for (int p = 0; p < period_length; ++p)
-		{
-			int leftvalue = buffer[2*p]>>16;
-			if (leftvalue > _left_trigger_level.getValue() && lefttrace[_left_bin_counter] <= _left_trigger_level.getValue()) {
-				lefttrigger = true;
-			}
-			lefttrace[_left_bin_counter]  = leftvalue;
-
-			if (lefttrigger) {
-				++_left_bin_counter;
-				if (_left_bin_counter == tracelen) {
-					_left_bin_counter = 0;
-					lefttrigger = false;
-					for (long i = 0; i < tracelen; ++i) {
-						_channel_left.setBinContent(i, lefttrace[i]);
+				if (lefttrigger) {
+					++_left_bin_counter;
+					if (_left_bin_counter == tracelen) {
+						_left_bin_counter = 0;
+						lefttrigger = false;
+						for (long i = 0; i < tracelen; ++i) {
+							_channel_left.setBinContent(i, lefttrace[i]+_left_offset.getValue());
+						}
 					}
 				}
-			}
 
 
-			int rightvalue = buffer[2*p+1]>>16;
-			if (rightvalue > _right_trigger_level.getValue() && righttrace[_right_bin_counter] <= _right_trigger_level.getValue()) {
-				righttrigger = true;
-			}
-			righttrace[_right_bin_counter] = rightvalue;
+				int rightvalue = buffer[2*p+1]>>16;
+				double righttriggerlevel = _right_trigger_level.getValue()-_right_offset.getValue();
+				if (rightvalue > righttriggerlevel && righttrace[_right_bin_counter] <= righttriggerlevel) {
+					righttrigger = true;
+				}
+				righttrace[_right_bin_counter] = rightvalue;
 
-			if (righttrigger) {
-				++_right_bin_counter;
-				if (_right_bin_counter == tracelen) {
-					_right_bin_counter = 0;
-					righttrigger = false;
-					for (long i = 0; i < tracelen; ++i) {
-						_channel_right.setBinContent(i, righttrace[i]);
+				if (righttrigger) {
+					++_right_bin_counter;
+					if (_right_bin_counter == tracelen) {
+						_right_bin_counter = 0;
+						righttrigger = false;
+						for (long i = 0; i < tracelen; ++i) {
+							_channel_right.setBinContent(i, righttrace[i]+_right_offset.getValue());
+						}
 					}
 				}
-			}
 
-			//writeln(sum_l, " ", sum_r, "\r");
+				//writeln(sum_l, " ", sum_r, "\r");
+			}
 		}
 
 		// check if we should continue
@@ -212,6 +245,7 @@ private:
 	// reference by assigning length = 0;
 	immutable(Visualizer)[] _visualizer;
 
+	string   _itemname;  // our name in the session
 	int      _colorIdx;
 	string   _filename;
 	long     _steps_left; // number of steps to be done
@@ -223,8 +257,8 @@ private:
 	Hist1 _channel_left  = null;
 	Hist1 _channel_right = null;
 	import number;
-	Number _left_trigger_level;
-	Number _right_trigger_level;
+	Number _left_trigger_level, _left_offset;
+	Number _right_trigger_level, _right_offset;
 	//Number _left_top,  _left_bot;
 	//Number _right_top, _right_bot;
 
@@ -234,7 +268,7 @@ private:
 	immutable uint                  period_length = 32;     // 32 frames in one period
 	immutable uint                  rate          = 192000; // as fast as we can
 	immutable uint                  num_channels  = 2;      // stereo
-	immutable uint                  tracelen      = 512;    // number of bins of the histograms showing the trace
+	immutable uint                  tracelen      = 256;    // number of bins of the histograms showing the trace
 	int[tracelen]                   lefttrace;
 	bool                            lefttrigger;
 	long _left_bin_counter = 0;
@@ -253,14 +287,16 @@ private:
 
 immutable class SoundScopeFactory : ItemFactory
 {
-	this(string filename, int colorIdx = -1) pure {
+	this(string itemname, string filename, int colorIdx = -1) pure {
+		_itemname = itemname;
 		_filename = filename;
 		_colorIdx = colorIdx;
 	}
 	override Item getItem() pure {
-		return new SoundScope(_colorIdx, _filename);
+		return new SoundScope(_itemname, _colorIdx, _filename);
 	}
 private:
+	string    _itemname;
 	string    _filename;
 	int       _colorIdx;
 }

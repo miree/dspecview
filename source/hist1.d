@@ -72,6 +72,9 @@ public:
 		_colorIdx = idx;
 	}
 
+	void notifyItemChanged(string itemname, Item item) {
+		// nothing
+	}
 
 // Methods for Hist1Interface
 	ulong getBins() {

@@ -25,8 +25,6 @@ void populate_list_of_commands()
 	list_of_commands["start_anl"]   = &startAnalysis;
 	list_of_commands["stop_anl"]    = &stopAnalysis;
 	list_of_commands["soundscope"]  = &addSoundScope;
-	list_of_commands["startscope"]  = &startSoundScope;
-	list_of_commands["stopscope"]   = &stopSoundScope;
 	//list_of_commands["visualizer"]  = &getItemVisualizer;
 	list_of_commands["gui"]         = &runGui;
 	list_of_commands["guistatus"]   = &showGuiStatus;
@@ -407,41 +405,8 @@ void addSoundScope(immutable string[] args)
 
 	import session;
 	import soundscope;
-	sessionTid.send(MsgAddItem(args[0], new immutable(SoundScopeFactory)("SoundScope.config", -1)));
-}
-
-void startSoundScope(immutable string[] args)
-{
-	import std.stdio, std.concurrency, std.array, std.algorithm, std.conv;
-
-	writeln("start soundscope\r");
-	if (args.length != 1 && args.length != 2) {
-		writeln("expecting arguments: <itemname> [<steps>], got ", args.length , "arguments: ", args);
-		return;
-	}
-
-	import session;
-	import soundscope;
-	long count = -1;
-	if (args.length == 2) {
-		count = args[1].to!long;
-	}
-	sessionTid.send(MsgStartSoundScope(args[0], count));
-}
-
-void stopSoundScope(immutable string[] args)
-{
-	import std.stdio, std.concurrency, std.array, std.algorithm, std.conv;
-
-	if (args.length != 1) {
-		writeln("expecting arguments: <itemname>, got ", args.length , "arguments: ", args);
-		return;
-	}
-
-	import session;
-	import soundscope;
-	long count = 0;
-	sessionTid.send(MsgStartSoundScope(args[0], count));
+	sessionTid.send(MsgAddItem(args[0], new immutable(SoundScopeFactory)(args[0], "SoundScope.config", -1)));
+	sessionTid.send(MsgStartSoundScope(args[0], -1));
 }
 
 

@@ -33,6 +33,10 @@ public:
 		_colorIdx = idx;
 	}
 
+	void notifyItemChanged(string itemname, Item item) {
+		// nothing
+	}
+
 	double getValue() {
 		if (_delta !is double.init) {
 			if (_logscale) {

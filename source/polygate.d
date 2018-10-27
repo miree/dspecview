@@ -36,6 +36,10 @@ public:
 		_colorIdx = idx;
 	}
 
+	void notifyItemChanged(string itmename, Item item) {
+		// nothing
+	}
+
 private:
 	int         _colorIdx;
 	PolyPoint[] _points;

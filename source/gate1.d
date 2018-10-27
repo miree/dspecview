@@ -41,6 +41,10 @@ public:
 		_colorIdx = idx;
 	}
 
+	void notifyItemChanged(string itemname, Item item) {
+		// nothing
+	}
+
 	double getValue1() pure {
 		if (_delta1 !is double.init) {
 			if (_logscale) {

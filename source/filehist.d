@@ -77,6 +77,11 @@ public:
 		return _visualizer[0];
 	}
 
+	void notifyItemChanged(string itemname, Item item) {
+		// nothing
+	}
+
+
 private: // some private functions
 	bool need_to_reload() {
 		bool need_update = false;
@@ -258,6 +263,7 @@ private: // some private functions
 			return HistData();
 		}
 	}
+
 
 private: // private state
 	// make this an array to be able discard the 

@@ -121,6 +121,11 @@ public:
 	void idle() {
 	}
 
+	void notifyItemChanged(string itemname, Item item) {
+		// nothing
+	}
+
+
 private:
 	// make this an array to be able discard the 
 	// reference by assigning length = 0;

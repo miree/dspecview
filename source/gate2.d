@@ -40,6 +40,10 @@ public:
 		_colorIdx = idx;
 	}
 
+	void notifyItemChanged(string itemname, Item item) {
+		// nothing
+	}
+
 	double getLeft() pure {
 		if (_delta_lrbt !is null && _delta_lrbt[0] !is double.init) {
 			if (_logx) {
