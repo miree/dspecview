@@ -34,6 +34,9 @@ public:
 		_left_offset  = new Number(5000, 0, false, leftcoloridx+1, Direction.y);
 		_right_offset = new Number(-5000, 0, false, rightcoloridx+1, Direction.y);
 
+		_left_timezero  = new Number(0, 0, false, leftcoloridx, Direction.x);
+		_right_timezero = new Number(0, 0, false, rightcoloridx, Direction.x);
+
 		//_left_top = new Number( 10000, 0, false, leftcoloridx, Direction.y);
 		//_left_bot = new Number(-10000, 0, false, leftcoloridx, Direction.y);
 
@@ -64,7 +67,7 @@ public:
 
 	void notifyItemChanged(string itemname, Item item) {
 		import std.stdio;
-		writeln("item ", itemname, " changed\r");
+		//writeln("item ", itemname, " changed\r");
 		Number number = cast(Number)item;
 		if (number !is null) {
 			if (itemname == _itemname ~ "/left/triggerlevel") {
@@ -73,11 +76,17 @@ public:
 			if (itemname == _itemname ~ "/left/offset") {
 				_left_offset = number;
 			}
+			if (itemname == _itemname ~ "/left/timezero") {
+				_left_timezero = number;
+			}
 			if (itemname == _itemname ~ "/right/triggerlevel") {
 				_right_trigger_level = number;
 			}
 			if (itemname == _itemname ~ "/right/offset") {
 				_right_offset = number;
+			}
+			if (itemname == _itemname ~ "/right/timezero") {
+				_right_timezero = number;
 			}
 		}
 	}
@@ -121,7 +130,9 @@ public:
 			thisTid.send(MsgInsertItem(_itemname ~ "/left/signal", cast(immutable(Item))_channel_left));
 			thisTid.send(MsgInsertItem(_itemname ~ "/left/triggerlevel", cast(immutable(Item))_left_trigger_level));
 			thisTid.send(MsgInsertItem(_itemname ~ "/left/offset", cast(immutable(Item))_left_offset));
+			thisTid.send(MsgInsertItem(_itemname ~ "/left/timezero", cast(immutable(Item))_left_timezero));
 			thisTid.send(MsgNotifyMeOnItemChange(_itemname, _itemname ~ "/left/triggerlevel"));
+			thisTid.send(MsgNotifyMeOnItemChange(_itemname, _itemname ~ "/left/timezero"));
 			thisTid.send(MsgNotifyMeOnItemChange(_itemname, _itemname ~ "/left/offset"));
 
 			//thisTid.send(MsgInsertItem("left/top", cast(immutable(Item))_left_top));
@@ -131,7 +142,9 @@ public:
 			thisTid.send(MsgInsertItem(_itemname ~ "/right/signal", cast(immutable(Item))_channel_right));
 			thisTid.send(MsgInsertItem(_itemname ~ "/right/triggerlevel", cast(immutable(Item))_right_trigger_level));
 			thisTid.send(MsgInsertItem(_itemname ~ "/right/offset", cast(immutable(Item))_right_offset));
+			thisTid.send(MsgInsertItem(_itemname ~ "/right/timezero", cast(immutable(Item))_right_timezero));
 			thisTid.send(MsgNotifyMeOnItemChange(_itemname, _itemname ~ "/right/triggerlevel"));
+			thisTid.send(MsgNotifyMeOnItemChange(_itemname, _itemname ~ "/right/timezero"));
 			thisTid.send(MsgNotifyMeOnItemChange(_itemname, _itemname ~ "/right/offset"));
 			//thisTid.send(MsgInsertItem("right/top", cast(immutable(Item))_right_top));
 			//thisTid.send(MsgInsertItem("right/bot", cast(immutable(Item))_right_bot));
@@ -178,41 +191,64 @@ public:
 			{
 				int leftvalue = buffer[2*p]>>16;
 				double lefttriggerlevel = _left_trigger_level.getValue()-_left_offset.getValue();
-				if (leftvalue > lefttriggerlevel && lefttrace[_left_bin_counter] <= lefttriggerlevel) {
+				if (lefttrigger == false && leftvalue > lefttriggerlevel && lefttrace[lefttrace_w] <= lefttriggerlevel) {
 					lefttrigger = true;
+					_left_bin_counter = tracelen-tracelen/2-cast(int)_left_timezero.getValue();
+					if (_left_bin_counter <=          1) _left_bin_counter = 1;
+					if (_left_bin_counter >= tracelen-1) _left_bin_counter = tracelen-1;
 				}
-				lefttrace[_left_bin_counter]  = leftvalue;
+				lefttrace_w+=1;
+				//writeln(lefttrace_w," ", _left_bin_counter, "\r");
+				if (lefttrace_w == tracelen) {
+					lefttrace_w = 0;
+				}
+				lefttrace[lefttrace_w] = leftvalue;
 
 				if (lefttrigger) {
-					++_left_bin_counter;
-					if (_left_bin_counter == tracelen) {
-						_left_bin_counter = 0;
+					if (_left_bin_counter == 0) {
+						//writeln("----\r");
 						lefttrigger = false;
 						for (long i = 0; i < tracelen; ++i) {
-							_channel_left.setBinContent(i, lefttrace[i]+_left_offset.getValue());
+
+							ulong idx = lefttrace_w+i+1;
+							while (idx >= tracelen) idx -= tracelen;
+							//writeln(i, " ", idx, "\r");
+							_channel_left.setBinContent(i, lefttrace[idx]+_left_offset.getValue());
 						}
 					}
+					--_left_bin_counter;
 				}
 
 
 				int rightvalue = buffer[2*p+1]>>16;
 				double righttriggerlevel = _right_trigger_level.getValue()-_right_offset.getValue();
-				if (rightvalue > righttriggerlevel && righttrace[_right_bin_counter] <= righttriggerlevel) {
+				if (righttrigger == false && rightvalue > righttriggerlevel && righttrace[righttrace_w] <= righttriggerlevel) {
 					righttrigger = true;
+					_right_bin_counter = tracelen-tracelen/2-cast(int)_right_timezero.getValue();
+					if (_right_bin_counter <=          1) _right_bin_counter = 1;
+					if (_right_bin_counter >= tracelen-1) _right_bin_counter = tracelen-1;
 				}
-				righttrace[_right_bin_counter] = rightvalue;
+				righttrace_w+=1;
+				//writeln(righttrace_w," ", _right_bin_counter, "\r");
+				if (righttrace_w == tracelen) {
+					righttrace_w = 0;
+				}
+				righttrace[righttrace_w] = rightvalue;
 
 				if (righttrigger) {
-					++_right_bin_counter;
-					if (_right_bin_counter == tracelen) {
-						_right_bin_counter = 0;
+					if (_right_bin_counter == 0) {
+						//writeln("----\r");
 						righttrigger = false;
 						for (long i = 0; i < tracelen; ++i) {
-							_channel_right.setBinContent(i, righttrace[i]+_right_offset.getValue());
+
+							ulong idx = righttrace_w+i+1;
+							while (idx >= tracelen) idx -= tracelen;
+							//writeln(i, " ", idx, "\r");
+							_channel_right.setBinContent(i, righttrace[idx]+_right_offset.getValue());
 						}
 					}
+					--_right_bin_counter;
 				}
-
 				//writeln(sum_l, " ", sum_r, "\r");
 			}
 		}
@@ -257,8 +293,8 @@ private:
 	Hist1 _channel_left  = null;
 	Hist1 _channel_right = null;
 	import number;
-	Number _left_trigger_level, _left_offset;
-	Number _right_trigger_level, _right_offset;
+	Number _left_trigger_level, _left_offset, _left_timezero;
+	Number _right_trigger_level, _right_offset, _right_timezero;
 	//Number _left_top,  _left_bot;
 	//Number _right_top, _right_bot;
 
@@ -268,11 +304,13 @@ private:
 	immutable uint                  period_length = 32;     // 32 frames in one period
 	immutable uint                  rate          = 192000; // as fast as we can
 	immutable uint                  num_channels  = 2;      // stereo
-	immutable uint                  tracelen      = 256;    // number of bins of the histograms showing the trace
+	immutable uint                  tracelen      = 1024;    // number of bins of the histograms showing the trace
 	int[tracelen]                   lefttrace;
+	ulong 							lefttrace_w = 0;
 	bool                            lefttrigger;
 	long _left_bin_counter = 0;
 	int[tracelen]                   righttrace;
+	ulong 							righttrace_w = 0;
 	bool                            righttrigger;
 	long _right_bin_counter = 0;
 	snd_pcm_hw_params_t             *params;
