@@ -22,3 +22,15 @@ docs/
 
 # Code coverage
 *.lst
+dspecview.so
+dspecview.dylib
+dspecview.dll
+dspecview.a
+dspecview.lib
+dspecview-test-*
+*.exe
+*.o
+*.obj
+*.lst
+dspecview
+dspecview.sublime-workspace

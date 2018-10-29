@@ -1,0 +1,16 @@
+{
+	"build_systems":
+	[
+		{
+			"name": "compile",
+			"shell_cmd": "dub build --build=debug  && tilix -x ./run.sh --gui",
+			"working_dir": "$project_path"
+		}
+	],
+	"folders":
+	[
+		{
+			"path": "."
+		}
+	]
+}

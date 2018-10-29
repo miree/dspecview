@@ -1,0 +1,6 @@
+[submodule "GtkD"]
+	path = GtkD
+	url = https://github.com/gtkd-developers/GtkD
+[submodule "linenoise"]
+	path = linenoise
+	url = https://github.com/D-Programming-Deimos/linenoise.git
